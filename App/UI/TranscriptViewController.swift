@@ -128,28 +128,87 @@ final class TranscriptViewController: UIViewController, UITableViewDataSource {
             let spinner = UIActivityIndicatorView(style: .medium)
             spinner.startAnimating()
             navigationItem.rightBarButtonItem = UIBarButtonItem(customView: spinner)
-        } else {
-            navigationItem.rightBarButtonItem = UIBarButtonItem(
-                image: UIImage(systemName: "sparkles"),
-                primaryAction: UIAction { [weak self] _ in self?.analyze() }
-            )
-            navigationItem.rightBarButtonItem?.isEnabled = !plainText.isEmpty
+            return
         }
+        var actions: [UIAction] = [
+            UIAction(title: "提取考点", image: UIImage(systemName: "text.magnifyingglass")) { [weak self] _ in
+                self?.analyze()
+            },
+        ]
+        if analysis != nil {
+            actions.append(UIAction(title: "生成本讲讲义", image: UIImage(systemName: "doc.text")) { [weak self] _ in
+                self?.generateHandout()
+            })
+        }
+        if let markdown = try? String(contentsOf: handoutURL, encoding: .utf8), !markdown.isEmpty {
+            actions.append(UIAction(title: "查看本讲讲义", image: UIImage(systemName: "doc.richtext")) { [weak self] _ in
+                self?.showHandout(markdown)
+            })
+        }
+        let button = UIBarButtonItem(image: UIImage(systemName: "sparkles"), menu: UIMenu(children: actions))
+        button.isEnabled = !plainText.isEmpty
+        navigationItem.rightBarButtonItem = button
+    }
+
+    private var handoutURL: URL {
+        LibraryStore.shared.productURL(lecture, in: course, ext: "handout.md")
+    }
+
+    private func generateHandout() {
+        guard let analysis else { return }
+        guard let config = Settings.chatConfig else {
+            presentConfigureAlert()
+            return
+        }
+        isAnalyzing = true
+        updateAnalyzeButton()
+
+        let transcript = plainText
+        let lectureTitle = lecture.name
+        Task {
+            do {
+                let markdown = try await HandoutGenerator().lectureHandout(
+                    title: lectureTitle,
+                    transcript: transcript,
+                    analysis: analysis,
+                    client: ChatClient(config: config)
+                )
+                try markdown.write(to: handoutURL, atomically: true, encoding: .utf8)
+                showHandout(markdown)
+            } catch {
+                let alert = UIAlertController(title: "生成失败", message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "好", style: .default))
+                present(alert, animated: true)
+            }
+            isAnalyzing = false
+            updateAnalyzeButton()
+        }
+    }
+
+    private func showHandout(_ markdown: String) {
+        navigationController?.pushViewController(
+            MarkdownViewController(markdown: markdown, title: "\(lecture.name) 讲义"),
+            animated: true
+        )
+    }
+
+    private func presentConfigureAlert() {
+        let alert = UIAlertController(
+            title: "先配置 AI 接口",
+            message: "在设置里填写 Base URL、API Key 和 Model。",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "去设置", style: .default) { [weak self] _ in
+            self?.present(UINavigationController(rootViewController: SettingsViewController()), animated: true)
+        })
+        present(alert, animated: true)
     }
 
     private func analyze() {
         guard !plainText.isEmpty else { return }
         guard let config = Settings.chatConfig else {
-            let alert = UIAlertController(
-                title: "先配置 AI 接口",
-                message: "在设置里填写 Base URL、API Key 和 Model。",
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-            alert.addAction(UIAlertAction(title: "去设置", style: .default) { [weak self] _ in
-                self?.present(UINavigationController(rootViewController: SettingsViewController()), animated: true)
-            })
-            present(alert, animated: true)
+            presentConfigureAlert()
             return
         }
 

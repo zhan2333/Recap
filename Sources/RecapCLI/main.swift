@@ -8,6 +8,7 @@
 import Foundation
 import PipelineKit
 import TranscriptionKit
+import AnalysisKit
 
 let defaultModelPath = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent("whisper-models/ggml-large-v3-turbo.bin")
@@ -19,6 +20,7 @@ func usage() -> Never {
       transcribe <media-file>   Transcribe a local audio/video file to .srt + .txt
       run <url>                 Download (cloud-classroom headers) then transcribe
       sample                    Self-check: synthesize a Mandarin clip via `say`, transcribe it
+      textbook <pdf>            Extract textbook text (text layer + Vision OCR fallback)
 
     Options:
       --model <path>   whisper model (default: \(defaultModelPath.path))
@@ -100,6 +102,19 @@ func run() async throws {
         }
         FileHandle.standardError.write(Data("\nDownloaded → \(dest.path)\n".utf8))
         try await transcribeFile(dest, options: options)
+
+    case "textbook":
+        guard let path = options.positional.first else { usage() }
+        let pdfURL = URL(fileURLWithPath: path)
+        let text = try await TextbookImporter.extractText(from: pdfURL) { done, total in
+            if done % 20 == 0 || done == total {
+                FileHandle.standardError.write(Data("\r\(done)/\(total) pages".utf8))
+            }
+        }
+        let outURL = (options.out ?? pdfURL.deletingLastPathComponent())
+            .appendingPathComponent(pdfURL.deletingPathExtension().lastPathComponent + ".txt")
+        try text.write(to: outURL, atomically: true, encoding: .utf8)
+        print("\n\(text.count) characters → \(outURL.path)")
 
     case "sample":
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("recap-sample")

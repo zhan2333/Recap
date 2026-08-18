@@ -78,6 +78,11 @@ final class LibraryStore {
         courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).\(ext)")
     }
 
+    /// Course-level files (textbook.txt, review.md).
+    func courseFileURL(_ course: Course, name: String) -> URL {
+        courseDirectory(course).appendingPathComponent(name)
+    }
+
     // MARK: - Mutations
 
     func addCourse(named name: String) -> Course {

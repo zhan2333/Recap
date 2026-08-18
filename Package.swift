@@ -35,7 +35,7 @@ let package = Package(
         .target(name: "AnalysisKit"),
         .executableTarget(
             name: "RecapCLI",
-            dependencies: ["TranscriptionKit", "PipelineKit"]
+            dependencies: ["TranscriptionKit", "PipelineKit", "AnalysisKit"]
         ),
     ]
 )

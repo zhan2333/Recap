@@ -13,6 +13,7 @@
 		37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */; };
 		69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006620A5F96466763716A77A /* CourseListViewController.swift */; };
 		9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B84F6FA84480A57562810F7 /* SceneDelegate.swift */; };
+		ABA1677873A7AC347D8C1E34 /* MarkdownViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */; };
 		B6E3C895C9A6F38996546DD6 /* TranscriptionKit in Frameworks */ = {isa = PBXBuildFile; productRef = AAF9B2049FBC7E10384E8785 /* TranscriptionKit */; };
 		BAD8944340A9CCBFECBDF1DF /* AnalysisKit in Frameworks */ = {isa = PBXBuildFile; productRef = E453285FB6C6C290772DBA8B /* AnalysisKit */; };
 		D21128496414482812B7924E /* PipelineKit in Frameworks */ = {isa = PBXBuildFile; productRef = A274F8399FA5EDA4B3CE84DD /* PipelineKit */; };
@@ -36,6 +37,7 @@
 		C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSplitViewController.swift; sourceTree = "<group>"; };
 		D349115A5C23C711AB33AF33 /* Recap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Recap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E0EEB693F131F46234ED3DF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -113,6 +115,7 @@
 				006620A5F96466763716A77A /* CourseListViewController.swift */,
 				70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */,
 				C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */,
+				E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */,
 				456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */,
 				10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */,
 			);
@@ -190,6 +193,7 @@
 				D742402BFA22E5EB83E20B00 /* LectureQueue.swift in Sources */,
 				F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */,
 				D5C9254CEBE25AD0D2D48162 /* MainSplitViewController.swift in Sources */,
+				ABA1677873A7AC347D8C1E34 /* MarkdownViewController.swift in Sources */,
 				9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */,
 				D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */,
 				37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */,

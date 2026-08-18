@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import AnalysisKit
 
 /// Middle column: lectures of one course, with live queue state.
 final class LectureListViewController: UIViewController, UICollectionViewDelegate {
@@ -57,17 +58,20 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             collectionView.dequeueConfiguredReusableCell(using: cellRegistration, for: indexPath, item: lectureID)
         }
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "plus"),
-            menu: UIMenu(children: [
-                UIAction(title: "粘贴直链入队", image: UIImage(systemName: "link")) { [weak self] _ in
-                    self?.promptNewLecture()
-                },
-                UIAction(title: "导入本地文件", image: UIImage(systemName: "folder")) { [weak self] _ in
-                    self?.pickLocalFile()
-                },
-            ])
-        )
+        navigationItem.rightBarButtonItems = [
+            UIBarButtonItem(
+                image: UIImage(systemName: "plus"),
+                menu: UIMenu(children: [
+                    UIAction(title: "粘贴直链入队", image: UIImage(systemName: "link")) { [weak self] _ in
+                        self?.promptNewLecture()
+                    },
+                    UIAction(title: "导入本地文件", image: UIImage(systemName: "folder")) { [weak self] _ in
+                        self?.pickLocalFile()
+                    },
+                ])
+            ),
+            courseToolsButton,
+        ]
 
         LectureQueue.shared.onActivity = { [weak self] lectureID in
             self?.reconfigure(lectureID)
@@ -173,6 +177,132 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         present(picker, animated: true)
     }
 
+    // MARK: - Course tools (textbook + exam digest)
+
+    private var isWorking = false
+
+    private var courseToolsButton: UIBarButtonItem {
+        UIBarButtonItem(image: UIImage(systemName: "book"), menu: UIMenu(children: courseToolActions))
+    }
+
+    private var courseToolActions: [UIAction] {
+        let store = LibraryStore.shared
+        var actions: [UIAction] = [
+            UIAction(title: "导入教材 PDF", image: UIImage(systemName: "doc.badge.plus")) { [weak self] _ in
+                self?.pickTextbook()
+            },
+        ]
+        if let text = try? String(contentsOf: store.courseFileURL(course, name: "textbook.txt"), encoding: .utf8),
+           !text.isEmpty {
+            actions.append(UIAction(title: "查看教材全文", image: UIImage(systemName: "text.book.closed")) { [weak self] _ in
+                guard let self else { return }
+                (self.splitViewController as? MainSplitViewController)?
+                    .show(markdown: text, title: "\(self.course.name) 教材")
+            })
+        }
+        actions.append(UIAction(title: "生成考试重点", image: UIImage(systemName: "star.circle")) { [weak self] _ in
+            self?.generateDigest()
+        })
+        if let digest = try? String(contentsOf: store.courseFileURL(course, name: "review.md"), encoding: .utf8),
+           !digest.isEmpty {
+            actions.append(UIAction(title: "查看考试重点", image: UIImage(systemName: "star.fill")) { [weak self] _ in
+                guard let self else { return }
+                (self.splitViewController as? MainSplitViewController)?
+                    .show(markdown: digest, title: "\(self.course.name)考试重点")
+            })
+        }
+        return actions
+    }
+
+    private func refreshCourseTools() {
+        navigationItem.rightBarButtonItems?[1] = isWorking
+            ? { let s = UIActivityIndicatorView(style: .medium); s.startAnimating(); return UIBarButtonItem(customView: s) }()
+            : courseToolsButton
+    }
+
+    private func pickTextbook() {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.pdf], asCopy: true)
+        picker.delegate = self
+        present(picker, animated: true)
+    }
+
+    private func importTextbook(from url: URL) {
+        guard !isWorking else { return }
+        isWorking = true
+        refreshCourseTools()
+        Task {
+            do {
+                let text = try await TextbookImporter.extractText(from: url)
+                try text.write(
+                    to: LibraryStore.shared.courseFileURL(course, name: "textbook.txt"),
+                    atomically: true, encoding: .utf8
+                )
+                let pages = text.components(separatedBy: "【第").count - 1
+                let alert = UIAlertController(
+                    title: "教材导入完成",
+                    message: "共提取 \(pages) 页文本。",
+                    preferredStyle: .alert
+                )
+                alert.addAction(UIAlertAction(title: "好", style: .default))
+                present(alert, animated: true)
+            } catch {
+                let alert = UIAlertController(title: "导入失败", message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "好", style: .default))
+                present(alert, animated: true)
+            }
+            isWorking = false
+            refreshCourseTools()
+        }
+    }
+
+    private func generateDigest() {
+        guard !isWorking else { return }
+        guard let config = Settings.chatConfig else {
+            let alert = UIAlertController(title: "先配置 AI 接口", message: "在设置里填写 Base URL、API Key 和 Model。", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "好", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        let store = LibraryStore.shared
+        let inputs: [(title: String, analysis: AnalysisKit.LectureAnalysis)] = store.lectures(in: course).compactMap { lecture in
+            guard let data = try? Data(contentsOf: store.productURL(lecture, in: course, ext: "analysis.json")),
+                  let analysis = try? JSONDecoder().decode(AnalysisKit.LectureAnalysis.self, from: data)
+            else { return nil }
+            return (lecture.name, analysis)
+        }
+        guard !inputs.isEmpty else {
+            let alert = UIAlertController(title: "没有可汇总的讲次", message: "先对讲次逐个「提取考点」，再生成考试重点。", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "好", style: .default))
+            present(alert, animated: true)
+            return
+        }
+
+        isWorking = true
+        refreshCourseTools()
+        let courseName = course.name
+        Task {
+            do {
+                let markdown = try await HandoutGenerator().courseDigest(
+                    courseName: courseName,
+                    lectures: inputs,
+                    client: ChatClient(config: config)
+                )
+                try markdown.write(
+                    to: store.courseFileURL(course, name: "review.md"),
+                    atomically: true, encoding: .utf8
+                )
+                (splitViewController as? MainSplitViewController)?
+                    .show(markdown: markdown, title: "\(courseName)考试重点")
+            } catch {
+                let alert = UIAlertController(title: "生成失败", message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "好", style: .default))
+                present(alert, animated: true)
+            }
+            isWorking = false
+            refreshCourseTools()
+        }
+    }
+
     private func swipeActions(at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard let lectureID = dataSource.itemIdentifier(for: indexPath),
               let lecture = LibraryStore.shared.lecture(id: lectureID, in: course) else { return nil }
@@ -197,6 +327,10 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 extension LectureListViewController: UIDocumentPickerDelegate {
 
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        if let first = urls.first, first.pathExtension.lowercased() == "pdf" {
+            importTextbook(from: first)
+            return
+        }
         let store = LibraryStore.shared
         for url in urls {
             let name = url.deletingPathExtension().lastPathComponent

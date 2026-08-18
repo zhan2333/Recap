@@ -39,6 +39,11 @@ final class MainSplitViewController: UISplitViewController {
         let transcript = TranscriptViewController(lecture: lecture, course: course)
         setViewController(UINavigationController(rootViewController: transcript), for: .secondary)
     }
+
+    func show(markdown: String, title: String) {
+        let viewer = MarkdownViewController(markdown: markdown, title: title)
+        setViewController(UINavigationController(rootViewController: viewer), for: .secondary)
+    }
 }
 
 /// Neutral empty-state column.
