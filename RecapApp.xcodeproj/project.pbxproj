@@ -10,24 +10,29 @@
 		04075C62922F617B31757060 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0EEB693F131F46234ED3DF0 /* AppDelegate.swift */; };
 		08C426EB553D45A214CA1172 /* LectureListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */; };
 		1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */; };
+		37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */; };
 		69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006620A5F96466763716A77A /* CourseListViewController.swift */; };
 		9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B84F6FA84480A57562810F7 /* SceneDelegate.swift */; };
 		B6E3C895C9A6F38996546DD6 /* TranscriptionKit in Frameworks */ = {isa = PBXBuildFile; productRef = AAF9B2049FBC7E10384E8785 /* TranscriptionKit */; };
+		BAD8944340A9CCBFECBDF1DF /* AnalysisKit in Frameworks */ = {isa = PBXBuildFile; productRef = E453285FB6C6C290772DBA8B /* AnalysisKit */; };
 		D21128496414482812B7924E /* PipelineKit in Frameworks */ = {isa = PBXBuildFile; productRef = A274F8399FA5EDA4B3CE84DD /* PipelineKit */; };
 		D5C9254CEBE25AD0D2D48162 /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */; };
 		D742402BFA22E5EB83E20B00 /* LectureQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 676EC9FC010F8689B3A7E396 /* LectureQueue.swift */; };
+		D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE010D7F5C9CEB7CF7000C77 /* Settings.swift */; };
 		F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EAA252231B59F41A4E68A2A /* Library.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		006620A5F96466763716A77A /* CourseListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseListViewController.swift; sourceTree = "<group>"; };
 		10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptViewController.swift; sourceTree = "<group>"; };
+		456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		676EC9FC010F8689B3A7E396 /* LectureQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureQueue.swift; sourceTree = "<group>"; };
 		70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureListViewController.swift; sourceTree = "<group>"; };
 		7EAA252231B59F41A4E68A2A /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
 		8B84F6FA84480A57562810F7 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		937E3470DF8BE0C881CBEED5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A32D4D9C7AFED6217291035D /* Recap */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Recap; path = .; sourceTree = SOURCE_ROOT; };
+		BE010D7F5C9CEB7CF7000C77 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSplitViewController.swift; sourceTree = "<group>"; };
 		D349115A5C23C711AB33AF33 /* Recap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Recap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E0EEB693F131F46234ED3DF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -40,6 +45,7 @@
 			files = (
 				B6E3C895C9A6F38996546DD6 /* TranscriptionKit in Frameworks */,
 				D21128496414482812B7924E /* PipelineKit in Frameworks */,
+				BAD8944340A9CCBFECBDF1DF /* AnalysisKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -50,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				7EAA252231B59F41A4E68A2A /* Library.swift */,
+				BE010D7F5C9CEB7CF7000C77 /* Settings.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -106,6 +113,7 @@
 				006620A5F96466763716A77A /* CourseListViewController.swift */,
 				70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */,
 				C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */,
+				456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */,
 				10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */,
 			);
 			path = UI;
@@ -129,6 +137,7 @@
 			packageProductDependencies = (
 				AAF9B2049FBC7E10384E8785 /* TranscriptionKit */,
 				A274F8399FA5EDA4B3CE84DD /* PipelineKit */,
+				E453285FB6C6C290772DBA8B /* AnalysisKit */,
 			);
 			productName = Recap;
 			productReference = D349115A5C23C711AB33AF33 /* Recap.app */;
@@ -182,6 +191,8 @@
 				F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */,
 				D5C9254CEBE25AD0D2D48162 /* MainSplitViewController.swift in Sources */,
 				9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */,
+				D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */,
+				37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */,
 				1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -386,6 +397,10 @@
 		AAF9B2049FBC7E10384E8785 /* TranscriptionKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TranscriptionKit;
+		};
+		E453285FB6C6C290772DBA8B /* AnalysisKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnalysisKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

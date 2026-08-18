@@ -17,6 +17,7 @@ let package = Package(
     products: [
         .library(name: "TranscriptionKit", targets: ["TranscriptionKit"]),
         .library(name: "PipelineKit", targets: ["PipelineKit"]),
+        .library(name: "AnalysisKit", targets: ["AnalysisKit"]),
         .executable(name: "recap", targets: ["RecapCLI"]),
     ],
     targets: [
@@ -31,6 +32,7 @@ let package = Package(
             dependencies: ["whisper"]
         ),
         .target(name: "PipelineKit"),
+        .target(name: "AnalysisKit"),
         .executableTarget(
             name: "RecapCLI",
             dependencies: ["TranscriptionKit", "PipelineKit"]

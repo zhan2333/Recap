@@ -54,6 +54,12 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
             image: UIImage(systemName: "plus"),
             primaryAction: UIAction { [weak self] _ in self?.promptNewCourse() }
         )
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "gearshape"),
+            primaryAction: UIAction { [weak self] _ in
+                self?.present(UINavigationController(rootViewController: SettingsViewController()), animated: true)
+            }
+        )
 
         LibraryStore.shared.onChange = { [weak self] in self?.reload() }
         reload()

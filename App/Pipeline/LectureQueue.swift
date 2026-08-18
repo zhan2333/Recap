@@ -9,16 +9,6 @@ import Foundation
 import PipelineKit
 import TranscriptionKit
 
-enum Settings {
-    static var modelPath: URL {
-        if let path = UserDefaults.standard.string(forKey: "modelPath"), !path.isEmpty {
-            return URL(fileURLWithPath: path)
-        }
-        return URL(fileURLWithPath: NSHomeDirectory())
-            .appendingPathComponent("whisper-models/ggml-large-v3-turbo.bin")
-    }
-}
-
 /// Drives lectures through download → transcribe. Downloads run in parallel;
 /// transcriptions are chained strictly serially (one Metal context at a time).
 @MainActor

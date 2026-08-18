@@ -18,6 +18,8 @@ targets:
         product: TranscriptionKit
       - package: Recap
         product: PipelineKit
+      - package: Recap
+        product: AnalysisKit
     info:
       path: App/Info.plist
       properties:

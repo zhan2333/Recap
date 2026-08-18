@@ -59,7 +59,14 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "plus"),
-            primaryAction: UIAction { [weak self] _ in self?.promptNewLecture() }
+            menu: UIMenu(children: [
+                UIAction(title: "粘贴直链入队", image: UIImage(systemName: "link")) { [weak self] _ in
+                    self?.promptNewLecture()
+                },
+                UIAction(title: "导入本地文件", image: UIImage(systemName: "folder")) { [weak self] _ in
+                    self?.pickLocalFile()
+                },
+            ])
         )
 
         LectureQueue.shared.onActivity = { [weak self] lectureID in
@@ -160,6 +167,12 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         present(alert, animated: true)
     }
 
+    private func pickLocalFile() {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .audio], asCopy: true)
+        picker.delegate = self
+        present(picker, animated: true)
+    }
+
     private func swipeActions(at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard let lectureID = dataSource.itemIdentifier(for: indexPath),
               let lecture = LibraryStore.shared.lecture(id: lectureID, in: course) else { return nil }
@@ -178,5 +191,27 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         guard let lectureID = dataSource.itemIdentifier(for: indexPath),
               let lecture = LibraryStore.shared.lecture(id: lectureID, in: course) else { return }
         (splitViewController as? MainSplitViewController)?.show(lecture: lecture, in: course)
+    }
+}
+
+extension LectureListViewController: UIDocumentPickerDelegate {
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        let store = LibraryStore.shared
+        for url in urls {
+            let name = url.deletingPathExtension().lastPathComponent
+            var lecture = store.addLecture(named: name, url: nil, to: course)
+            do {
+                try FileManager.default.copyItem(at: url, to: store.mediaURL(lecture, in: course))
+                lecture.phase = .downloaded
+                store.updateLecture(lecture, in: course)
+                LectureQueue.shared.retranscribe(lecture, in: course)
+            } catch {
+                lecture.phase = .failed
+                lecture.errorMessage = error.localizedDescription
+                store.updateLecture(lecture, in: course)
+            }
+        }
+        reload()
     }
 }
