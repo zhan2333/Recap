@@ -1,0 +1,41 @@
+# project.yml — xcodegen manifest for the Recap Mac Catalyst app.
+# Created by Rio on 2026/8/19.
+name: RecapApp
+options:
+  bundleIdPrefix: com.rio
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  Recap:
+    path: .
+targets:
+  Recap:
+    type: application
+    platform: iOS
+    sources: [App]
+    dependencies:
+      - package: Recap
+        product: TranscriptionKit
+      - package: Recap
+        product: PipelineKit
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Recap
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
+        UILaunchScreen: {}
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+    settings:
+      base:
+        SUPPORTS_MACCATALYST: true
+        TARGETED_DEVICE_FAMILY: "2,6"   # iPad + Mac idiom (Optimized for Mac)
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: false
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        SWIFT_VERSION: "5.9"
