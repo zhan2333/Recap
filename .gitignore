@@ -1,0 +1,6 @@
+.build/
+.swiftpm/
+xcuserdata/
+.DS_Store
+DerivedData/
+Vendor/whisper.xcframework/
