@@ -71,7 +71,9 @@ final class DetailHeaderView: UIView {
 
         var analyzeConfig = UIButton.Configuration.filled()
         analyzeConfig.attributedTitle = AttributedString(
-            "提取重点", attributes: AttributeContainer([.font: RecapTheme.body(12, weight: .semibold)]))
+            "提取重点", attributes: AttributeContainer([
+                .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
+            ]))
         analyzeConfig.baseBackgroundColor = RecapTheme.ink
         analyzeConfig.baseForegroundColor = RecapTheme.paper
         analyzeConfig.background.cornerRadius = RecapTheme.radiusSM

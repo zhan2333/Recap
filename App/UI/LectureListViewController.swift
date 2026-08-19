@@ -133,7 +133,9 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     private func footerButton(title: String, action: @escaping () -> Void) -> UIButton {
         var config = UIButton.Configuration.plain()
-        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: RecapTheme.body(11)]))
+        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([
+            .font: RecapTheme.body(11), .foregroundColor: RecapTheme.muted,
+        ]))
         config.baseForegroundColor = RecapTheme.muted
         config.background.backgroundColor = RecapTheme.paper.withAlphaComponent(0.7)
         config.background.strokeColor = RecapTheme.line
@@ -392,7 +394,9 @@ final class LectureHeaderBar: UIView {
 
         var addConfig = UIButton.Configuration.plain()
         addConfig.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .medium))
-        addConfig.attributedTitle = AttributedString("添加讲次", attributes: AttributeContainer([.font: RecapTheme.body(12)]))
+        addConfig.attributedTitle = AttributedString("添加讲次", attributes: AttributeContainer([
+            .font: RecapTheme.body(12), .foregroundColor: RecapTheme.muted,
+        ]))
         addConfig.imagePadding = 4
         addConfig.baseForegroundColor = RecapTheme.muted
         addConfig.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8)

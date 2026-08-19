@@ -11,6 +11,7 @@
 		08C426EB553D45A214CA1172 /* LectureListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */; };
 		1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */; };
 		37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */; };
+		4E3B91489EB4E18760D2C223 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0BCD4FAA05DF20394776496E /* AppIcon.icon */; };
 		60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E37ED690FC7C2FF61570139 /* RecapTheme.swift */; };
 		69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006620A5F96466763716A77A /* CourseListViewController.swift */; };
 		9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B84F6FA84480A57562810F7 /* SceneDelegate.swift */; };
@@ -28,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		006620A5F96466763716A77A /* CourseListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseListViewController.swift; sourceTree = "<group>"; };
+		0BCD4FAA05DF20394776496E /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptViewController.swift; sourceTree = "<group>"; };
 		456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		5E37ED690FC7C2FF61570139 /* RecapTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapTheme.swift; sourceTree = "<group>"; };
@@ -110,6 +112,7 @@
 		E5119D41221C0B0B3DF26297 = {
 			isa = PBXGroup;
 			children = (
+				0BCD4FAA05DF20394776496E /* AppIcon.icon */,
 				7AACD87583552AA96BF70AAD /* App */,
 				34CCF7E59D31314A7FFC2C99 /* Packages */,
 				EC7BDFB329F1F5821D3AF306 /* Products */,
@@ -147,6 +150,7 @@
 			buildConfigurationList = 8947BC798E823AE8B8248FBF /* Build configuration list for PBXNativeTarget "Recap" */;
 			buildPhases = (
 				6867D91E65A9164BFC0D9E89 /* Sources */,
+				67196F96BAB9B4A090C04DA4 /* Resources */,
 				82CE7747CD9C25B2DD2C9D92 /* Frameworks */,
 			);
 			buildRules = (
@@ -198,6 +202,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		67196F96BAB9B4A090C04DA4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4E3B91489EB4E18760D2C223 /* AppIcon.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		6867D91E65A9164BFC0D9E89 /* Sources */ = {

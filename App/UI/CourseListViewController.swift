@@ -47,8 +47,11 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
         settingsConfig.imagePadding = 7
         settingsConfig.baseForegroundColor = RecapTheme.muted
         settingsConfig.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8)
-        settingsConfig.attributedTitle = AttributedString("设置…", attributes: AttributeContainer([.font: RecapTheme.body(12)]))
+        settingsConfig.attributedTitle = AttributedString("设置…", attributes: AttributeContainer([
+            .font: RecapTheme.body(12), .foregroundColor: RecapTheme.muted,
+        ]))
         settingsButton.configuration = settingsConfig
+        settingsButton.tintColor = RecapTheme.muted
         settingsButton.contentHorizontalAlignment = .leading
         settingsButton.addAction(UIAction { [weak self] _ in
             self?.present(UINavigationController(rootViewController: SettingsViewController()), animated: true)

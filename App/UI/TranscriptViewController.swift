@@ -127,7 +127,9 @@ final class TranscriptViewController: UIViewController {
         var title = "提取重点"
         if analysis != nil { title = hasHandout ? "查看讲义" : "生成讲义" }
         header.analyzeButton.configuration?.attributedTitle = AttributedString(
-            title, attributes: AttributeContainer([.font: RecapTheme.body(12, weight: .semibold)]))
+            title, attributes: AttributeContainer([
+                .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
+            ]))
         header.analyzeButton.isEnabled = !plainText.isEmpty
 
         var actions: [UIAction] = []
@@ -544,7 +546,9 @@ final class SignalsPageView: UIView {
 
         let redo = UIButton(type: .system)
         var redoConfig = UIButton.Configuration.plain()
-        redoConfig.attributedTitle = AttributedString("重新提取", attributes: AttributeContainer([.font: RecapTheme.body(11)]))
+        redoConfig.attributedTitle = AttributedString("重新提取", attributes: AttributeContainer([
+            .font: RecapTheme.body(11), .foregroundColor: RecapTheme.muted,
+        ]))
         redoConfig.baseForegroundColor = RecapTheme.muted
         redoConfig.background.strokeColor = RecapTheme.line
         redoConfig.background.strokeWidth = 1

@@ -261,7 +261,9 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         let generate = UIButton(type: .system)
         var config = UIButton.Configuration.plain()
         config.attributedTitle = AttributedString(
-            "生成本讲讲义 →", attributes: AttributeContainer([.font: RecapTheme.body(11, weight: .semibold)]))
+            "生成本讲讲义 →", attributes: AttributeContainer([
+                .font: RecapTheme.body(11, weight: .semibold), .foregroundColor: RecapTheme.ink,
+            ]))
         config.baseForegroundColor = RecapTheme.ink
         config.background.backgroundColor = RecapTheme.paper
         config.background.strokeColor = RecapTheme.line

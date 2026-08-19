@@ -1,0 +1,133 @@
+{
+  "color-space-for-untagged-svg-colors": "display-p3",
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "srgb:0.97255,0.96078,0.93333,1.00000",
+          "srgb:0.90588,0.87451,0.81569,1.00000"
+        ],
+        "orientation": {
+          "start": {
+            "x": 0.25,
+            "y": 0
+          },
+          "stop": {
+            "x": 0.75,
+            "y": 1
+          }
+        }
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "srgb:0.14510,0.13725,0.12157,1.00000",
+          "srgb:0.07843,0.07451,0.06275,1.00000"
+        ],
+        "orientation": {
+          "start": {
+            "x": 0.25,
+            "y": 0
+          },
+          "stop": {
+            "x": 0.75,
+            "y": 1
+          }
+        }
+      }
+    },
+    {
+      "appearance": "tinted",
+      "value": {
+        "automatic-gradient": "extended-gray:0.18000,1.00000"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.85098,0.46667,0.34118,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.90588,0.56078,0.43922,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": {
+                "solid": "extended-gray:0.56000,1.00000"
+              }
+            }
+          ],
+          "glass": true,
+          "hidden": false,
+          "image-name": "01 Evidence Thread.svg",
+          "name": "Evidence Stitch"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Evidence Stitch",
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.2
+      },
+      "specular": false,
+      "translucency": {
+        "enabled": true,
+        "value": 0.1
+      }
+    },
+    {
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.18431,0.17647,0.16078,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.94510,0.92549,0.89020,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": {
+                "solid": "extended-gray:1.00000,1.00000"
+              }
+            }
+          ],
+          "glass": false,
+          "hidden": false,
+          "image-name": "02 R Mark.png",
+          "name": "R Mark"
+        }
+      ],
+      "lighting": "individual",
+      "name": "R Mark",
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.18
+      },
+      "specular": false,
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}
