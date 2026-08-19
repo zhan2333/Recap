@@ -16,6 +16,11 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     private let course: Course
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, UUID>!
+    private var selectedLectureID: UUID?
+    private var searchText = ""
+
+    private let headerBar = LectureHeaderBar()
+    private let searchField = UISearchTextField()
 
     init(course: Course) {
         self.course = course
@@ -27,114 +32,138 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = RecapTheme.surface
+        navigationController?.navigationBar.isHidden = true
 
+        headerBar.courseLabel.text = course.name
+        headerBar.addButton.menu = UIMenu(children: [
+            UIAction(title: "粘贴直链入队", image: UIImage(systemName: "link")) { [weak self] _ in
+                self?.promptNewLecture()
+            },
+            UIAction(title: "导入本地文件", image: UIImage(systemName: "folder")) { [weak self] _ in
+                self?.pickLocalFile()
+            },
+        ])
+        headerBar.addButton.showsMenuAsPrimaryAction = true
+        headerBar.toolsButton.showsMenuAsPrimaryAction = true
+
+        searchField.placeholder = "搜索讲次"
+        searchField.font = RecapTheme.body(12)
+        searchField.backgroundColor = RecapTheme.paper.withAlphaComponent(0.72)
+        searchField.addAction(UIAction { [weak self] _ in
+            self?.searchText = self?.searchField.text ?? ""
+            self?.reload()
+        }, for: .editingChanged)
+
+        var listConfig = UICollectionLayoutListConfiguration(appearance: .plain)
+        listConfig.showsSeparators = false
+        listConfig.backgroundColor = .clear
+        listConfig.trailingSwipeActionsConfigurationProvider = { [weak self] indexPath in
+            self?.swipeActions(at: indexPath)
+        }
         let layout = UICollectionViewCompositionalLayout { _, environment in
-            var config = UICollectionLayoutListConfiguration(appearance: .plain)
-            config.trailingSwipeActionsConfigurationProvider = { [weak self] indexPath in
-                self?.swipeActions(at: indexPath)
-            }
-            return NSCollectionLayoutSection.list(using: config, layoutEnvironment: environment)
+            let section = NSCollectionLayoutSection.list(using: listConfig, layoutEnvironment: environment)
+            section.contentInsets = NSDirectionalEdgeInsets(top: 3, leading: 6, bottom: 3, trailing: 6)
+            return section
         }
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.backgroundColor = .clear
         collectionView.delegate = self
-        collectionView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(collectionView)
+
+        let footer = UIStackView()
+        footer.axis = .horizontal
+        footer.spacing = 6
+        footer.distribution = .fillEqually
+        footer.addArrangedSubview(footerButton(title: "粘贴直链") { [weak self] in self?.promptNewLecture() })
+        footer.addArrangedSubview(footerButton(title: "导入文件…") { [weak self] in self?.pickLocalFile() })
+
+        for subview in [headerBar, searchField, collectionView, footer] as [UIView] {
+            subview.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(subview)
+        }
+        let safe = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            headerBar.topAnchor.constraint(equalTo: safe.topAnchor),
+            headerBar.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
+            headerBar.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
+            headerBar.heightAnchor.constraint(equalToConstant: 46),
+            searchField.topAnchor.constraint(equalTo: headerBar.bottomAnchor, constant: 7),
+            searchField.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            searchField.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
+            searchField.heightAnchor.constraint(equalToConstant: 32),
+            collectionView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 3),
+            collectionView.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
+            footer.topAnchor.constraint(equalTo: collectionView.bottomAnchor, constant: 8),
+            footer.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 8),
+            footer.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -8),
+            footer.heightAnchor.constraint(equalToConstant: 30),
+            footer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
         ])
 
-        let cellRegistration = UICollectionView.CellRegistration<UICollectionViewListCell, UUID> {
-            [weak self] cell, _, lectureID in
-            guard let self, let lecture = LibraryStore.shared.lecture(id: lectureID, in: self.course) else { return }
-            cell.contentConfiguration = Self.content(for: lecture)
-            cell.accessories = Self.accessories(for: lecture)
+        let cellRegistration = UICollectionView.CellRegistration<LectureCell, UUID> { [weak self] cell, _, lectureID in
+            guard let self,
+                  let lecture = LibraryStore.shared.lecture(id: lectureID, in: self.course) else { return }
+            let index = LibraryStore.shared.lectures(in: self.course).firstIndex { $0.id == lectureID } ?? 0
+            cell.configure(
+                lecture: lecture,
+                number: index + 1,
+                activity: LectureQueue.shared.activity(for: lectureID),
+                keyPointCount: self.keyPointCount(of: lecture),
+                isActive: lectureID == self.selectedLectureID
+            )
         }
         dataSource = UICollectionViewDiffableDataSource<Section, UUID>(collectionView: collectionView) {
             collectionView, indexPath, lectureID in
             collectionView.dequeueConfiguredReusableCell(using: cellRegistration, for: indexPath, item: lectureID)
         }
 
-        navigationItem.rightBarButtonItems = [
-            UIBarButtonItem(
-                image: UIImage(systemName: "plus"),
-                menu: UIMenu(children: [
-                    UIAction(title: "粘贴直链入队", image: UIImage(systemName: "link")) { [weak self] _ in
-                        self?.promptNewLecture()
-                    },
-                    UIAction(title: "导入本地文件", image: UIImage(systemName: "folder")) { [weak self] _ in
-                        self?.pickLocalFile()
-                    },
-                ])
-            ),
-            courseToolsButton,
-        ]
-
         LectureQueue.shared.onActivity = { [weak self] lectureID in
             self?.reconfigure(lectureID)
         }
+        refreshToolsMenu()
         reload()
     }
 
-    // MARK: - Cell content
-
-    private static func content(for lecture: Lecture) -> UIListContentConfiguration {
-        var content = UIListContentConfiguration.subtitleCell()
-        content.text = lecture.name
-        content.textProperties.font = .preferredFont(forTextStyle: .body)
-        content.secondaryTextProperties.color = .secondaryLabel
-        content.secondaryTextProperties.font = .preferredFont(forTextStyle: .caption1)
-
-        if let activity = LectureQueue.shared.activity(for: lecture.id) {
-            switch activity {
-            case .downloading(let progress):
-                content.secondaryText = "下载中 \(Int(progress * 100))%"
-            case .waitingToTranscribe:
-                content.secondaryText = "排队等待转写"
-            case .transcribing(let progress):
-                content.secondaryText = "转写中 \(Int(progress * 100))%"
-            }
-        } else {
-            switch lecture.phase {
-            case .pending: content.secondaryText = "等待处理"
-            case .downloaded: content.secondaryText = "已下载，未转写"
-            case .transcribed: content.secondaryText = "已完成"
-            case .failed: content.secondaryText = "失败：\(lecture.errorMessage ?? "未知错误")"
-            }
-        }
-        return content
+    private func keyPointCount(of lecture: Lecture) -> Int? {
+        guard let data = try? Data(contentsOf: LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json")),
+              let analysis = try? JSONDecoder().decode(LectureAnalysis.self, from: data) else { return nil }
+        return analysis.examSignals.count
     }
 
-    private static func accessories(for lecture: Lecture) -> [UICellAccessory] {
-        if LectureQueue.shared.activity(for: lecture.id) != nil {
-            let spinner = UIActivityIndicatorView(style: .medium)
-            spinner.startAnimating()
-            return [.customView(configuration: .init(customView: spinner, placement: .trailing()))]
-        }
-        switch lecture.phase {
-        case .transcribed:
-            let check = UIImageView(image: UIImage(systemName: "checkmark.circle.fill"))
-            check.tintColor = .systemGreen
-            return [.customView(configuration: .init(customView: check, placement: .trailing()))]
-        case .failed:
-            let warn = UIImageView(image: UIImage(systemName: "exclamationmark.triangle.fill"))
-            warn.tintColor = .systemOrange
-            return [.customView(configuration: .init(customView: warn, placement: .trailing()))]
-        default:
-            return []
-        }
+    private func footerButton(title: String, action: @escaping () -> Void) -> UIButton {
+        var config = UIButton.Configuration.plain()
+        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: RecapTheme.body(11)]))
+        config.baseForegroundColor = RecapTheme.muted
+        config.background.backgroundColor = RecapTheme.paper.withAlphaComponent(0.7)
+        config.background.strokeColor = RecapTheme.line
+        config.background.strokeWidth = 1
+        config.background.cornerRadius = RecapTheme.radiusSM
+        let button = UIButton(configuration: config)
+        button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        return button
     }
 
     // MARK: - Data
 
+    private var visibleLectures: [Lecture] {
+        let all = LibraryStore.shared.lectures(in: course)
+        guard !searchText.isEmpty else { return all }
+        return all.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
     private func reload() {
+        let lectures = visibleLectures
+        headerBar.countLabel.text = lectures.isEmpty && searchText.isEmpty
+            ? "还没有讲次"
+            : "\(lectures.count) 个讲次"
         var snapshot = NSDiffableDataSourceSnapshot<Section, UUID>()
         snapshot.appendSections([.main])
-        snapshot.appendItems(LibraryStore.shared.lectures(in: course).map(\.id))
+        snapshot.appendItems(lectures.map(\.id))
         dataSource.apply(snapshot, animatingDifferences: true)
+        var reconfigure = dataSource.snapshot()
+        reconfigure.reconfigureItems(reconfigure.itemIdentifiers)
+        dataSource.apply(reconfigure, animatingDifferences: false)
     }
 
     private func reconfigure(_ lectureID: UUID) {
@@ -144,7 +173,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         dataSource.apply(snapshot, animatingDifferences: false)
     }
 
-    // MARK: - Actions
+    // MARK: - Add lecture
 
     private func promptNewLecture() {
         let alert = UIAlertController(
@@ -181,8 +210,10 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     private var isWorking = false
 
-    private var courseToolsButton: UIBarButtonItem {
-        UIBarButtonItem(image: UIImage(systemName: "book"), menu: UIMenu(children: courseToolActions))
+    private func refreshToolsMenu() {
+        headerBar.toolsButton.menu = UIMenu(children: courseToolActions)
+        headerBar.toolsSpinner.isHidden = !isWorking
+        headerBar.toolsButton.isHidden = isWorking
     }
 
     private var courseToolActions: [UIAction] {
@@ -214,12 +245,6 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         return actions
     }
 
-    private func refreshCourseTools() {
-        navigationItem.rightBarButtonItems?[1] = isWorking
-            ? { let s = UIActivityIndicatorView(style: .medium); s.startAnimating(); return UIBarButtonItem(customView: s) }()
-            : courseToolsButton
-    }
-
     private func pickTextbook() {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.pdf], asCopy: true)
         picker.delegate = self
@@ -229,7 +254,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     private func importTextbook(from url: URL) {
         guard !isWorking else { return }
         isWorking = true
-        refreshCourseTools()
+        refreshToolsMenu()
         Task {
             do {
                 let text = try await TextbookImporter.extractText(from: url)
@@ -238,47 +263,35 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                     atomically: true, encoding: .utf8
                 )
                 let pages = text.components(separatedBy: "【第").count - 1
-                let alert = UIAlertController(
-                    title: "教材导入完成",
-                    message: "共提取 \(pages) 页文本。",
-                    preferredStyle: .alert
-                )
-                alert.addAction(UIAlertAction(title: "好", style: .default))
-                present(alert, animated: true)
+                presentInfo(title: "教材导入完成", message: "共提取 \(pages) 页文本。")
             } catch {
-                let alert = UIAlertController(title: "导入失败", message: error.localizedDescription, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "好", style: .default))
-                present(alert, animated: true)
+                presentInfo(title: "导入失败", message: error.localizedDescription)
             }
             isWorking = false
-            refreshCourseTools()
+            refreshToolsMenu()
         }
     }
 
     private func generateDigest() {
         guard !isWorking else { return }
         guard let config = Settings.chatConfig else {
-            let alert = UIAlertController(title: "先配置 AI 接口", message: "在设置里填写 Base URL、API Key 和 Model。", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "好", style: .default))
-            present(alert, animated: true)
+            presentInfo(title: "先配置 AI 接口", message: "在设置里填写 Base URL、API Key 和 Model。")
             return
         }
         let store = LibraryStore.shared
-        let inputs: [(title: String, analysis: AnalysisKit.LectureAnalysis)] = store.lectures(in: course).compactMap { lecture in
+        let inputs: [(title: String, analysis: LectureAnalysis)] = store.lectures(in: course).compactMap { lecture in
             guard let data = try? Data(contentsOf: store.productURL(lecture, in: course, ext: "analysis.json")),
-                  let analysis = try? JSONDecoder().decode(AnalysisKit.LectureAnalysis.self, from: data)
+                  let analysis = try? JSONDecoder().decode(LectureAnalysis.self, from: data)
             else { return nil }
             return (lecture.name, analysis)
         }
         guard !inputs.isEmpty else {
-            let alert = UIAlertController(title: "没有可汇总的讲次", message: "先对讲次逐个「提取考点」，再生成考试重点。", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "好", style: .default))
-            present(alert, animated: true)
+            presentInfo(title: "没有可汇总的讲次", message: "先对讲次逐个「提取重点」，再生成考试重点。")
             return
         }
 
         isWorking = true
-        refreshCourseTools()
+        refreshToolsMenu()
         let courseName = course.name
         Task {
             do {
@@ -294,13 +307,17 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                 (splitViewController as? MainSplitViewController)?
                     .show(markdown: markdown, title: "\(courseName)考试重点")
             } catch {
-                let alert = UIAlertController(title: "生成失败", message: error.localizedDescription, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "好", style: .default))
-                present(alert, animated: true)
+                presentInfo(title: "生成失败", message: error.localizedDescription)
             }
             isWorking = false
-            refreshCourseTools()
+            refreshToolsMenu()
         }
+    }
+
+    private func presentInfo(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "好", style: .default))
+        present(alert, animated: true)
     }
 
     private func swipeActions(at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
@@ -320,6 +337,8 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard let lectureID = dataSource.itemIdentifier(for: indexPath),
               let lecture = LibraryStore.shared.lecture(id: lectureID, in: course) else { return }
+        selectedLectureID = lectureID
+        reload()
         (splitViewController as? MainSplitViewController)?.show(lecture: lecture, in: course)
     }
 }
@@ -347,5 +366,222 @@ extension LectureListViewController: UIDocumentPickerDelegate {
             }
         }
         reload()
+    }
+}
+
+/// Two-line header: course name over lecture count, add + tools trailing.
+final class LectureHeaderBar: UIView {
+
+    let courseLabel = UILabel()
+    let countLabel = UILabel()
+    let addButton = UIButton(type: .system)
+    let toolsButton = UIButton(type: .system)
+    let toolsSpinner = UIActivityIndicatorView(style: .medium)
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        courseLabel.font = RecapTheme.body(11)
+        courseLabel.textColor = RecapTheme.quiet
+        countLabel.font = RecapTheme.body(13, weight: .semibold)
+        countLabel.textColor = RecapTheme.ink
+
+        let titles = UIStackView(arrangedSubviews: [courseLabel, countLabel])
+        titles.axis = .vertical
+        titles.spacing = 1
+
+        var addConfig = UIButton.Configuration.plain()
+        addConfig.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .medium))
+        addConfig.attributedTitle = AttributedString("添加讲次", attributes: AttributeContainer([.font: RecapTheme.body(12)]))
+        addConfig.imagePadding = 4
+        addConfig.baseForegroundColor = RecapTheme.muted
+        addConfig.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8)
+        addButton.configuration = addConfig
+
+        toolsButton.setImage(
+            UIImage(systemName: "book", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .medium)),
+            for: .normal
+        )
+        toolsButton.tintColor = RecapTheme.muted
+        toolsSpinner.hidesWhenStopped = false
+        toolsSpinner.isHidden = true
+        toolsSpinner.startAnimating()
+
+        let bottomLine = UIView()
+        bottomLine.backgroundColor = RecapTheme.ink.withAlphaComponent(0.08)
+
+        for subview in [titles, addButton, toolsButton, toolsSpinner, bottomLine] as [UIView] {
+            subview.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(subview)
+        }
+        NSLayoutConstraint.activate([
+            titles.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            titles.centerYAnchor.constraint(equalTo: centerYAnchor),
+            toolsButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
+            toolsButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            toolsButton.widthAnchor.constraint(equalToConstant: 28),
+            toolsSpinner.centerXAnchor.constraint(equalTo: toolsButton.centerXAnchor),
+            toolsSpinner.centerYAnchor.constraint(equalTo: toolsButton.centerYAnchor),
+            addButton.trailingAnchor.constraint(equalTo: toolsButton.leadingAnchor, constant: -2),
+            addButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            addButton.leadingAnchor.constraint(greaterThanOrEqualTo: titles.trailingAnchor, constant: 8),
+            bottomLine.leadingAnchor.constraint(equalTo: leadingAnchor),
+            bottomLine.trailingAnchor.constraint(equalTo: trailingAnchor),
+            bottomLine.bottomAnchor.constraint(equalTo: bottomAnchor),
+            bottomLine.heightAnchor.constraint(equalToConstant: 1),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+}
+
+/// Lecture row: number column, title/status, trailing state glyph,
+/// inline progress while transcribing, active left rule.
+final class LectureCell: UICollectionViewCell {
+
+    private let numberLabel = UILabel()
+    private let titleLabel = UILabel()
+    private let statusLabel = UILabel()
+    private let stateLabel = UILabel()
+    private let progressTrack = UIView()
+    private let progressFill = UIView()
+    private let activeRule = UIView()
+    private var progressWidth: NSLayoutConstraint!
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundConfiguration = .clear()
+        contentView.layer.cornerRadius = 7
+        contentView.layer.cornerCurve = .continuous
+
+        numberLabel.font = RecapTheme.mono(11, weight: .semibold)
+        numberLabel.textColor = RecapTheme.quiet
+        titleLabel.font = RecapTheme.body(13, weight: .semibold)
+        titleLabel.textColor = RecapTheme.ink
+        statusLabel.font = RecapTheme.body(11)
+        statusLabel.textColor = RecapTheme.muted
+        stateLabel.font = RecapTheme.body(11, weight: .semibold)
+        stateLabel.textAlignment = .center
+
+        progressTrack.backgroundColor = RecapTheme.time.withAlphaComponent(0.16)
+        progressTrack.layer.cornerRadius = 1.5
+        progressTrack.isHidden = true
+        progressFill.backgroundColor = RecapTheme.time
+        progressFill.layer.cornerRadius = 1.5
+
+        activeRule.backgroundColor = RecapTheme.time
+        activeRule.layer.cornerRadius = 1
+        activeRule.isHidden = true
+
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, statusLabel, progressTrack])
+        textStack.axis = .vertical
+        textStack.spacing = 4
+        textStack.setCustomSpacing(6, after: statusLabel)
+
+        progressTrack.addSubview(progressFill)
+        for subview in [numberLabel, textStack, stateLabel, activeRule] as [UIView] {
+            subview.translatesAutoresizingMaskIntoConstraints = false
+            contentView.addSubview(subview)
+        }
+        progressFill.translatesAutoresizingMaskIntoConstraints = false
+        progressWidth = progressFill.widthAnchor.constraint(equalTo: progressTrack.widthAnchor, multiplier: 0)
+
+        NSLayoutConstraint.activate([
+            contentView.heightAnchor.constraint(greaterThanOrEqualToConstant: 58),
+            numberLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            numberLabel.widthAnchor.constraint(equalToConstant: 28),
+            numberLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            textStack.leadingAnchor.constraint(equalTo: numberLabel.trailingAnchor, constant: 8),
+            textStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            textStack.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 8),
+            stateLabel.leadingAnchor.constraint(equalTo: textStack.trailingAnchor, constant: 8),
+            stateLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            stateLabel.widthAnchor.constraint(equalToConstant: 24),
+            stateLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            progressTrack.heightAnchor.constraint(equalToConstant: 3),
+            progressFill.leadingAnchor.constraint(equalTo: progressTrack.leadingAnchor),
+            progressFill.topAnchor.constraint(equalTo: progressTrack.topAnchor),
+            progressFill.bottomAnchor.constraint(equalTo: progressTrack.bottomAnchor),
+            progressWidth,
+            activeRule.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            activeRule.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            activeRule.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
+            activeRule.widthAnchor.constraint(equalToConstant: 2),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func configure(
+        lecture: Lecture,
+        number: Int,
+        activity: LectureQueue.Activity?,
+        keyPointCount: Int?,
+        isActive: Bool
+    ) {
+        numberLabel.text = String(format: "%02d", number)
+        titleLabel.text = lecture.name
+        activeRule.isHidden = !isActive
+        contentView.backgroundColor = isActive ? RecapTheme.selection : .clear
+
+        var progress: Double?
+        if let activity {
+            switch activity {
+            case .downloading(let value):
+                statusLabel.text = "下载中 \(Int(value * 100))%"
+                progress = value
+                stateLabel.text = "\(Int(value * 100))"
+                stateLabel.textColor = RecapTheme.quiet
+            case .waitingToTranscribe:
+                statusLabel.text = "排队等待转写"
+                stateLabel.text = "·"
+                stateLabel.textColor = RecapTheme.quiet
+            case .transcribing(let value):
+                statusLabel.text = "转写中 \(Int(value * 100))%"
+                progress = value
+                stateLabel.text = "\(Int(value * 100))"
+                stateLabel.textColor = RecapTheme.quiet
+            }
+        } else {
+            switch lecture.phase {
+            case .pending:
+                statusLabel.text = "等待处理"
+                stateLabel.text = "·"
+                stateLabel.textColor = RecapTheme.quiet
+            case .downloaded:
+                statusLabel.text = "文稿未转写"
+                stateLabel.text = "·"
+                stateLabel.textColor = RecapTheme.quiet
+            case .transcribed:
+                if let keyPointCount, keyPointCount > 0 {
+                    statusLabel.text = "已完成 · \(keyPointCount) 个重点"
+                } else {
+                    statusLabel.text = "文稿已就绪 · 等待提取重点"
+                }
+                stateLabel.text = keyPointCount == nil ? "◆" : "✓"
+                stateLabel.textColor = keyPointCount == nil ? RecapTheme.time : RecapTheme.complete
+            case .failed:
+                statusLabel.text = "失败：\(lecture.errorMessage ?? "未知错误")"
+                stateLabel.text = "!"
+                stateLabel.textColor = RecapTheme.error
+            }
+        }
+
+        if let progress {
+            progressTrack.isHidden = false
+            progressWidth.isActive = false
+            progressWidth = progressFill.widthAnchor.constraint(
+                equalTo: progressTrack.widthAnchor, multiplier: max(0.01, progress))
+            progressWidth.isActive = true
+        } else {
+            progressTrack.isHidden = true
+        }
+    }
+
+    override func updateConfiguration(using state: UICellConfigurationState) {
+        super.updateConfiguration(using: state)
+        if state.isHighlighted && contentView.backgroundColor == .clear {
+            contentView.backgroundColor = RecapTheme.hover
+        }
     }
 }

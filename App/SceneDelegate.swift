@@ -20,7 +20,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         #if targetEnvironment(macCatalyst)
         windowScene.titlebar?.titleVisibility = .visible
-        windowScene.sizeRestrictions?.minimumSize = CGSize(width: 1000, height: 640)
+        windowScene.sizeRestrictions?.minimumSize = CGSize(width: 1180, height: 720)
         #endif
 
         let window = UIWindow(windowScene: windowScene)

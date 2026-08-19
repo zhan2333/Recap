@@ -14,16 +14,17 @@ final class MainSplitViewController: UISplitViewController {
 
     init() {
         super.init(style: .tripleColumn)
-        primaryBackgroundStyle = .sidebar
         preferredDisplayMode = .twoBesideSecondary
         preferredSplitBehavior = .tile
         minimumPrimaryColumnWidth = 200
-        maximumPrimaryColumnWidth = 300
+        maximumPrimaryColumnWidth = 240
+        preferredPrimaryColumnWidth = 210
         minimumSupplementaryColumnWidth = 280
-        maximumSupplementaryColumnWidth = 400
+        maximumSupplementaryColumnWidth = 340
+        preferredSupplementaryColumnWidth = 300
 
         setViewController(UINavigationController(rootViewController: courseList), for: .primary)
-        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: "选择或创建一门课程")), for: .supplementary)
+        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: "这里还没有内容，但第一步很轻。\n先新建一门课程。")), for: .supplementary)
         setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: "选择一个讲次查看文稿")), for: .secondary)
     }
 
@@ -60,17 +61,23 @@ final class PlaceholderViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = RecapTheme.paper
+        navigationController?.navigationBar.isHidden = true
 
         let label = UILabel()
         label.text = text
-        label.font = .preferredFont(forTextStyle: .body)
-        label.textColor = .secondaryLabel
+        label.font = RecapTheme.body(13)
+        label.textColor = RecapTheme.quiet
+        label.numberOfLines = 0
+        label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(label)
+        let safe = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            label.centerXAnchor.constraint(equalTo: safe.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
+            label.leadingAnchor.constraint(greaterThanOrEqualTo: safe.leadingAnchor, constant: 24),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: safe.trailingAnchor, constant: -24),
         ])
     }
 }
