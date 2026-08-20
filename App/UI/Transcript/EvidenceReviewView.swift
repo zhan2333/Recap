@@ -19,8 +19,16 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         let start: TimeInterval?
     }
 
+    /// Reading-friendly row merged from whisper's fragmented segments.
+    struct DisplayRow {
+        let start: TimeInterval
+        let text: String
+        let segmentRange: Range<Int>   // original segment indices
+    }
+
     private(set) var segments: [TranscriptSegment] = []
     private(set) var evidences: [Evidence] = []
+    private var displayRows: [DisplayRow] = []
     private var selectedEvidenceIndex: Int?
 
     var onGenerateHandout: (() -> Void)?
@@ -37,6 +45,16 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
     private let selectionStatusLabel = UILabel()
     private var noteCards: [NoteCardButton] = []
     private var notesWidthConstraint: NSLayoutConstraint!
+    private let resizeHandle = UIView()
+    private let resizeLine = UIView()
+
+    private var preferredNotesWidth: CGFloat {
+        get {
+            let stored = UserDefaults.standard.double(forKey: "notesPaneWidth")
+            return stored > 0 ? stored : RecapTheme.notesWidth
+        }
+        set { UserDefaults.standard.set(newValue, forKey: "notesPaneWidth") }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -95,6 +113,14 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         railStem.translatesAutoresizingMaskIntoConstraints = false
         rail.addSubview(railStem)
 
+        resizeLine.backgroundColor = RecapTheme.line
+        resizeHandle.addSubview(resizeLine)
+        resizeLine.translatesAutoresizingMaskIntoConstraints = false
+        resizeHandle.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(resizeHandle)
+        resizeHandle.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(handleResize(_:))))
+        resizeHandle.addGestureRecognizer(UIHoverGestureRecognizer(target: self, action: #selector(handleHover(_:))))
+
         notesWidthConstraint = notesPane.widthAnchor.constraint(equalToConstant: RecapTheme.notesWidth)
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: topAnchor),
@@ -122,15 +148,100 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
             notesContent.leadingAnchor.constraint(equalTo: notesScroll.contentLayoutGuide.leadingAnchor),
             notesContent.trailingAnchor.constraint(equalTo: notesScroll.contentLayoutGuide.trailingAnchor),
             notesContent.widthAnchor.constraint(equalTo: notesScroll.frameLayoutGuide.widthAnchor),
+            resizeHandle.centerXAnchor.constraint(equalTo: notesPane.leadingAnchor),
+            resizeHandle.topAnchor.constraint(equalTo: topAnchor),
+            resizeHandle.bottomAnchor.constraint(equalTo: bottomAnchor),
+            resizeHandle.widthAnchor.constraint(equalToConstant: 9),
+            resizeLine.centerXAnchor.constraint(equalTo: resizeHandle.centerXAnchor),
+            resizeLine.topAnchor.constraint(equalTo: resizeHandle.topAnchor),
+            resizeLine.bottomAnchor.constraint(equalTo: resizeHandle.bottomAnchor),
+            resizeLine.widthAnchor.constraint(equalToConstant: 1),
         ])
+    }
+
+    // MARK: - Notes pane resizing
+
+    @objc private func handleResize(_ gesture: UIPanGestureRecognizer) {
+        let dx = gesture.translation(in: self).x
+        gesture.setTranslation(.zero, in: self)
+        let upperBound = min(420, bounds.width * 0.45)
+        let width = min(upperBound, max(200, notesWidthConstraint.constant - dx))
+        notesWidthConstraint.constant = width
+        preferredNotesWidth = width
+        if gesture.state == .began || gesture.state == .changed {
+            resizeLine.backgroundColor = RecapTheme.quiet
+        } else {
+            resizeLine.backgroundColor = RecapTheme.line
+        }
+        layoutIfNeeded()
+        layoutPins()
+    }
+
+    @objc private func handleHover(_ gesture: UIHoverGestureRecognizer) {
+        switch gesture.state {
+        case .began, .changed:
+            resizeLine.backgroundColor = RecapTheme.quiet
+        default:
+            resizeLine.backgroundColor = RecapTheme.line
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     // MARK: - Content
 
+    /// Merges fragments into rows: break on long pauses (semantic gaps),
+    /// sentence-ending punctuation past a minimum, or a length cap.
+    static func mergeRows(_ segments: [TranscriptSegment]) -> [DisplayRow] {
+        var rows: [DisplayRow] = []
+        var buffer = ""
+        var bufferStart: TimeInterval = 0
+        var rangeStart = 0
+        var lastEnd: TimeInterval = 0
+
+        func flush(upTo endIndex: Int) {
+            let trimmed = buffer.trimmingCharacters(in: .whitespaces)
+            if !trimmed.isEmpty {
+                rows.append(DisplayRow(start: bufferStart, text: trimmed, segmentRange: rangeStart..<endIndex))
+            }
+            buffer = ""
+            rangeStart = endIndex
+        }
+
+        for (index, segment) in segments.enumerated() {
+            let text = segment.text.trimmingCharacters(in: .whitespaces)
+            guard !text.isEmpty else { continue }
+            if buffer.isEmpty {
+                bufferStart = segment.start
+                rangeStart = index
+            } else if segment.start - lastEnd > 2.0 {
+                flush(upTo: index)
+                bufferStart = segment.start
+                rangeStart = index
+            }
+            buffer += text
+            lastEnd = segment.end
+            let endsSentence = text.hasSuffix("。") || text.hasSuffix("？") || text.hasSuffix("！")
+            if buffer.count >= 64 || (endsSentence && buffer.count >= 24) {
+                flush(upTo: index + 1)
+            }
+        }
+        flush(upTo: segments.count)
+        return rows
+    }
+
+    private func rowIndex(forSegment segmentIndex: Int) -> Int? {
+        displayRows.firstIndex { $0.segmentRange.contains(segmentIndex) }
+    }
+
+    private func evidenceIndex(forRow row: Int) -> Int? {
+        let range = displayRows[row].segmentRange
+        return evidences.firstIndex { $0.segmentIndex.map(range.contains) ?? false }
+    }
+
     func update(segments: [TranscriptSegment], analysis: LectureAnalysis?) {
         self.segments = segments
+        displayRows = Self.mergeRows(segments)
         if let analysis {
             let matches = EvidenceMatcher.match(
                 signals: analysis.examSignals,
@@ -157,7 +268,9 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
     override func layoutSubviews() {
         super.layoutSubviews()
         // Hide the notes pane when the detail column gets narrow.
-        notesWidthConstraint.constant = bounds.width < 620 ? 0 : RecapTheme.notesWidth
+        let narrow = bounds.width < 620
+        notesWidthConstraint.constant = narrow ? 0 : min(preferredNotesWidth, bounds.width * 0.45)
+        resizeHandle.isHidden = narrow
         layoutPins()
     }
 
@@ -202,8 +315,12 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
     private func layoutPins() {
         for pin in pinButtons {
             let evidence = evidences[pin.tag]
-            guard let segmentIndex = evidence.segmentIndex else { continue }
-            let rowRect = tableView.rectForRow(at: IndexPath(row: segmentIndex, section: 0))
+            guard let segmentIndex = evidence.segmentIndex,
+                  let row = rowIndex(forSegment: segmentIndex) else {
+                pin.isHidden = true
+                continue
+            }
+            let rowRect = tableView.rectForRow(at: IndexPath(row: row, section: 0))
             let inRail = tableView.convert(rowRect, to: rail)
             pin.frame = CGRect(x: (RecapTheme.railWidth - 44) / 2, y: inRail.midY - 22, width: 44, height: 44)
             pin.isHidden = inRail.midY < -10 || inRail.midY > rail.bounds.height + 10
@@ -305,8 +422,9 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
             }
         }
         updateSelectionStatus()
-        if scrollToRow, let segmentIndex = evidences[evidenceIndex].segmentIndex {
-            tableView.scrollToRow(at: IndexPath(row: segmentIndex, section: 0), at: .middle, animated: true)
+        if scrollToRow, let segmentIndex = evidences[evidenceIndex].segmentIndex,
+           let row = rowIndex(forSegment: segmentIndex) {
+            tableView.scrollToRow(at: IndexPath(row: row, section: 0), at: .middle, animated: true)
         }
         tableView.reloadData()
         setNeedsLayout()
@@ -315,14 +433,16 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
     // MARK: - UITableViewDataSource / Delegate
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        segments.count
+        displayRows.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: TranscriptRowCell.reuseID, for: indexPath) as! TranscriptRowCell
-        let evidenceIndex = evidences.firstIndex { $0.segmentIndex == indexPath.row }
+        let row = displayRows[indexPath.row]
+        let evidenceIndex = evidenceIndex(forRow: indexPath.row)
         cell.configure(
-            segment: segments[indexPath.row],
+            start: row.start,
+            text: row.text,
             evidence: evidenceIndex.map { evidences[$0] },
             isFocused: evidenceIndex != nil && evidenceIndex == selectedEvidenceIndex
         )
@@ -331,7 +451,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: false)
-        if let evidenceIndex = evidences.firstIndex(where: { $0.segmentIndex == indexPath.row }) {
+        if let evidenceIndex = evidenceIndex(forRow: indexPath.row) {
             select(evidenceIndex: evidenceIndex, scrollToRow: false)
         }
     }
@@ -409,9 +529,9 @@ final class TranscriptRowCell: UITableViewCell {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func configure(segment: TranscriptSegment, evidence: EvidenceReviewView.Evidence?, isFocused: Bool) {
-        timeLabel.text = EvidenceReviewView.timestamp(segment.start)
-        let text = segment.text.trimmingCharacters(in: .whitespaces)
+    func configure(start: TimeInterval, text rowText: String, evidence: EvidenceReviewView.Evidence?, isFocused: Bool) {
+        timeLabel.text = EvidenceReviewView.timestamp(start)
+        let text = rowText
 
         if let evidence {
             bodyLabel.font = RecapTheme.display(16, weight: .medium)

@@ -57,26 +57,62 @@ description: 在 Recap 课程目录里做课堂复习资料：提取老师强调
 2. 按目录把 `textbook.txt` 切分成 `教材分章/ch00.txt、ch01.txt…`（保留页码标记）。用脚本或分段读写完成，核对每章首尾不丢段落。
 3. 之后任何需要教材的任务，**只读对应章的分章文件**。
 
-## 任务三：生成本讲讲义 → `<UUID>.handout.md`
+## 任务三：生成本讲讲义（LaTeX → PDF）→ `<UUID>.handout.pdf`
 
-输入：该讲 `analysis.json` + 转写稿 + （有教材时）对应章节的分章原文。结构固定：
+输入：该讲 `analysis.json` + 转写稿 + （有教材时）对应章节的分章原文。产物是 **LaTeX 编译的 PDF**，Recap.app 直接展示 `<UUID>.handout.pdf`；同时保留 `<UUID>.handout.tex` 源。
 
-```markdown
-# <讲次名>
-## 本讲概览        （3-5 句：讲了什么、重心在哪）
-## 考点详解        （逐条：知识点讲解 + 老师原话用 > 引用块保留 + 题型提示）
-## 必背清单        （有教材时逐字取自课本原文，不得杜撰；OCR 错字按规范用语修正）
-## 易混辨析
-## 作业与思考题
+### 结构（对齐验证过的开卷资料风格）
+
+1. `\section{讲次名}` 开头，紧接 `\dw{一句话定位：本讲在课程体系中的位置 + 最核心命题}`
+2. `suvlan` 环境：要点速览（enumerate 骨架，复习时可秒定位）
+3. 按主题分 `\subsection`，正文讲解帮理解；关键术语 `\tj{加粗}`、核心词 `\kw{标红}`
+4. `kaodian` 环境：★老师强调的考点，**保留老师原话**（`\textit{原话}`）并标注题型——这是资料的灵魂，把 exam_signals 的高强度项做足
+5. `bibei` 环境：■必背（有教材时逐字取自课本原文，不得杜撰；OCR 错字按规范用语修正）
+6. `bianxi` 环境：◆易混易错辨析
+7. `ketang` 环境：►答题思路（分步骤、踩点术语，来自 answer_approaches）
+
+硬规则：讲解基于转写稿实际讲过的内容；老师讲得薄或跳过的小节从教材对应章补齐并注明"（老师未展开，据教材补充）"；语言平实直接，不灌水、不杜撰。
+
+### 自足模板（每份讲义一个独立 .tex，用此 preamble）
+
+```latex
+\documentclass[11pt]{ctexart}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{framed}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=2em}
+\definecolor{signal}{HTML}{D97757}
+\definecolor{signaltext}{HTML}{9A452F}
+\definecolor{completec}{HTML}{63715F}
+\definecolor{errorc}{HTML}{B84B43}
+\definecolor{timec}{HTML}{6B655C}
+\newcommand{\kw}[1]{\textcolor{signaltext}{\textbf{#1}}}
+\newcommand{\tj}[1]{\textbf{#1}}
+\newcommand{\dw}[1]{{\small\color{timec}▸ #1}\par\medskip}
+\newenvironment{reviewbox}[2]{%
+  \def\FrameCommand{{\color{#1}\vrule width 2.5pt}\hspace{8pt}}%
+  \MakeFramed{\advance\hsize-\width\FrameRestore}%
+  \noindent{\small\color{#1}\textbf{#2}}\par\smallskip}%
+  {\endMakeFramed\medskip}
+\newenvironment{kaodian}{\begin{reviewbox}{signal}{★ 考点（老师原话）}}{\end{reviewbox}}
+\newenvironment{bibei}{\begin{reviewbox}{completec}{■ 必背}}{\end{reviewbox}}
+\newenvironment{bianxi}{\begin{reviewbox}{errorc}{◆ 易混辨析}}{\end{reviewbox}}
+\newenvironment{ketang}{\begin{reviewbox}{timec}{► 答题思路}}{\end{reviewbox}}
+\newenvironment{suvlan}{\par\noindent{\small\color{timec}\textbf{要点速览}}\par\begin{enumerate}}{\end{enumerate}\medskip}
+\begin{document}
+% 正文
+\end{document}
 ```
 
-硬规则：
+### 编译与注意（本机 BasicTeX 已验证的配方）
 
-- 讲解基于转写稿实际讲过的内容；**老师讲得薄或跳过的小节，从教材对应章补齐**，并注明"（老师未展开，据教材补充）"。
-- 老师原话用 `>` 引用块逐字保留，这是资料的灵魂。
-- 答题套路（材料题/论述题）要具体可操作：分几步、踩哪些术语点。
-- **Markdown 只用这些语法**（Recap.app 的渲染器只支持这个子集）：`#`/`##`/`###` 标题、`-` 列表、`>` 引用、`**加粗**`、`` `代码` ``、普通段落。不用表格、图片、链接、HTML。
-- 语言平实直接，不用比喻，不灌水、不杜撰。
+- 编译：`/Library/TeX/texbin/xelatex -interaction=nonstopmode <file>.tex` 跑两遍；找不到 xelatex 时试 `which xelatex`，仍没有则告知用户需安装 BasicTeX，改出 `<UUID>.handout.md` 降级产物。
+- **BasicTeX 没有 tcolorbox/mdframed/titlesec**——只用上面模板里的包，不要 `\usepackage` 其他包。
+- 特殊字符转义：`% → \%`、`& → \&`、`# → \#`、`_ → \_`；引号用中文""''；`$` 慎用。
+- ★■◆► 等符号若编译警告缺字形，换成【考点】【必背】等文字标签。
+- 编译失败时读 log 定位（通常是转义漏了），修正 .tex 重编，不超过 3 轮。
+- 成功后把 PDF 命名为 `<UUID>.handout.pdf` 放课程目录，辅助文件（.aux/.log）删除。
 
 ## 任务四：课程考试重点总表 → `review.md`
 

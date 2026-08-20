@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		04075C62922F617B31757060 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0EEB693F131F46234ED3DF0 /* AppDelegate.swift */; };
 		08C426EB553D45A214CA1172 /* LectureListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */; };
+		10FCF05C75C867182052A765 /* PDFViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3822695569806EF08ECC2E35 /* PDFViewController.swift */; };
 		1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */; };
 		1ED21351811066B3286595E1 /* BatchAddLectureSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9825A3F595F774D5AF0C9A55 /* BatchAddLectureSheet.swift */; };
 		37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */; };
@@ -35,9 +36,11 @@
 		0BCD4FAA05DF20394776496E /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptViewController.swift; sourceTree = "<group>"; };
 		224A0D4835EA9FE5F416758A /* recap-review-skill.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "recap-review-skill.md"; sourceTree = "<group>"; };
+		3822695569806EF08ECC2E35 /* PDFViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFViewController.swift; sourceTree = "<group>"; };
 		456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		5E37ED690FC7C2FF61570139 /* RecapTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapTheme.swift; sourceTree = "<group>"; };
 		5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "recap-r-mark.png"; sourceTree = "<group>"; };
+		616F809051DE4C0195CAA00B /* RecapKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecapKit; path = RecapKit; sourceTree = SOURCE_ROOT; };
 		676EC9FC010F8689B3A7E396 /* LectureQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureQueue.swift; sourceTree = "<group>"; };
 		70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureListViewController.swift; sourceTree = "<group>"; };
 		7EAA252231B59F41A4E68A2A /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
@@ -46,7 +49,6 @@
 		9825A3F595F774D5AF0C9A55 /* BatchAddLectureSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchAddLectureSheet.swift; sourceTree = "<group>"; };
 		A13099B29E78D6084BE81FFF /* DetailHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailHeaderView.swift; sourceTree = "<group>"; };
 		A30AF5F43694C7E8CFA4DE5C /* EvidenceReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvidenceReviewView.swift; sourceTree = "<group>"; };
-		A32D4D9C7AFED6217291035D /* Recap */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Recap; path = .; sourceTree = SOURCE_ROOT; };
 		BE010D7F5C9CEB7CF7000C77 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSplitViewController.swift; sourceTree = "<group>"; };
 		D349115A5C23C711AB33AF33 /* Recap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Recap.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -80,7 +82,7 @@
 		34CCF7E59D31314A7FFC2C99 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				A32D4D9C7AFED6217291035D /* Recap */,
+				616F809051DE4C0195CAA00B /* RecapKit */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -143,6 +145,7 @@
 				70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */,
 				C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */,
 				E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */,
+				3822695569806EF08ECC2E35 /* PDFViewController.swift */,
 				5E37ED690FC7C2FF61570139 /* RecapTheme.swift */,
 				456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */,
 				10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */,
@@ -200,7 +203,7 @@
 			mainGroup = E5119D41221C0B0B3DF26297;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				9CD375C1857680A7694F3090 /* XCLocalSwiftPackageReference "." */,
+				12FBB1A508009CBD4616E22D /* XCLocalSwiftPackageReference "RecapKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EC7BDFB329F1F5821D3AF306 /* Products */;
@@ -240,6 +243,7 @@
 				F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */,
 				D5C9254CEBE25AD0D2D48162 /* MainSplitViewController.swift in Sources */,
 				ABA1677873A7AC347D8C1E34 /* MarkdownViewController.swift in Sources */,
+				10FCF05C75C867182052A765 /* PDFViewController.swift in Sources */,
 				60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */,
 				9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */,
 				D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */,
@@ -434,9 +438,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		9CD375C1857680A7694F3090 /* XCLocalSwiftPackageReference "." */ = {
+		12FBB1A508009CBD4616E22D /* XCLocalSwiftPackageReference "RecapKit" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = .;
+			relativePath = RecapKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 

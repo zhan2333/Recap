@@ -112,11 +112,11 @@ final class TranscriptViewController: UIViewController {
     }
 
     private var handoutURL: URL {
-        LibraryStore.shared.productURL(lecture, in: course, ext: "handout.md")
+        LibraryStore.shared.productURL(lecture, in: course, ext: "handout.pdf")
     }
 
     private var hasHandout: Bool {
-        (try? String(contentsOf: handoutURL, encoding: .utf8))?.isEmpty == false
+        FileManager.default.fileExists(atPath: handoutURL.path)
     }
 
     // MARK: - Chrome
@@ -209,7 +209,13 @@ final class TranscriptViewController: UIViewController {
                 analysis = result
                 loadContent()
             } catch {
-                presentInfo(title: "提取失败", message: error.localizedDescription)
+                var message = error.localizedDescription
+                if let analyzeError = error as? LectureAnalyzer.AnalyzeError {
+                    let rawURL = LibraryStore.shared.productURL(lecture, in: course, ext: "analysis-raw.txt")
+                    try? analyzeError.rawResponse.write(to: rawURL, atomically: true, encoding: .utf8)
+                    message += "\n完整响应已保存到课程目录 analysis-raw.txt。"
+                }
+                presentInfo(title: "提取失败", message: message)
             }
             isAnalyzing = false
             refreshChrome()
@@ -217,40 +223,30 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
+    /// Handouts are produced by the claude CLI (LaTeX → PDF, per the bundled
+    /// skill). This hands the user a ready command and opens the course dir.
     private func generateHandout() {
-        guard let analysis, !isAnalyzing else { return }
-        guard let config = Settings.chatConfig else {
-            presentConfigureAlert()
-            return
-        }
-        isAnalyzing = true
-        refreshChrome()
-
-        let transcript = plainText
-        let lectureTitle = lecture.name
-        Task {
-            do {
-                let markdown = try await HandoutGenerator().lectureHandout(
-                    title: lectureTitle,
-                    transcript: transcript,
-                    analysis: analysis,
-                    client: ChatClient(config: config)
-                )
-                try markdown.write(to: handoutURL, atomically: true, encoding: .utf8)
-                showHandout()
-            } catch {
-                presentInfo(title: "生成失败", message: error.localizedDescription)
-            }
-            isAnalyzing = false
-            refreshChrome()
-        }
+        let command = "claude \"为「\(lecture.name)」生成讲义\""
+        UIPasteboard.general.string = command
+        let alert = UIAlertController(
+            title: "用 claude 生成讲义",
+            message: "讲义由 claude 按内置 skill 生成（LaTeX 排版编译为 PDF）。命令已复制：\n\n\(command)\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "好", style: .cancel))
+        alert.addAction(UIAlertAction(title: "打开课程目录", style: .default) { [weak self] _ in
+            guard let self else { return }
+            let dir = LibraryStore.shared.courseDirectory(self.course)
+            UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
+        })
+        present(alert, animated: true)
     }
 
     private func showHandout() {
-        guard let markdown = try? String(contentsOf: handoutURL, encoding: .utf8) else { return }
+        guard hasHandout else { return }
         navigationController?.navigationBar.isHidden = false
         navigationController?.pushViewController(
-            MarkdownViewController(markdown: markdown, title: "\(lecture.name) 讲义"),
+            PDFViewController(fileURL: handoutURL, title: "\(lecture.name) 讲义"),
             animated: true
         )
     }
@@ -387,12 +383,13 @@ final class ReadingPageView: UIView, UITableViewDataSource {
         }
 
         rows = [.eyebrow("\(subtitle) · 完整文稿"), .title(title)]
-        var buffer: [String] = []
+        var buffer = ""
         func flush() {
-            if !buffer.isEmpty {
-                rows.append(.paragraph(buffer.joined()))
-                buffer = []
+            let trimmed = buffer.trimmingCharacters(in: .whitespaces)
+            if !trimmed.isEmpty {
+                rows.append(.paragraph(trimmed))
             }
+            buffer = ""
         }
         for (index, segment) in segments.enumerated() {
             let text = segment.text.trimmingCharacters(in: .whitespaces)
@@ -401,8 +398,9 @@ final class ReadingPageView: UIView, UITableViewDataSource {
                 flush()
                 rows.append(.quote(text))
             } else {
-                buffer.append(text)
-                if buffer.count >= 5 { flush() }
+                buffer += text
+                let endsSentence = text.hasSuffix("。") || text.hasSuffix("？") || text.hasSuffix("！")
+                if buffer.count >= 220 || (endsSentence && buffer.count >= 120) { flush() }
             }
         }
         flush()
