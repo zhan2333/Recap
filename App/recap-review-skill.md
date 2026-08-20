@@ -81,6 +81,8 @@ description: 在 Recap 课程目录里做课堂复习资料：提取老师强调
 \usepackage{xcolor}
 \usepackage{framed}
 \usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 \setlist{nosep,leftmargin=2em}
 \definecolor{signal}{HTML}{D97757}
 \definecolor{signaltext}{HTML}{9A452F}
@@ -104,6 +106,17 @@ description: 在 Recap 课程目录里做课堂复习资料：提取老师强调
 % 正文
 \end{document}
 ```
+
+### 示意图（TikZ，本机已装 tikz + pgfplots）
+
+**老师明确说"要会画"的图必须画进讲义**——这类图本身就是考点（作图题）。核心概念有标准示意图的（应力-应变曲线、受力/计算简图、破坏形态、流程关系）也优先配图。规范：
+
+- 简洁线条图：坐标轴 + 曲线 + 特征点，不加装饰。特征点用字母标注（A、B、C…），图下用一两行说明每个点的含义——这正是考试要写的内容。
+- 关键曲线/特征点用 `signal` 色标出，其余用黑与 `timec` 灰；坐标轴一律带物理量与符号标注。
+- 放 `\begin{center}\begin{tikzpicture}[...]` 中，宽度控制在版面内（约 10–12cm）。
+- 考试要求会画的图，在图注前加 ★ 并写明"考试要求会画"。
+- TikZ 语法错误是编译失败高发点：一图一图加、先简后繁；某张图连续两次编译失败就简化为更朴素的版本（直线段近似曲线也可接受），不死磕。
+- 需要函数曲线时可 `\usepackage{pgfplots}\pgfplotsset{compat=1.18}`（本机已装）；简单示意优先手绘 `\draw` 坐标点连线。
 
 ### 编译与注意（本机 BasicTeX 已验证的配方）
 

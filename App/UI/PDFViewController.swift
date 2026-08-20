@@ -27,6 +27,16 @@ final class PDFViewController: UIViewController {
         navigationController?.setNavigationBarHidden(false, animated: false)
     }
 
+    /// Night rendering: invert luminance but keep hues (invert + 180° hue
+    /// spin), so the warm paper turns dark and the signal color stays itself.
+    private var invertsInDark = UserDefaults.standard.object(forKey: "pdfInvertsInDark") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(invertsInDark, forKey: "pdfInvertsInDark")
+            applyAppearance()
+        }
+    }
+    private var invertButton: UIBarButtonItem!
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = RecapTheme.paper
@@ -44,10 +54,46 @@ final class PDFViewController: UIViewController {
             pdfView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "square.and.arrow.up"),
-            primaryAction: UIAction { [weak self] _ in self?.exportPDF() }
+        invertButton = UIBarButtonItem(
+            image: UIImage(systemName: "circle.lefthalf.filled"),
+            primaryAction: UIAction { [weak self] _ in
+                self?.invertsInDark.toggle()
+            }
         )
+        navigationItem.rightBarButtonItems = [
+            UIBarButtonItem(
+                image: UIImage(systemName: "square.and.arrow.up"),
+                primaryAction: UIAction { [weak self] _ in self?.exportPDF() }
+            ),
+            invertButton,
+        ]
+        applyAppearance()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
+            applyAppearance()
+        }
+    }
+
+    private func applyAppearance() {
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        invertButton.isHidden = !isDark
+        if isDark && invertsInDark,
+           let invert = CIFilter(name: "CIColorInvert"),
+           let hue = CIFilter(name: "CIHueAdjust") {
+            hue.setValue(CGFloat.pi, forKey: kCIInputAngleKey)
+            pdfView.layer.filters = [invert, hue]
+            // The filter inverts the backdrop too — feed it the inverse of the
+            // dark canvas so it comes out right.
+            pdfView.backgroundColor = UIColor(red: 0.878, green: 0.886, blue: 0.898, alpha: 1)
+            invertButton.tintColor = RecapTheme.ink
+        } else {
+            pdfView.layer.filters = nil
+            pdfView.backgroundColor = RecapTheme.canvas
+            invertButton.tintColor = RecapTheme.quiet
+        }
     }
 
     private func exportPDF() {
