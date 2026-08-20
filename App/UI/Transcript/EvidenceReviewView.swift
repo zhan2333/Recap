@@ -15,7 +15,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
 
     struct Evidence {
         let signal: LectureAnalysis.ExamSignal
-        let segmentIndex: Int?     // nil when the quote couldn't be matched
+        let rowIndex: Int?         // nil when the quote couldn't be matched
         let start: TimeInterval?
     }
 
@@ -26,7 +26,6 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         let segmentRange: Range<Int>   // original segment indices
     }
 
-    private(set) var segments: [TranscriptSegment] = []
     private(set) var evidences: [Evidence] = []
     private var displayRows: [DisplayRow] = []
     private var selectedEvidenceIndex: Int?
@@ -230,34 +229,14 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         return rows
     }
 
-    private func rowIndex(forSegment segmentIndex: Int) -> Int? {
-        displayRows.firstIndex { $0.segmentRange.contains(segmentIndex) }
-    }
-
     private func evidenceIndex(forRow row: Int) -> Int? {
-        let range = displayRows[row].segmentRange
-        return evidences.firstIndex { $0.segmentIndex.map(range.contains) ?? false }
+        evidences.firstIndex { $0.rowIndex == row }
     }
 
-    func update(segments: [TranscriptSegment], analysis: LectureAnalysis?) {
-        self.segments = segments
-        displayRows = Self.mergeRows(segments)
-        if let analysis {
-            let matches = EvidenceMatcher.match(
-                signals: analysis.examSignals,
-                segments: segments.map { ($0.start, $0.text) }
-            )
-            let matchBySignal = Dictionary(uniqueKeysWithValues: matches.map { ($0.signalIndex, $0) })
-            evidences = analysis.examSignals.enumerated().map { index, signal in
-                Evidence(
-                    signal: signal,
-                    segmentIndex: matchBySignal[index]?.segmentIndex,
-                    start: matchBySignal[index]?.start
-                )
-            }
-        } else {
-            evidences = []
-        }
+    /// Rows and matches are prepared off the main thread by the controller.
+    func update(rows: [DisplayRow], evidences: [Evidence]) {
+        self.displayRows = rows
+        self.evidences = evidences
         selectedEvidenceIndex = nil
         tableView.reloadData()
         rebuildPins()
@@ -279,7 +258,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
     private func rebuildPins() {
         pinButtons.forEach { $0.removeFromSuperview() }
         pinButtons = []
-        for (index, evidence) in evidences.enumerated() where evidence.segmentIndex != nil {
+        for (index, evidence) in evidences.enumerated() where evidence.rowIndex != nil {
             let pin = UIButton(type: .custom)
             pin.tag = index
             pin.accessibilityLabel = "选择 \(Self.timestamp(evidence.start ?? 0)) 重点线索"
@@ -315,8 +294,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
     private func layoutPins() {
         for pin in pinButtons {
             let evidence = evidences[pin.tag]
-            guard let segmentIndex = evidence.segmentIndex,
-                  let row = rowIndex(forSegment: segmentIndex) else {
+            guard let row = evidence.rowIndex else {
                 pin.isHidden = true
                 continue
             }
@@ -356,7 +334,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
 
         if evidences.isEmpty {
             let empty = UILabel()
-            empty.text = segments.isEmpty ? "" : "提取重点后，证据线索会出现在这里。"
+            empty.text = displayRows.isEmpty ? "" : "提取重点后，证据线索会出现在这里。"
             empty.font = RecapTheme.body(11)
             empty.textColor = RecapTheme.quiet
             empty.numberOfLines = 0
@@ -422,8 +400,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
             }
         }
         updateSelectionStatus()
-        if scrollToRow, let segmentIndex = evidences[evidenceIndex].segmentIndex,
-           let row = rowIndex(forSegment: segmentIndex) {
+        if scrollToRow, let row = evidences[evidenceIndex].rowIndex {
             tableView.scrollToRow(at: IndexPath(row: row, section: 0), at: .middle, animated: true)
         }
         tableView.reloadData()

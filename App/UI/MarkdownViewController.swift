@@ -43,7 +43,15 @@ final class MarkdownViewController: UIViewController {
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
-        webView.loadHTMLString(Self.html(from: markdown), baseURL: nil)
+        // Conversion is line-by-line with regex passes — heavy for a full
+        // textbook (900KB+), so render off the main thread.
+        let source = markdown
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let html = Self.html(from: source)
+            await MainActor.run { [weak self] in
+                self?.webView.loadHTMLString(html, baseURL: nil)
+            }
+        }
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "square.and.arrow.up"),

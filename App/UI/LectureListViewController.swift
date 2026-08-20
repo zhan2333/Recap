@@ -116,10 +116,18 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         reload()
     }
 
+    /// Cell configuration path — cache so scrolling never touches disk.
+    private var keyPointCounts: [UUID: Int?] = [:]
+
     private func keyPointCount(of lecture: Lecture) -> Int? {
-        guard let data = try? Data(contentsOf: LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json")),
-              let analysis = try? JSONDecoder().decode(LectureAnalysis.self, from: data) else { return nil }
-        return analysis.examSignals.count
+        if let cached = keyPointCounts[lecture.id] { return cached }
+        var count: Int?
+        if let data = try? Data(contentsOf: LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json")),
+           let analysis = try? JSONDecoder().decode(LectureAnalysis.self, from: data) {
+            count = analysis.examSignals.count
+        }
+        keyPointCounts[lecture.id] = count
+        return count
     }
 
     private func footerButton(title: String, action: @escaping () -> Void) -> UIButton {
@@ -147,6 +155,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     }
 
     private func reload() {
+        keyPointCounts.removeAll()
         let lectures = visibleLectures
         headerBar.countLabel.text = lectures.isEmpty && searchText.isEmpty
             ? "还没有讲次"
@@ -161,6 +170,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     }
 
     private func reconfigure(_ lectureID: UUID) {
+        keyPointCounts.removeValue(forKey: lectureID)
         var snapshot = dataSource.snapshot()
         guard snapshot.itemIdentifiers.contains(lectureID) else { return reload() }
         snapshot.reconfigureItems([lectureID])

@@ -19,6 +19,7 @@ final class TranscriptViewController: UIViewController {
     private var plainText: String = ""
     private var analysis: LectureAnalysis?
     private var isAnalyzing = false
+    private var isLoading = false
 
     private let header = DetailHeaderView()
     private let metaBar = TranscriptMetaBar()
@@ -94,21 +95,63 @@ final class TranscriptViewController: UIViewController {
 
     // MARK: - Content
 
+    /// File IO, JSON decoding, row merging and quote matching are heavy for a
+    /// real 1.5h lecture — all off the main thread; UI applies the results.
     private func loadContent() {
+        isLoading = true
+        applyMode()
         let store = LibraryStore.shared
-        if let data = try? Data(contentsOf: store.productURL(lecture, in: course, ext: "segments.json")),
-           let decoded = try? JSONDecoder().decode([TranscriptSegment].self, from: data) {
-            segments = decoded
+        let segmentsURL = store.productURL(lecture, in: course, ext: "segments.json")
+        let txtURL = store.productURL(lecture, in: course, ext: "txt")
+        let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
+        let lectureName = lecture.name
+        let courseName = course.name
+
+        Task.detached(priority: .userInitiated) { [weak self] in
+            var segments: [TranscriptSegment] = []
+            if let data = try? Data(contentsOf: segmentsURL),
+               let decoded = try? JSONDecoder().decode([TranscriptSegment].self, from: data) {
+                segments = decoded
+            }
+            let plainText = (try? String(contentsOf: txtURL, encoding: .utf8)) ?? ""
+            var analysis: LectureAnalysis?
+            if let data = try? Data(contentsOf: analysisURL),
+               let decoded = try? JSONDecoder().decode(LectureAnalysis.self, from: data) {
+                analysis = decoded
+            }
+
+            let rows = EvidenceReviewView.mergeRows(segments)
+            var evidences: [EvidenceReviewView.Evidence] = []
+            if let analysis {
+                let matches = EvidenceMatcher.match(
+                    signals: analysis.examSignals,
+                    segments: rows.map { ($0.start, $0.text) }
+                )
+                let matchBySignal = Dictionary(uniqueKeysWithValues: matches.map { ($0.signalIndex, $0) })
+                evidences = analysis.examSignals.enumerated().map { index, signal in
+                    EvidenceReviewView.Evidence(
+                        signal: signal,
+                        rowIndex: matchBySignal[index]?.segmentIndex,
+                        start: matchBySignal[index]?.start
+                    )
+                }
+            }
+            let quoteRows = Set(evidences.compactMap(\.rowIndex))
+
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.segments = segments
+                self.plainText = plainText
+                self.analysis = analysis
+                self.reviewView.update(rows: rows, evidences: evidences)
+                self.readingView.update(title: lectureName, subtitle: courseName, rows: rows, quoteRows: quoteRows)
+                self.signalsView.update(analysis: analysis)
+                self.metaBar.update(segments: segments, characterCount: plainText.count)
+                self.isLoading = false
+                self.refreshChrome()
+                self.applyMode()
+            }
         }
-        plainText = (try? String(contentsOf: store.productURL(lecture, in: course, ext: "txt"), encoding: .utf8)) ?? ""
-        if let data = try? Data(contentsOf: store.productURL(lecture, in: course, ext: "analysis.json")),
-           let decoded = try? JSONDecoder().decode(LectureAnalysis.self, from: data) {
-            analysis = decoded
-        }
-        reviewView.update(segments: segments, analysis: analysis)
-        readingView.update(title: lecture.name, subtitle: course.name, segments: segments, analysis: analysis)
-        signalsView.update(analysis: analysis)
-        metaBar.update(segments: segments, characterCount: plainText.count)
     }
 
     private var handoutURL: URL {
@@ -157,6 +200,11 @@ final class TranscriptViewController: UIViewController {
         signalsView.isHidden = true
         emptyLabel.isHidden = true
 
+        if isLoading {
+            emptyLabel.isHidden = false
+            emptyLabel.text = "正在载入文稿…"
+            return
+        }
         switch mode {
         case 0 where !segments.isEmpty:
             reviewView.isHidden = false
@@ -372,16 +420,7 @@ final class ReadingPageView: UIView, UITableViewDataSource {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func update(title: String, subtitle: String, segments: [TranscriptSegment], analysis: LectureAnalysis?) {
-        var quoteSegmentIndexes = Set<Int>()
-        if let analysis {
-            let matches = EvidenceMatcher.match(
-                signals: analysis.examSignals,
-                segments: segments.map { ($0.start, $0.text) }
-            )
-            quoteSegmentIndexes = Set(matches.map(\.segmentIndex))
-        }
-
+    func update(title: String, subtitle: String, rows displayRows: [EvidenceReviewView.DisplayRow], quoteRows: Set<Int>) {
         rows = [.eyebrow("\(subtitle) · 完整文稿"), .title(title)]
         var buffer = ""
         func flush() {
@@ -391,15 +430,13 @@ final class ReadingPageView: UIView, UITableViewDataSource {
             }
             buffer = ""
         }
-        for (index, segment) in segments.enumerated() {
-            let text = segment.text.trimmingCharacters(in: .whitespaces)
-            guard !text.isEmpty else { continue }
-            if quoteSegmentIndexes.contains(index) {
+        for (index, row) in displayRows.enumerated() {
+            if quoteRows.contains(index) {
                 flush()
-                rows.append(.quote(text))
+                rows.append(.quote(row.text))
             } else {
-                buffer += text
-                let endsSentence = text.hasSuffix("。") || text.hasSuffix("？") || text.hasSuffix("！")
+                buffer += row.text
+                let endsSentence = row.text.hasSuffix("。") || row.text.hasSuffix("？") || row.text.hasSuffix("！")
                 if buffer.count >= 220 || (endsSentence && buffer.count >= 120) { flush() }
             }
         }

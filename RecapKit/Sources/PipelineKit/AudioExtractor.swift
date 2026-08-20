@@ -39,6 +39,14 @@ public enum AudioExtractor {
         guard let track = try await asset.loadTracks(withMediaType: .audio).first else {
             throw ExtractError.noAudioTrack(url)
         }
+        // The decode loop is CPU-bound for minutes on a full lecture — keep it
+        // off the cooperative pool.
+        return try await Task.detached(priority: .userInitiated) {
+            try Self.decode(asset: asset, track: track)
+        }.value
+    }
+
+    private static func decode(asset: AVURLAsset, track: AVAssetTrack) throws -> [Float] {
 
         let reader = try AVAssetReader(asset: asset)
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
