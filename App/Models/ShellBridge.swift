@@ -1,0 +1,49 @@
+//
+//  ShellBridge.swift
+//  Recap
+//
+//  Created by Rio on 2026/8/20.
+//
+
+import Foundation
+
+/// Mirror of the plugin's interface — @objc protocols unify by name at
+/// runtime, so the macOS-built class satisfies this Catalyst-side type.
+@objc(RSPShellRunning)
+protocol ShellRunning {
+    static func run(
+        _ command: String,
+        onOutput: @escaping (String) -> Void,
+        onExit: @escaping (Int32) -> Void
+    )
+}
+
+/// Loads the macOS glue bundle that provides subprocess support (Process is
+/// unavailable in Catalyst itself).
+enum ShellBridge {
+
+    private static let runner: ShellRunning.Type? = {
+        let candidates = [Bundle.main.builtInPlugInsURL, Bundle.main.resourceURL]
+        for base in candidates {
+            guard let url = base?.appendingPathComponent("RecapShellPlugin.bundle"),
+                  let bundle = Bundle(url: url), bundle.load(),
+                  let cls = bundle.classNamed("RSPShellRunner") else { continue }
+            return cls as? ShellRunning.Type
+        }
+        return nil
+    }()
+
+    static var isAvailable: Bool { runner != nil }
+
+    static func run(
+        _ command: String,
+        onOutput: @escaping (String) -> Void,
+        onExit: @escaping (Int32) -> Void
+    ) {
+        guard let runner else {
+            onExit(-1)
+            return
+        }
+        runner.run(command, onOutput: onOutput, onExit: onExit)
+    }
+}

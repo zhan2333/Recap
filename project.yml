@@ -9,6 +9,19 @@ packages:
   RecapKit:
     path: RecapKit
 targets:
+  RecapShellPlugin:
+    type: bundle
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources: [Plugin]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rio.Recap.ShellPlugin
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: true
+
   Recap:
     type: application
     platform: iOS
@@ -23,6 +36,9 @@ targets:
         product: PipelineKit
       - package: RecapKit
         product: AnalysisKit
+      - target: RecapShellPlugin
+        embed: true
+        codeSign: true
     info:
       path: App/Info.plist
       properties:
@@ -47,3 +63,4 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         SWIFT_VERSION: "5.9"
+        MARKETING_VERSION: "0.1.0"

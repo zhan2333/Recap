@@ -13,6 +13,7 @@
 		1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */; };
 		1ED21351811066B3286595E1 /* BatchAddLectureSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9825A3F595F774D5AF0C9A55 /* BatchAddLectureSheet.swift */; };
 		37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */; };
+		4DA6C44E3E4A5BE360117666 /* ShellRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83E85A621F54206094AFF288 /* ShellRunner.swift */; };
 		4E3B91489EB4E18760D2C223 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0BCD4FAA05DF20394776496E /* AppIcon.icon */; };
 		60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E37ED690FC7C2FF61570139 /* RecapTheme.swift */; };
 		69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006620A5F96466763716A77A /* CourseListViewController.swift */; };
@@ -20,16 +21,30 @@
 		8DB68D877F1B18A690D807B9 /* recap-r-mark.png in Resources */ = {isa = PBXBuildFile; fileRef = 5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */; };
 		9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B84F6FA84480A57562810F7 /* SceneDelegate.swift */; };
 		ABA1677873A7AC347D8C1E34 /* MarkdownViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */; };
+		AC5C00D0EE7A17E4F256C4D0 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF07F81006BA32EFA6020422 /* UpdateChecker.swift */; };
 		B5C337CBDA7637648DF120FD /* EvidenceReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30AF5F43694C7E8CFA4DE5C /* EvidenceReviewView.swift */; };
 		B6E3C895C9A6F38996546DD6 /* TranscriptionKit in Frameworks */ = {isa = PBXBuildFile; productRef = AAF9B2049FBC7E10384E8785 /* TranscriptionKit */; };
 		BAD8944340A9CCBFECBDF1DF /* AnalysisKit in Frameworks */ = {isa = PBXBuildFile; productRef = E453285FB6C6C290772DBA8B /* AnalysisKit */; };
+		BAF5469021701803372AF638 /* ShellBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A01234BCEBBEF3102133BDF /* ShellBridge.swift */; };
+		BEA3E5807BC109A8EA353EF2 /* RecapShellPlugin.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 6BC0E06F800CA245EDEAB6DC /* RecapShellPlugin.bundle */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D21128496414482812B7924E /* PipelineKit in Frameworks */ = {isa = PBXBuildFile; productRef = A274F8399FA5EDA4B3CE84DD /* PipelineKit */; };
 		D5C9254CEBE25AD0D2D48162 /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */; };
 		D742402BFA22E5EB83E20B00 /* LectureQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 676EC9FC010F8689B3A7E396 /* LectureQueue.swift */; };
 		D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE010D7F5C9CEB7CF7000C77 /* Settings.swift */; };
 		DB5005A472A2861E6E97225C /* DetailHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13099B29E78D6084BE81FFF /* DetailHeaderView.swift */; };
+		F401865D77202AD7C57F7A81 /* OnboardingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D359651834E09C48C9E660 /* OnboardingViewController.swift */; };
 		F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EAA252231B59F41A4E68A2A /* Library.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DE72FBB5C188C53CFD79DEA9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DCA4EC43C3F813175112084B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1816EEFBE9371521EBDFEF47;
+			remoteInfo = RecapShellPlugin;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		006620A5F96466763716A77A /* CourseListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseListViewController.swift; sourceTree = "<group>"; };
@@ -42,8 +57,11 @@
 		5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "recap-r-mark.png"; sourceTree = "<group>"; };
 		616F809051DE4C0195CAA00B /* RecapKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecapKit; path = RecapKit; sourceTree = SOURCE_ROOT; };
 		676EC9FC010F8689B3A7E396 /* LectureQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureQueue.swift; sourceTree = "<group>"; };
+		6BC0E06F800CA245EDEAB6DC /* RecapShellPlugin.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecapShellPlugin.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureListViewController.swift; sourceTree = "<group>"; };
 		7EAA252231B59F41A4E68A2A /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
+		83E85A621F54206094AFF288 /* ShellRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellRunner.swift; sourceTree = "<group>"; };
+		8A01234BCEBBEF3102133BDF /* ShellBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellBridge.swift; sourceTree = "<group>"; };
 		8B84F6FA84480A57562810F7 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		937E3470DF8BE0C881CBEED5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		9825A3F595F774D5AF0C9A55 /* BatchAddLectureSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchAddLectureSheet.swift; sourceTree = "<group>"; };
@@ -51,6 +69,8 @@
 		A30AF5F43694C7E8CFA4DE5C /* EvidenceReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvidenceReviewView.swift; sourceTree = "<group>"; };
 		BE010D7F5C9CEB7CF7000C77 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSplitViewController.swift; sourceTree = "<group>"; };
+		C6D359651834E09C48C9E660 /* OnboardingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
+		CF07F81006BA32EFA6020422 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
 		D349115A5C23C711AB33AF33 /* Recap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Recap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E0EEB693F131F46234ED3DF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownViewController.swift; sourceTree = "<group>"; };
@@ -75,6 +95,8 @@
 			children = (
 				7EAA252231B59F41A4E68A2A /* Library.swift */,
 				BE010D7F5C9CEB7CF7000C77 /* Settings.swift */,
+				8A01234BCEBBEF3102133BDF /* ShellBridge.swift */,
+				CF07F81006BA32EFA6020422 /* UpdateChecker.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -119,12 +141,21 @@
 			path = Pipeline;
 			sourceTree = "<group>";
 		};
+		CDFC2843D1AD62B27559CFD2 /* Plugin */ = {
+			isa = PBXGroup;
+			children = (
+				83E85A621F54206094AFF288 /* ShellRunner.swift */,
+			);
+			path = Plugin;
+			sourceTree = "<group>";
+		};
 		E5119D41221C0B0B3DF26297 = {
 			isa = PBXGroup;
 			children = (
 				0BCD4FAA05DF20394776496E /* AppIcon.icon */,
 				7AACD87583552AA96BF70AAD /* App */,
 				34CCF7E59D31314A7FFC2C99 /* Packages */,
+				CDFC2843D1AD62B27559CFD2 /* Plugin */,
 				EC7BDFB329F1F5821D3AF306 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -133,6 +164,7 @@
 			isa = PBXGroup;
 			children = (
 				D349115A5C23C711AB33AF33 /* Recap.app */,
+				6BC0E06F800CA245EDEAB6DC /* RecapShellPlugin.bundle */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -145,6 +177,7 @@
 				70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */,
 				C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */,
 				E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */,
+				C6D359651834E09C48C9E660 /* OnboardingViewController.swift */,
 				3822695569806EF08ECC2E35 /* PDFViewController.swift */,
 				5E37ED690FC7C2FF61570139 /* RecapTheme.swift */,
 				456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */,
@@ -157,6 +190,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1816EEFBE9371521EBDFEF47 /* RecapShellPlugin */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 80BCF78454A51B4D75621CE0 /* Build configuration list for PBXNativeTarget "RecapShellPlugin" */;
+			buildPhases = (
+				7B095B99F57F8BD0D581BB7E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RecapShellPlugin;
+			packageProductDependencies = (
+			);
+			productName = RecapShellPlugin;
+			productReference = 6BC0E06F800CA245EDEAB6DC /* RecapShellPlugin.bundle */;
+			productType = "com.apple.product-type.bundle";
+		};
 		3B6175ECA027D4D9CAB721B8 /* Recap */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8947BC798E823AE8B8248FBF /* Build configuration list for PBXNativeTarget "Recap" */;
@@ -168,6 +218,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				2597845D3568698FABAE4EDE /* PBXTargetDependency */,
 			);
 			name = Recap;
 			packageProductDependencies = (
@@ -188,6 +239,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					1816EEFBE9371521EBDFEF47 = {
+						ProvisioningStyle = Manual;
+					};
 					3B6175ECA027D4D9CAB721B8 = {
 						ProvisioningStyle = Manual;
 					};
@@ -210,6 +264,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				1816EEFBE9371521EBDFEF47 /* RecapShellPlugin */,
 				3B6175ECA027D4D9CAB721B8 /* Recap */,
 			);
 		};
@@ -223,6 +278,7 @@
 				4E3B91489EB4E18760D2C223 /* AppIcon.icon in Resources */,
 				8DB68D877F1B18A690D807B9 /* recap-r-mark.png in Resources */,
 				8A2C0198D72ED5F314B359EC /* recap-review-skill.md in Resources */,
+				BEA3E5807BC109A8EA353EF2 /* RecapShellPlugin.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -243,16 +299,35 @@
 				F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */,
 				D5C9254CEBE25AD0D2D48162 /* MainSplitViewController.swift in Sources */,
 				ABA1677873A7AC347D8C1E34 /* MarkdownViewController.swift in Sources */,
+				F401865D77202AD7C57F7A81 /* OnboardingViewController.swift in Sources */,
 				10FCF05C75C867182052A765 /* PDFViewController.swift in Sources */,
 				60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */,
 				9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */,
 				D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */,
 				37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */,
+				BAF5469021701803372AF638 /* ShellBridge.swift in Sources */,
 				1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */,
+				AC5C00D0EE7A17E4F256C4D0 /* UpdateChecker.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7B095B99F57F8BD0D581BB7E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4DA6C44E3E4A5BE360117666 /* ShellRunner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2597845D3568698FABAE4EDE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1816EEFBE9371521EBDFEF47 /* RecapShellPlugin */;
+			targetProxy = DE72FBB5C188C53CFD79DEA9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1CD0C804AE598C657A41F0DF /* Debug */ = {
@@ -266,6 +341,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rio.Recap;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = YES;
@@ -324,10 +400,27 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		7FEEE89FF673CD5C1E11667F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rio.Recap.ShellPlugin;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
 			};
 			name = Release;
 		};
@@ -387,10 +480,27 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BB40D55657796D62210845F9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rio.Recap.ShellPlugin;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
 			};
 			name = Debug;
 		};
@@ -405,6 +515,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rio.Recap;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = YES;
@@ -417,6 +528,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		80BCF78454A51B4D75621CE0 /* Build configuration list for PBXNativeTarget "RecapShellPlugin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB40D55657796D62210845F9 /* Debug */,
+				7FEEE89FF673CD5C1E11667F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		8947BC798E823AE8B8248FBF /* Build configuration list for PBXNativeTarget "Recap" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -39,6 +39,19 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = MainSplitViewController()
         window.makeKeyAndVisible()
         self.window = window
+
+        if !Settings.modelExists {
+            let onboarding = OnboardingViewController()
+            onboarding.modalPresentationStyle = .pageSheet
+            onboarding.isModalInPresentation = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                window.rootViewController?.present(onboarding, animated: true)
+            }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                UpdateChecker.checkIfDue(presenting: self?.window)
+            }
+        }
     }
 }
 

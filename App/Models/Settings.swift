@@ -10,6 +10,10 @@ import AnalysisKit
 
 enum Settings {
 
+    static var modelExists: Bool {
+        FileManager.default.fileExists(atPath: modelPath.path)
+    }
+
     static var modelPath: URL {
         get {
             if let path = UserDefaults.standard.string(forKey: "modelPath"), !path.isEmpty {

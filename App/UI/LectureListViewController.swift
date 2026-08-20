@@ -179,7 +179,18 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     // MARK: - Add lecture
 
+    /// Queueing without a model would just fail at transcription — steer to
+    /// onboarding first.
+    private func ensureModelReady() -> Bool {
+        guard !Settings.modelExists else { return true }
+        let onboarding = OnboardingViewController()
+        onboarding.modalPresentationStyle = .pageSheet
+        present(onboarding, animated: true)
+        return false
+    }
+
     private func promptNewLecture() {
+        guard ensureModelReady() else { return }
         let sheet = BatchAddLectureSheet()
         sheet.existingLectureCount = LibraryStore.shared.lectures(in: course).count
         sheet.onSubmit = { [weak self] entries in
@@ -195,6 +206,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     }
 
     private func pickLocalFile() {
+        guard ensureModelReady() else { return }
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .audio], asCopy: true)
         picker.allowsMultipleSelection = true
         picker.delegate = self
