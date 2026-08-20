@@ -31,9 +31,12 @@ enum Settings {
         set { UserDefaults.standard.set(newValue, forKey: "llmModel") }
     }
 
+    // UserDefaults for now: ad-hoc re-signing on every debug build breaks
+    // Keychain ACLs (items become unreadable/undeletable). Move back to
+    // Keychain once the app ships with a stable signing identity.
     static var llmAPIKey: String {
-        get { KeychainStore.get("llmAPIKey") ?? "" }
-        set { KeychainStore.set(newValue, for: "llmAPIKey") }
+        get { UserDefaults.standard.string(forKey: "llmAPIKey") ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "llmAPIKey") }
     }
 
     /// nil until base URL + key + model are all configured.
@@ -43,35 +46,3 @@ enum Settings {
     }
 }
 
-/// Generic-password wrapper; API key never touches UserDefaults.
-enum KeychainStore {
-
-    private static let service = "com.rio.Recap"
-
-    static func set(_ value: String, for key: String) {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-        ]
-        SecItemDelete(query as CFDictionary)
-        guard !value.isEmpty else { return }
-        var attributes = query
-        attributes[kSecValueData as String] = Data(value.utf8)
-        SecItemAdd(attributes as CFDictionary, nil)
-    }
-
-    static func get(_ key: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-}

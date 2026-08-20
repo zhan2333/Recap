@@ -37,7 +37,7 @@ final class SettingsViewController: UITableViewController {
         ),
         Section(
             header: "AI 分析",
-            footer: "任何 OpenAI-compatible 接口：OpenRouter、自建网关，或本地 Ollama。API Key 存储在 Keychain。",
+            footer: "任何 OpenAI-compatible 接口：OpenRouter、自建网关，或本地 Ollama。API Key 保存在本机。",
             fields: [
                 Field(title: "Base URL", placeholder: "https://openrouter.ai/api/v1", secure: false,
                       get: { Settings.llmBaseURL }, set: { Settings.llmBaseURL = $0 }),
