@@ -42,12 +42,19 @@ public struct LectureAnalysis: Codable, Sendable {
 public struct LectureAnalyzer {
 
     public enum AnalyzeError: Error, LocalizedError {
-        case unparsableResponse(String)
+        case unparsableResponse(raw: String, detail: String)
 
         public var errorDescription: String? {
             switch self {
-            case .unparsableResponse(let text):
-                "无法解析模型返回的 JSON：\(text.prefix(200))"
+            case .unparsableResponse(_, let detail):
+                "无法解析模型返回的 JSON（\(detail)）"
+            }
+        }
+
+        /// Full model output, for saving next to the lecture for diagnosis.
+        public var rawResponse: String {
+            switch self {
+            case .unparsableResponse(let raw, _): raw
             }
         }
     }
@@ -82,7 +89,8 @@ public struct LectureAnalyzer {
         return try Self.parse(response)
     }
 
-    /// Tolerant of models that wrap JSON in a code fence despite instructions.
+    /// Tolerant of code fences, surrounding prose, and the most common LLM
+    /// JSON defect: raw control characters inside string literals.
     static func parse(_ raw: String) throws -> LectureAnalysis {
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if text.hasPrefix("```") {
@@ -94,9 +102,57 @@ public struct LectureAnalyzer {
         if let start = text.firstIndex(of: "{"), let end = text.lastIndex(of: "}") {
             text = String(text[start...end])
         }
-        guard let data = text.data(using: .utf8),
-              let analysis = try? JSONDecoder().decode(LectureAnalysis.self, from: data)
-        else { throw AnalyzeError.unparsableResponse(raw) }
-        return analysis
+
+        var lastError = "empty response"
+        for candidate in [text, Self.escapingControlCharacters(in: text)] {
+            guard let data = candidate.data(using: .utf8) else { continue }
+            do {
+                return try JSONDecoder().decode(LectureAnalysis.self, from: data)
+            } catch {
+                lastError = Self.describe(error)
+            }
+        }
+        throw AnalyzeError.unparsableResponse(raw: raw, detail: lastError)
+    }
+
+    /// Escapes raw newlines/tabs that appear inside JSON string literals —
+    /// invalid JSON that models emit intermittently when pretty-printing.
+    static func escapingControlCharacters(in text: String) -> String {
+        var out = ""
+        out.reserveCapacity(text.count)
+        var inString = false
+        var escaped = false
+        for ch in text {
+            if escaped {
+                out.append(ch)
+                escaped = false
+                continue
+            }
+            switch ch {
+            case "\\" where inString:
+                out.append(ch)
+                escaped = true
+            case "\"":
+                inString.toggle()
+                out.append(ch)
+            case "\n" where inString: out += "\\n"
+            case "\r" where inString: out += "\\r"
+            case "\t" where inString: out += "\\t"
+            default:
+                out.append(ch)
+            }
+        }
+        return out
+    }
+
+    private static func describe(_ error: Error) -> String {
+        guard let decoding = error as? DecodingError else { return error.localizedDescription }
+        switch decoding {
+        case .dataCorrupted(let context): return "JSON 语法错误：\(context.debugDescription)"
+        case .keyNotFound(let key, _): return "缺少字段 \(key.stringValue)"
+        case .typeMismatch(_, let context): return "字段类型不符：\(context.codingPath.map(\.stringValue).joined(separator: "."))"
+        case .valueNotFound(_, let context): return "字段值缺失：\(context.codingPath.map(\.stringValue).joined(separator: "."))"
+        @unknown default: return error.localizedDescription
+        }
     }
 }

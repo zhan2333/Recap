@@ -623,6 +623,10 @@ final class LectureCell: UICollectionViewCell {
                 progress = value
                 stateLabel.text = "\(Int(value * 100))"
                 stateLabel.textColor = RecapTheme.quiet
+            case .analyzing:
+                statusLabel.text = "正在提取重点…"
+                stateLabel.text = "✦"
+                stateLabel.textColor = RecapTheme.signalText
             }
         } else {
             switch lecture.phase {

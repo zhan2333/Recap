@@ -23,12 +23,12 @@ enum Settings {
 
     static var llmBaseURL: String {
         get { UserDefaults.standard.string(forKey: "llmBaseURL") ?? "https://openrouter.ai/api/v1" }
-        set { UserDefaults.standard.set(newValue, forKey: "llmBaseURL") }
+        set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "llmBaseURL") }
     }
 
     static var llmModel: String {
         get { UserDefaults.standard.string(forKey: "llmModel") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "llmModel") }
+        set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "llmModel") }
     }
 
     // UserDefaults for now: ad-hoc re-signing on every debug build breaks
@@ -36,13 +36,17 @@ enum Settings {
     // Keychain once the app ships with a stable signing identity.
     static var llmAPIKey: String {
         get { UserDefaults.standard.string(forKey: "llmAPIKey") ?? "" }
-        set { UserDefaults.standard.set(newValue, forKey: "llmAPIKey") }
+        set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "llmAPIKey") }
     }
 
-    /// nil until base URL + key + model are all configured.
+    /// nil until base URL + key are configured. Model is optional — an empty
+    /// value lets the gateway pick its default.
     static var chatConfig: ChatClient.Config? {
-        guard let url = URL(string: llmBaseURL), !llmAPIKey.isEmpty, !llmModel.isEmpty else { return nil }
-        return ChatClient.Config(baseURL: url, apiKey: llmAPIKey, model: llmModel)
+        let base = llmBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = llmAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let model = llmModel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: base), url.host != nil, !key.isEmpty else { return nil }
+        return ChatClient.Config(baseURL: url, apiKey: key, model: model)
     }
 }
 

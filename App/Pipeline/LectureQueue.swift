@@ -8,6 +8,7 @@
 import Foundation
 import PipelineKit
 import TranscriptionKit
+import AnalysisKit
 
 /// Drives lectures through download → transcribe. Downloads run in parallel;
 /// transcriptions are chained strictly serially (one Metal context at a time).
@@ -21,6 +22,7 @@ final class LectureQueue {
         case downloading(Double)
         case waitingToTranscribe
         case transcribing(Double)
+        case analyzing
     }
 
     private(set) var activities: [UUID: Activity] = [:]
@@ -107,9 +109,38 @@ final class LectureQueue {
                 $0.errorMessage = nil
             }
             setActivity(nil, for: lecture.id)
+            // Auto-extract key points; fire-and-forget so the transcription
+            // chain moves on to the next lecture immediately.
+            Task { await self.autoExtract(of: lecture, in: course) }
         } catch {
             fail(lecture, in: course, error: error)
         }
+    }
+
+    /// Runs key-point extraction right after a transcription lands. Skips
+    /// silently when the LLM endpoint isn't configured; a failure leaves the
+    /// lecture transcribed so the user can retry from the detail view.
+    private func autoExtract(of lecture: Lecture, in course: Course) async {
+        guard let config = Settings.chatConfig else { return }
+        let store = LibraryStore.shared
+        let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
+        guard !FileManager.default.fileExists(atPath: analysisURL.path),
+              let transcript = try? String(contentsOf: store.productURL(lecture, in: course, ext: "txt"), encoding: .utf8),
+              !transcript.isEmpty else { return }
+
+        setActivity(.analyzing, for: lecture.id)
+        do {
+            let result = try await LectureAnalyzer().extract(transcript: transcript, client: ChatClient(config: config))
+            try JSONEncoder().encode(result).write(to: analysisURL, options: .atomic)
+            mark(lecture, in: course) { $0.errorMessage = nil }
+        } catch {
+            if let analyzeError = error as? LectureAnalyzer.AnalyzeError {
+                let rawURL = store.productURL(lecture, in: course, ext: "analysis-raw.txt")
+                try? analyzeError.rawResponse.write(to: rawURL, atomically: true, encoding: .utf8)
+            }
+            NSLog("Recap auto-extract failed for %@: %@", lecture.name, error.localizedDescription)
+        }
+        setActivity(nil, for: lecture.id)
     }
 
     /// whisper_full blocks; run it on a dedicated thread, not the cooperative pool.

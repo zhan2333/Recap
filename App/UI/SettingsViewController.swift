@@ -43,7 +43,7 @@ final class SettingsViewController: UITableViewController {
                       get: { Settings.llmBaseURL }, set: { Settings.llmBaseURL = $0 }),
                 Field(title: "API Key", placeholder: "sk-…", secure: true,
                       get: { Settings.llmAPIKey }, set: { Settings.llmAPIKey = $0 }),
-                Field(title: "Model", placeholder: "如 anthropic/claude-sonnet-4.5", secure: false,
+                Field(title: "Model", placeholder: "留空用接口默认模型", secure: false,
                       get: { Settings.llmModel }, set: { Settings.llmModel = $0 }),
             ]
         ),
