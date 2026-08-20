@@ -36,16 +36,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         navigationController?.navigationBar.isHidden = true
 
         headerBar.courseLabel.text = course.name
-        headerBar.addButton.menu = UIMenu(children: [
-            UIAction(title: "粘贴直链入队", image: UIImage(systemName: "link")) { [weak self] _ in
-                self?.promptNewLecture()
-            },
-            UIAction(title: "导入本地文件", image: UIImage(systemName: "folder")) { [weak self] _ in
-                self?.pickLocalFile()
-            },
-        ])
         headerBar.addButton.showsMenuAsPrimaryAction = true
-        headerBar.toolsButton.showsMenuAsPrimaryAction = true
 
         searchField.placeholder = "搜索讲次"
         searchField.font = RecapTheme.body(12)
@@ -137,11 +128,12 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             .font: RecapTheme.body(11), .foregroundColor: RecapTheme.muted,
         ]))
         config.baseForegroundColor = RecapTheme.muted
-        config.background.backgroundColor = RecapTheme.paper.withAlphaComponent(0.7)
-        config.background.strokeColor = RecapTheme.line
+        config.background.backgroundColor = RecapTheme.paper
+        config.background.strokeColor = RecapTheme.ink.withAlphaComponent(0.16)
         config.background.strokeWidth = 1
         config.background.cornerRadius = RecapTheme.radiusSM
         let button = UIButton(configuration: config)
+        button.tintColor = RecapTheme.muted
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
         return button
     }
@@ -213,9 +205,19 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     private var isWorking = false
 
     private func refreshToolsMenu() {
-        headerBar.toolsButton.menu = UIMenu(children: courseToolActions)
-        headerBar.toolsSpinner.isHidden = !isWorking
-        headerBar.toolsButton.isHidden = isWorking
+        let addActions = [
+            UIAction(title: "粘贴直链入队", image: UIImage(systemName: "link")) { [weak self] _ in
+                self?.promptNewLecture()
+            },
+            UIAction(title: "导入本地文件", image: UIImage(systemName: "folder")) { [weak self] _ in
+                self?.pickLocalFile()
+            },
+        ]
+        headerBar.addButton.menu = UIMenu(children: [
+            UIMenu(options: .displayInline, children: addActions),
+            UIMenu(options: .displayInline, children: courseToolActions),
+        ])
+        headerBar.isWorking = isWorking
     }
 
     private var courseToolActions: [UIAction] {
@@ -371,14 +373,21 @@ extension LectureListViewController: UIDocumentPickerDelegate {
     }
 }
 
-/// Two-line header: course name over lecture count, add + tools trailing.
+/// Two-line header: course name over lecture count, one quiet add button
+/// trailing (its menu carries both lecture sources and course tools).
 final class LectureHeaderBar: UIView {
 
     let courseLabel = UILabel()
     let countLabel = UILabel()
     let addButton = UIButton(type: .system)
-    let toolsButton = UIButton(type: .system)
-    let toolsSpinner = UIActivityIndicatorView(style: .medium)
+    private let spinner = UIActivityIndicatorView(style: .medium)
+
+    var isWorking = false {
+        didSet {
+            addButton.isHidden = isWorking
+            spinner.isHidden = !isWorking
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -399,36 +408,30 @@ final class LectureHeaderBar: UIView {
         ]))
         addConfig.imagePadding = 4
         addConfig.baseForegroundColor = RecapTheme.muted
-        addConfig.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8)
+        addConfig.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 8, bottom: 5, trailing: 8)
+        addConfig.indicator = .none
         addButton.configuration = addConfig
+        addButton.tintColor = RecapTheme.muted
 
-        toolsButton.setImage(
-            UIImage(systemName: "book", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .medium)),
-            for: .normal
-        )
-        toolsButton.tintColor = RecapTheme.muted
-        toolsSpinner.hidesWhenStopped = false
-        toolsSpinner.isHidden = true
-        toolsSpinner.startAnimating()
+        spinner.hidesWhenStopped = false
+        spinner.isHidden = true
+        spinner.startAnimating()
 
         let bottomLine = UIView()
         bottomLine.backgroundColor = RecapTheme.ink.withAlphaComponent(0.08)
 
-        for subview in [titles, addButton, toolsButton, toolsSpinner, bottomLine] as [UIView] {
+        for subview in [titles, addButton, spinner, bottomLine] as [UIView] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             addSubview(subview)
         }
         NSLayoutConstraint.activate([
             titles.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
             titles.centerYAnchor.constraint(equalTo: centerYAnchor),
-            toolsButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
-            toolsButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-            toolsButton.widthAnchor.constraint(equalToConstant: 28),
-            toolsSpinner.centerXAnchor.constraint(equalTo: toolsButton.centerXAnchor),
-            toolsSpinner.centerYAnchor.constraint(equalTo: toolsButton.centerYAnchor),
-            addButton.trailingAnchor.constraint(equalTo: toolsButton.leadingAnchor, constant: -2),
+            addButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
             addButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             addButton.leadingAnchor.constraint(greaterThanOrEqualTo: titles.trailingAnchor, constant: 8),
+            spinner.centerXAnchor.constraint(equalTo: addButton.centerXAnchor),
+            spinner.centerYAnchor.constraint(equalTo: addButton.centerYAnchor),
             bottomLine.leadingAnchor.constraint(equalTo: leadingAnchor),
             bottomLine.trailingAnchor.constraint(equalTo: trailingAnchor),
             bottomLine.bottomAnchor.constraint(equalTo: bottomAnchor),
