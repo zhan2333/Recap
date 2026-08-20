@@ -6,8 +6,8 @@ options:
   deploymentTarget:
     iOS: "17.0"
 packages:
-  Recap:
-    path: .
+  RecapKit:
+    path: RecapKit
 targets:
   Recap:
     type: application
@@ -17,11 +17,11 @@ targets:
       - path: AppIcon.icon
         type: file
     dependencies:
-      - package: Recap
+      - package: RecapKit
         product: TranscriptionKit
-      - package: Recap
+      - package: RecapKit
         product: PipelineKit
-      - package: Recap
+      - package: RecapKit
         product: AnalysisKit
     info:
       path: App/Info.plist

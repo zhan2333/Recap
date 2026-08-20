@@ -13,7 +13,7 @@ set -euo pipefail
 VERSION="v1.9.2"
 URL="https://github.com/ggml-org/whisper.cpp/releases/download/${VERSION}/whisper-${VERSION}-xcframework.zip"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DEST="${ROOT}/Vendor/whisper.xcframework"
+DEST="${ROOT}/RecapKit/Vendor/whisper.xcframework"
 
 if [ -d "$DEST" ]; then
     echo "Already present: $DEST"
@@ -27,6 +27,6 @@ echo "Downloading whisper.cpp ${VERSION} xcframework…"
 curl -L --fail -o "$TMP/whisper.zip" "$URL"
 unzip -q "$TMP/whisper.zip" -d "$TMP"
 
-mkdir -p "${ROOT}/Vendor"
+mkdir -p "${ROOT}/RecapKit/Vendor"
 mv "$TMP/build-apple/whisper.xcframework" "$DEST"
 echo "Installed → $DEST"

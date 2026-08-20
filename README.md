@@ -7,18 +7,22 @@ Everything runs on-device except the optional analysis step — no ffmpeg, no Py
 ## Architecture
 
 ```
-Recap.app (Mac Catalyst, UIKit)     — planned
-├─ PipelineKit        download (URLSession) + audio decode (AVAssetReader)
-├─ TranscriptionKit   TranscriptionEngine protocol + whisper.cpp/Metal backend
-└─ AnalysisKit        single-turn LLM analysis (OpenAI-compatible) — planned
+Recap.app (Mac Catalyst, UIKit)     — App/ + RecapApp.xcodeproj (xcodegen)
+└─ RecapKit/                        — local SPM package
+   ├─ PipelineKit        download (URLSession) + audio decode (AVAssetReader)
+   ├─ TranscriptionKit   TranscriptionEngine protocol + whisper.cpp/Metal backend
+   ├─ AnalysisKit        LLM analysis (OpenAI-compatible), textbook OCR, evidence matching
+   └─ recap (CLI)        pipeline demo / verification tool
 ```
 
-## CLI (current demo)
+## CLI
 
 ```sh
+cd RecapKit
 swift run recap sample                 # self-check with a synthesized Mandarin clip
 swift run recap transcribe lecture.mp4 # local file → .srt + .txt
 swift run recap run "<direct mp4 url>" # download with classroom headers, then transcribe
+swift run recap textbook book.pdf      # extract textbook text (OCR fallback)
 ```
 
 Requirements: macOS 14+, a ggml whisper model (default path `~/whisper-models/ggml-large-v3-turbo.bin`).

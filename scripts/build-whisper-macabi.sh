@@ -15,7 +15,7 @@ set -euo pipefail
 
 SRC="${1:?usage: build-whisper-macabi.sh <whisper.cpp source dir>}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-XCFW="$ROOT/Vendor/whisper.xcframework"
+XCFW="$ROOT/RecapKit/Vendor/whisper.xcframework"
 TRIPLE="arm64-apple-ios17.0-macabi"
 BUILD="$SRC/build-maccatalyst"
 SYSROOT="$(xcrun --sdk macosx --show-sdk-path)"
