@@ -36,6 +36,8 @@ targets:
         UILaunchScreen: {}
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+        NSSupportsAutomaticTermination: false
+        NSSupportsSuddenTermination: false
     settings:
       base:
         SUPPORTS_MACCATALYST: true

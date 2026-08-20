@@ -84,7 +84,8 @@ final class LectureQueue {
     private func runTranscription(of lecture: Lecture, in course: Course, mediaURL: URL) async {
         let store = LibraryStore.shared
         let token = ProcessInfo.processInfo.beginActivity(
-            options: [.userInitiated, .idleSystemSleepDisabled],
+            options: [.userInitiated, .idleSystemSleepDisabled,
+                      .automaticTerminationDisabled, .suddenTerminationDisabled],
             reason: "Transcribing lecture"
         )
         defer { ProcessInfo.processInfo.endActivity(token) }
