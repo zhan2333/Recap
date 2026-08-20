@@ -145,6 +145,60 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
               let course = LibraryStore.shared.courses.first(where: { $0.id == courseID }) else { return }
         select(course)
     }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        contextMenuConfigurationForItemAt indexPath: IndexPath,
+        point: CGPoint
+    ) -> UIContextMenuConfiguration? {
+        guard let courseID = dataSource.itemIdentifier(for: indexPath),
+              let course = LibraryStore.shared.courses.first(where: { $0.id == courseID }) else { return nil }
+        return UIContextMenuConfiguration(actionProvider: { [weak self] _ in
+            let rename = UIAction(title: "重命名…", image: UIImage(systemName: "pencil")) { _ in
+                self?.promptRename(course)
+            }
+            let reveal = UIAction(title: "在访达中显示", image: UIImage(systemName: "folder")) { _ in
+                let dir = LibraryStore.shared.courseDirectory(course)
+                UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
+            }
+            let delete = UIAction(title: "删除课程", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
+                self?.confirmDelete(course)
+            }
+            return UIMenu(children: [
+                UIMenu(options: .displayInline, children: [rename, reveal]),
+                UIMenu(options: .displayInline, children: [delete]),
+            ])
+        })
+    }
+
+    private func promptRename(_ course: Course) {
+        let alert = UIAlertController(title: "重命名课程", message: nil, preferredStyle: .alert)
+        alert.addTextField { $0.text = course.name }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "确定", style: .default) { [weak self, weak alert] _ in
+            guard let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
+                  !name.isEmpty else { return }
+            var renamed = course
+            renamed.name = name
+            LibraryStore.shared.updateCourse(renamed)
+            self?.reload()
+        })
+        present(alert, animated: true)
+    }
+
+    private func confirmDelete(_ course: Course) {
+        let lectureCount = LibraryStore.shared.lectures(in: course).count
+        let alert = UIAlertController(
+            title: "删除「\(course.name)」？",
+            message: lectureCount > 0 ? "该课程的 \(lectureCount) 个讲次及全部文稿、重点、讲义都会一并删除。" : nil,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "删除", style: .destructive) { _ in
+            LibraryStore.shared.deleteCourse(course)
+        })
+        present(alert, animated: true)
+    }
 }
 
 /// Shared 46pt pane header: bold title + trailing plus button.

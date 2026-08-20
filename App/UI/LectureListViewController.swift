@@ -170,32 +170,23 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     // MARK: - Add lecture
 
     private func promptNewLecture() {
-        let alert = UIAlertController(
-            title: "添加讲次",
-            message: "粘贴课程回放的媒体直链（带 token 的 mp4 地址）",
-            preferredStyle: .alert
-        )
-        alert.addTextField { $0.placeholder = "讲次名（如：第1讲 03-04）" }
-        alert.addTextField {
-            $0.placeholder = "https://look.tongji.edu.cn/...mp4?...."
-            if let paste = UIPasteboard.general.string, paste.hasPrefix("http") {
-                $0.text = paste
+        let sheet = BatchAddLectureSheet()
+        sheet.existingLectureCount = LibraryStore.shared.lectures(in: course).count
+        sheet.onSubmit = { [weak self] entries in
+            guard let self else { return }
+            for entry in entries {
+                let lecture = LibraryStore.shared.addLecture(named: entry.name, url: entry.url, to: self.course)
+                LectureQueue.shared.enqueue(lecture, in: self.course)
             }
         }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "入队", style: .default) { [weak self, weak alert] _ in
-            guard let self,
-                  let name = alert?.textFields?[0].text?.trimmingCharacters(in: .whitespaces), !name.isEmpty,
-                  let urlString = alert?.textFields?[1].text?.trimmingCharacters(in: .whitespaces),
-                  let url = URL(string: urlString) else { return }
-            let lecture = LibraryStore.shared.addLecture(named: name, url: url, to: self.course)
-            LectureQueue.shared.enqueue(lecture, in: self.course)
-        })
-        present(alert, animated: true)
+        let nav = UINavigationController(rootViewController: sheet)
+        nav.modalPresentationStyle = .pageSheet
+        present(nav, animated: true)
     }
 
     private func pickLocalFile() {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .audio], asCopy: true)
+        picker.allowsMultipleSelection = true
         picker.delegate = self
         present(picker, animated: true)
     }
@@ -213,9 +204,15 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                 self?.pickLocalFile()
             },
         ]
+        let revealAction = UIAction(title: "在访达中显示课程目录", image: UIImage(systemName: "folder.badge.gearshape")) { [weak self] _ in
+            guard let self else { return }
+            let dir = LibraryStore.shared.courseDirectory(self.course)
+            UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
+        }
         headerBar.addButton.menu = UIMenu(children: [
             UIMenu(options: .displayInline, children: addActions),
             UIMenu(options: .displayInline, children: courseToolActions),
+            UIMenu(options: .displayInline, children: [revealAction]),
         ])
         headerBar.isWorking = isWorking
     }
@@ -344,6 +341,84 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         selectedLectureID = lectureID
         reload()
         (splitViewController as? MainSplitViewController)?.show(lecture: lecture, in: course)
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        contextMenuConfigurationForItemAt indexPath: IndexPath,
+        point: CGPoint
+    ) -> UIContextMenuConfiguration? {
+        guard let lectureID = dataSource.itemIdentifier(for: indexPath),
+              let lecture = LibraryStore.shared.lecture(id: lectureID, in: course) else { return nil }
+        return UIContextMenuConfiguration(actionProvider: { [weak self] _ in
+            self?.contextMenu(for: lecture)
+        })
+    }
+
+    private func contextMenu(for lecture: Lecture) -> UIMenu {
+        let store = LibraryStore.shared
+        let isBusy = LectureQueue.shared.activity(for: lecture.id) != nil
+        let mediaExists = FileManager.default.fileExists(atPath: store.mediaURL(lecture, in: course).path)
+
+        var workActions: [UIAction] = []
+        if !isBusy {
+            if mediaExists {
+                let title: String
+                switch lecture.phase {
+                case .transcribed: title = "重新转写"
+                case .failed: title = "重试转写"
+                default: title = "开始转写"
+                }
+                workActions.append(UIAction(title: title, image: UIImage(systemName: "waveform")) { [weak self] _ in
+                    guard let self else { return }
+                    LectureQueue.shared.retranscribe(lecture, in: self.course)
+                })
+            }
+            if lecture.sourceURL != nil {
+                workActions.append(UIAction(
+                    title: mediaExists ? "重新下载并转写" : "下载并转写",
+                    image: UIImage(systemName: "arrow.down.circle")
+                ) { [weak self] _ in
+                    guard let self else { return }
+                    LectureQueue.shared.enqueue(lecture, in: self.course)
+                })
+            }
+        }
+
+        let rename = UIAction(title: "重命名…", image: UIImage(systemName: "pencil")) { [weak self] _ in
+            self?.promptRename(lecture)
+        }
+        let reveal = UIAction(title: "在访达中显示", image: UIImage(systemName: "folder")) { [weak self] _ in
+            guard let self else { return }
+            let dir = store.courseDirectory(self.course)
+            UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
+        }
+        let delete = UIAction(title: "删除", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
+            guard let self else { return }
+            LibraryStore.shared.deleteLecture(lecture, in: self.course)
+            self.reload()
+        }
+
+        return UIMenu(children: [
+            UIMenu(options: .displayInline, children: workActions),
+            UIMenu(options: .displayInline, children: [rename, reveal]),
+            UIMenu(options: .displayInline, children: [delete]),
+        ])
+    }
+
+    private func promptRename(_ lecture: Lecture) {
+        let alert = UIAlertController(title: "重命名讲次", message: nil, preferredStyle: .alert)
+        alert.addTextField { $0.text = lecture.name }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "确定", style: .default) { [weak self, weak alert] _ in
+            guard let self,
+                  let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
+                  !name.isEmpty else { return }
+            var renamed = lecture
+            renamed.name = name
+            LibraryStore.shared.updateLecture(renamed, in: self.course)
+        })
+        present(alert, animated: true)
     }
 }
 

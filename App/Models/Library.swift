@@ -66,8 +66,25 @@ final class LibraryStore {
 
     func courseDirectory(_ course: Course) -> URL {
         let dir = root.appendingPathComponent(course.id.uuidString, isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        installSkillIfNeeded(in: dir)
         return dir
+    }
+
+    /// Places the bundled recap-review skill into the course directory so a
+    /// `claude` session started there picks up the working method.
+    private func installSkillIfNeeded(in courseDir: URL) {
+        guard let source = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md") else { return }
+        let skillDir = courseDir.appendingPathComponent(".claude/skills/recap-review", isDirectory: true)
+        let target = skillDir.appendingPathComponent("SKILL.md")
+        let sourceModified = (try? source.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+        let targetModified = (try? target.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+        guard sourceModified > targetModified else { return }
+        try? FileManager.default.createDirectory(at: skillDir, withIntermediateDirectories: true)
+        try? FileManager.default.removeItem(at: target)
+        try? FileManager.default.copyItem(at: source, to: target)
     }
 
     func mediaURL(_ lecture: Lecture, in course: Course) -> URL {
@@ -91,6 +108,13 @@ final class LibraryStore {
         persistCourses()
         notify()
         return course
+    }
+
+    func updateCourse(_ course: Course) {
+        guard let index = courses.firstIndex(where: { $0.id == course.id }) else { return }
+        courses[index] = course
+        persistCourses()
+        notify()
     }
 
     func deleteCourse(_ course: Course) {
