@@ -9,10 +9,10 @@ import UIKit
 import TranscriptionKit
 import AnalysisKit
 
-/// Detail column: Evidence Thread review, reading page, or key points.
+// Detail column: Evidence Thread review, reading page, or key points.
 final class TranscriptViewController: UIViewController {
 
-    private let lecture: Lecture
+    private var lecture: Lecture
     private let course: Course
 
     private var segments: [TranscriptSegment] = []
@@ -95,26 +95,38 @@ final class TranscriptViewController: UIViewController {
 
         reviewView.onGenerateHandout = { [weak self] in self?.generateHandout() }
 
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(queueActivityChanged(_:)),
+            name: LectureQueue.activityDidChange, object: nil
+        )
+
         loadContent()
         refreshChrome()
         applyMode()
     }
 
+    // Reload when a pipeline stage for this lecture finishes (e.g. after appending a part)
+    @objc private func queueActivityChanged(_ note: Notification) {
+        guard note.userInfo?["lectureID"] as? UUID == lecture.id,
+              LectureQueue.shared.activity(for: lecture.id) == nil else { return }
+        loadContent()
+    }
+
     // MARK: - Content
 
-    /// File IO, JSON decoding, row merging and quote matching are heavy for a
-    /// real 1.5h lecture — all off the main thread; UI applies the results.
+    // File IO, JSON decoding, row merging and quote matching are heavy for a real 1.5h lecture — all off the main thread
     private func loadContent() {
         isLoading = true
         applyMode()
         let store = LibraryStore.shared
+        if let fresh = store.lecture(id: lecture.id, in: course) { lecture = fresh }
         let segmentsURL = store.productURL(lecture, in: course, ext: "segments.json")
         let txtURL = store.productURL(lecture, in: course, ext: "txt")
         let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
-        let freshLecture = store.lecture(id: lecture.id, in: course) ?? lecture
-        let mediaParts = store.mediaParts(of: freshLecture, in: course)
-            .map { (url: $0.url, duration: $0.part.duration) }
-        let waveformURL = store.productURL(lecture, in: course, ext: "waveform.json")
+        let courseDirectory = store.courseDirectory(course)
+        let mediaParts = store.mediaParts(of: lecture, in: course)
+            .map { (url: $0.url, duration: $0.part.duration,
+                    waveformCacheURL: Optional(courseDirectory.appendingPathComponent("\($0.part.id.uuidString).waveform.json"))) }
         let lectureName = lecture.name
         let courseName = course.name
 
@@ -156,9 +168,7 @@ final class TranscriptViewController: UIViewController {
                 self.analysis = analysis
                 self.reviewView.update(rows: rows, evidences: evidences)
                 self.readingView.update(title: lectureName, subtitle: courseName, rows: rows, quoteRows: quoteRows)
-                self.playerPane.configure(
-                    parts: mediaParts, waveformCacheURL: waveformURL,
-                    rows: rows, evidences: evidences)
+                self.playerPane.configure(parts: mediaParts, rows: rows, evidences: evidences)
                 self.signalsView.update(analysis: analysis)
                 self.metaBar.update(segments: segments, characterCount: plainText.count)
                 self.isLoading = false
@@ -215,7 +225,8 @@ final class TranscriptViewController: UIViewController {
         signalsView.isHidden = true
         emptyLabel.isHidden = true
 
-        if isLoading {
+        // A background refresh must not flash the loading state over live content
+        if isLoading && segments.isEmpty {
             emptyLabel.isHidden = false
             emptyLabel.text = "正在载入文稿…"
             return
@@ -288,8 +299,7 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
-    /// Handouts are produced by the claude CLI (LaTeX → PDF, per the bundled
-    /// skill). This hands the user a ready command and opens the course dir.
+    // Handouts are produced by the claude CLI (LaTeX → PDF, per the bundled skill)
     private func generateHandout() {
         let command = "claude \"为「\(lecture.name)」生成讲义\""
         UIPasteboard.general.string = command
@@ -336,7 +346,7 @@ final class TranscriptViewController: UIViewController {
     }
 }
 
-/// 34pt strip under the header: local state dot, duration/word count, model.
+// 34pt strip under the header: local state dot, duration/word count, model.
 final class TranscriptMetaBar: UIView {
 
     private let stateLabel = UILabel()
@@ -403,7 +413,7 @@ final class TranscriptMetaBar: UIView {
     }
 }
 
-/// Full-text reading page: serif title, merged paragraphs, quote blocks.
+// Full-text reading page: serif title, merged paragraphs, quote blocks.
 final class ReadingPageView: UIView, UITableViewDataSource {
 
     fileprivate enum Row {
@@ -546,7 +556,7 @@ final class ReadingPageView: UIView, UITableViewDataSource {
     }
 }
 
-/// Key-points page: serif count header, quote cards, four-cell grid.
+// Key-points page: serif count header, quote cards, four-cell grid.
 final class SignalsPageView: UIView {
 
     var onReExtract: (() -> Void)?

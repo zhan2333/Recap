@@ -11,14 +11,16 @@ import PipelineKit
 import TranscriptionKit
 import AnalysisKit
 
-/// Drives lectures through download → transcribe. Downloads run in parallel;
-/// transcriptions are chained strictly serially (one Metal context at a time).
+// Drives lectures through download → transcribe
 @MainActor
 final class LectureQueue {
 
     static let shared = LectureQueue()
 
-    /// Transient per-lecture state; coarse phases persist in LibraryStore.
+    // Posted after every activity change; userInfo carries "lectureID"
+    static let activityDidChange = Notification.Name("LectureQueueActivityDidChange")
+
+    // Transient per-lecture state
     enum Activity {
         case downloading(Double)
         case waitingToTranscribe
@@ -43,32 +45,39 @@ final class LectureQueue {
     func enqueue(_ lecture: Lecture, in course: Course) {
         let store = LibraryStore.shared
         let parts = store.mediaParts(of: lecture, in: course)
-        guard parts.contains(where: { $0.part.sourceURL != nil }) else { return }
+        // Parts already on disk are never re-downloaded (their token may have expired)
+        let pending = parts.filter {
+            $0.part.sourceURL != nil && !FileManager.default.fileExists(atPath: $0.url.path)
+        }
+        let onDisk = parts.contains { FileManager.default.fileExists(atPath: $0.url.path) }
+        guard !pending.isEmpty || onDisk else { return }
 
         Task {
             do {
-                setActivity(.downloading(0), for: lecture.id)
-                var partProgress = [Int: Double]()
-                let lectureID = lecture.id
-                try await withThrowingTaskGroup(of: Void.self) { group in
-                    for (index, entry) in parts.enumerated() {
-                        guard let sourceURL = entry.part.sourceURL else { continue }
-                        let destination = entry.url
-                        let total = parts.count
-                        group.addTask {
-                            try await Downloader().download(
-                                .init(url: sourceURL, referer: "https://look.tongji.edu.cn/"),
-                                to: destination
-                            ) { progress in
-                                Task { @MainActor in
-                                    partProgress[index] = progress
-                                    let aggregate = partProgress.values.reduce(0, +) / Double(total)
-                                    LectureQueue.shared.setActivity(.downloading(aggregate), for: lectureID)
+                if !pending.isEmpty {
+                    setActivity(.downloading(0), for: lecture.id)
+                    var partProgress = [Int: Double]()
+                    let lectureID = lecture.id
+                    try await withThrowingTaskGroup(of: Void.self) { group in
+                        for (index, entry) in pending.enumerated() {
+                            guard let sourceURL = entry.part.sourceURL else { continue }
+                            let destination = entry.url
+                            let total = pending.count
+                            group.addTask {
+                                try await Downloader().download(
+                                    .init(url: sourceURL, referer: "https://look.tongji.edu.cn/"),
+                                    to: destination
+                                ) { progress in
+                                    Task { @MainActor in
+                                        partProgress[index] = progress
+                                        let aggregate = partProgress.values.reduce(0, +) / Double(total)
+                                        LectureQueue.shared.setActivity(.downloading(aggregate), for: lectureID)
+                                    }
                                 }
                             }
                         }
+                        try await group.waitForAll()
                     }
-                    try await group.waitForAll()
                 }
                 self.mark(lecture, in: course) { $0.phase = .downloaded }
 
@@ -80,7 +89,7 @@ final class LectureQueue {
         }
     }
 
-    /// Re-runs transcription for an already-downloaded lecture.
+    // Re-runs transcription for an already-downloaded lecture.
     func retranscribe(_ lecture: Lecture, in course: Course) {
         let store = LibraryStore.shared
         let parts = store.mediaParts(of: lecture, in: course)
@@ -99,8 +108,7 @@ final class LectureQueue {
         await task.value
     }
 
-    /// Transcribes every part in order and concatenates onto one global
-    /// timeline — downstream products stay single-lecture.
+    // Transcribes every part in order and concatenates onto one global timeline
     private func runTranscription(of lecture: Lecture, in course: Course) async {
         let store = LibraryStore.shared
         let token = ProcessInfo.processInfo.beginActivity(
@@ -153,27 +161,37 @@ final class LectureQueue {
                 .write(to: store.productURL(lecture, in: course, ext: "segments.json"), options: .atomic)
 
             mark(lecture, in: course) {
-                if $0.parts != nil { $0.parts = updatedParts }
+                // Merge by id so parts whose media was missing are not dropped
+                if var existing = $0.parts {
+                    for updated in updatedParts {
+                        if let i = existing.firstIndex(where: { $0.id == updated.id }) { existing[i] = updated }
+                    }
+                    $0.parts = existing
+                }
                 $0.phase = .transcribed
                 $0.errorMessage = nil
             }
             setActivity(nil, for: lecture.id)
-            // Auto-extract key points; fire-and-forget so the transcription
-            // chain moves on to the next lecture immediately.
+            // Auto-extract key points; fire-and-forget so the chain moves on immediately
             Task { await self.autoExtract(of: lecture, in: course) }
         } catch {
             fail(lecture, in: course, error: error)
         }
     }
 
-    /// Runs key-point extraction right after a transcription lands. Skips
-    /// silently when the LLM endpoint isn't configured; a failure leaves the
-    /// lecture transcribed so the user can retry from the detail view.
+    // Runs key-point extraction right after a transcription lands
     private func autoExtract(of lecture: Lecture, in course: Course) async {
         guard let config = Settings.chatConfig else { return }
         let store = LibraryStore.shared
         let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
-        guard !FileManager.default.fileExists(atPath: analysisURL.path),
+        let segmentsURL = store.productURL(lecture, in: course, ext: "segments.json")
+        // Re-extract when the transcript is newer than the analysis (e.g. after appending a part)
+        func modified(_ url: URL) -> Date {
+            (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+        }
+        let analysisFresh = FileManager.default.fileExists(atPath: analysisURL.path)
+            && modified(analysisURL) >= modified(segmentsURL)
+        guard !analysisFresh,
               let transcript = try? String(contentsOf: store.productURL(lecture, in: course, ext: "txt"), encoding: .utf8),
               !transcript.isEmpty else { return }
 
@@ -192,7 +210,7 @@ final class LectureQueue {
         setActivity(nil, for: lecture.id)
     }
 
-    /// whisper_full blocks; run it on a dedicated thread, not the cooperative pool.
+    // whisper_full blocks
     private static func transcribeOffMain(
         engine: WhisperCppEngine,
         samples: [Float],
@@ -217,6 +235,9 @@ final class LectureQueue {
     private func setActivity(_ activity: Activity?, for lectureID: UUID) {
         activities[lectureID] = activity
         onActivity?(lectureID)
+        NotificationCenter.default.post(
+            name: Self.activityDidChange, object: nil, userInfo: ["lectureID": lectureID]
+        )
     }
 
     private func mark(_ lecture: Lecture, in course: Course, _ mutate: (inout Lecture) -> Void) {

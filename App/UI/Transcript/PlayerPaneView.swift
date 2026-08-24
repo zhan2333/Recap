@@ -9,9 +9,7 @@ import UIKit
 import AVKit
 import AnalysisKit
 
-/// The player mode: system AVPlayerViewController on top (untouched AVKit
-/// semantics), Recap's Focus Rail below — waveform, key-point ranges, a
-/// playhead — and the phrase lens with "play from 3s before the quote".
+// The player mode: system AVPlayerViewController on top (untouched AVKit semantics), Recap's Focus Rail below
 final class PlayerPaneView: UIView {
 
     struct KeyPoint {
@@ -21,14 +19,15 @@ final class PlayerPaneView: UIView {
         let end: TimeInterval
     }
 
-    /// One video file on the lecture's global timeline.
+    // One video file on the lecture's global timeline.
     struct PlayablePart {
         let url: URL
         let globalStart: TimeInterval
         let duration: TimeInterval
+        let waveformCacheURL: URL?
     }
 
-    /// Host must add this as a child view controller.
+    // Host must add this as a child view controller.
     let playerViewController = AVPlayerViewController()
 
     var onRequestRedownload: (() -> Void)?
@@ -41,8 +40,11 @@ final class PlayerPaneView: UIView {
     private var duration: TimeInterval = 0
     private var playableParts: [PlayablePart] = []
     private var currentPartIndex = 0
+    private var partKeyPointIndices: [Int] = []
 
     private let rail = FocusRailView()
+    private let partPicker = UIStackView()
+    private var partPickerRow: UIStackView!
     private let railTitle = UILabel()
     private let railDetail = UILabel()
     private let previousButton = UIButton(type: .system)
@@ -78,7 +80,8 @@ final class PlayerPaneView: UIView {
         }
 
         rail.onSelectRange = { [weak self] index in
-            self?.select(index, seek: true, play: false)
+            guard let self, self.partKeyPointIndices.indices.contains(index) else { return }
+            self.select(self.partKeyPointIndices[index], seek: true, play: false)
         }
 
         lensIndex.font = RecapTheme.mono(11, weight: .semibold)
@@ -123,10 +126,21 @@ final class PlayerPaneView: UIView {
         lens.setCustomSpacing(12, after: lensQuote)
         lens.alignment = .leading
 
-        content = UIStackView(arrangedSubviews: [playerViewController.view, railHeader, rail, lens])
+        partPicker.axis = .horizontal
+        partPicker.spacing = 8
+        partPickerRow = UIStackView(arrangedSubviews: [partPicker, UIView()])
+        partPickerRow.axis = .horizontal
+
+        content = UIStackView(arrangedSubviews: [playerViewController.view, partPickerRow, railHeader, rail, lens])
+        // CHCR must sit on leaf views — a UIStackView row has no intrinsic size to defend
+        for view in [railTitle, railDetail, previousButton, nextButton,
+                     lensIndex, lensTime, lensQuote, playLeadInButton] as [UIView] {
+            view.setContentCompressionResistancePriority(.required, for: .vertical)
+        }
         content.axis = .vertical
         content.spacing = 14
-        content.setCustomSpacing(20, after: playerViewController.view)
+        content.setCustomSpacing(18, after: playerViewController.view)
+        content.setCustomSpacing(12, after: partPickerRow)
         content.isLayoutMarginsRelativeArrangement = true
         content.layoutMargins = UIEdgeInsets(top: 16, left: 24, bottom: 20, right: 24)
         content.translatesAutoresizingMaskIntoConstraints = false
@@ -167,13 +181,17 @@ final class PlayerPaneView: UIView {
         emptyState.translatesAutoresizingMaskIntoConstraints = false
         addSubview(emptyState)
 
+        let playerAspect = playerViewController.view.heightAnchor.constraint(
+            equalTo: content.widthAnchor, multiplier: 9.0 / 16.0, constant: -27)
+        // 749: below every default CHCR so scarce height always squeezes the video first
+        playerAspect.priority = UILayoutPriority(749)
         NSLayoutConstraint.activate([
             content.topAnchor.constraint(equalTo: topAnchor),
             content.leadingAnchor.constraint(equalTo: leadingAnchor),
             content.trailingAnchor.constraint(equalTo: trailingAnchor),
             content.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
-            playerViewController.view.heightAnchor.constraint(
-                equalTo: content.widthAnchor, multiplier: 9.0 / 16.0, constant: -27),
+            playerAspect,
+            playerViewController.view.heightAnchor.constraint(greaterThanOrEqualToConstant: 160),
             rail.heightAnchor.constraint(equalToConstant: 64),
             emptyIcon.heightAnchor.constraint(equalToConstant: 36),
             emptyState.centerXAnchor.constraint(equalTo: centerXAnchor),
@@ -193,8 +211,7 @@ final class PlayerPaneView: UIView {
     // MARK: - Configuration
 
     func configure(
-        parts: [(url: URL, duration: TimeInterval?)],
-        waveformCacheURL: URL?,
+        parts: [(url: URL, duration: TimeInterval?, waveformCacheURL: URL?)],
         rows: [EvidenceReviewView.DisplayRow],
         evidences: [EvidenceReviewView.Evidence]
     ) {
@@ -223,12 +240,14 @@ final class PlayerPaneView: UIView {
                 ? max(60, (rows.last?.end ?? 60) - offset)
                 : 60
             let partDuration = entry.duration ?? fallback
-            let part = PlayablePart(url: entry.url, globalStart: offset, duration: partDuration)
+            let part = PlayablePart(
+                url: entry.url, globalStart: offset, duration: partDuration,
+                waveformCacheURL: entry.waveformCacheURL
+            )
             offset += partDuration
             return part
         }
         duration = max(offset, rows.last?.end ?? 0)
-        rail.duration = duration
 
         if player == nil {
             let player = AVPlayer(playerItem: AVPlayerItem(url: playableParts[0].url))
@@ -241,23 +260,91 @@ final class PlayerPaneView: UIView {
                 self?.tick(time.seconds)
             }
             observePartEnd()
+        } else if currentPartIndex >= playableParts.count
+            || (player?.currentItem?.asset as? AVURLAsset)?.url != playableParts[currentPartIndex].url {
+            // Reconfigured with a different part list — restart from the first part
+            currentPartIndex = 0
+            player?.replaceCurrentItem(with: AVPlayerItem(url: playableParts[0].url))
+            observePartEnd()
         }
 
-        rail.ranges = keyPoints.map { ($0.start, $0.end) }
-        rail.partBoundaries = playableParts.dropFirst().map(\.globalStart)
+        rebuildPartPicker()
+        applyPart()
         select(keyPoints.isEmpty ? nil : 0, seek: false, play: false)
+    }
 
-        if let cacheURL = waveformCacheURL, let first = playableParts.first {
-            // Waveform covers the first part; later parts show ranges only.
-            Task { [weak self] in
-                if let buckets = try? await WaveformGenerator.waveform(for: first.url, cacheURL: cacheURL) {
-                    self?.rail.waveform = buckets
-                }
+    // MARK: - Part presentation
+
+    // The rail covers only the current part, in part-local coordinates
+    private func applyPart() {
+        guard playableParts.indices.contains(currentPartIndex) else { return }
+        let part = playableParts[currentPartIndex]
+        let partEnd = part.globalStart + part.duration
+        partKeyPointIndices = keyPoints.indices.filter {
+            keyPoints[$0].start >= part.globalStart && keyPoints[$0].start < partEnd
+        }
+        rail.rangeTitles = partKeyPointIndices.map { "\($0 + 1)" }
+        rail.ranges = partKeyPointIndices.map {
+            (keyPoints[$0].start - part.globalStart, min(keyPoints[$0].end, partEnd) - part.globalStart)
+        }
+        rail.duration = part.duration
+        rail.selectedIndex = selectedIndex.flatMap { partKeyPointIndices.firstIndex(of: $0) }
+        stylePartPicker()
+
+        rail.waveform = []
+        guard let cacheURL = part.waveformCacheURL else { return }
+        let url = part.url
+        let index = currentPartIndex
+        Task { [weak self] in
+            if let buckets = try? await WaveformGenerator.waveform(for: url, cacheURL: cacheURL),
+               self?.currentPartIndex == index {
+                self?.rail.waveform = buckets
             }
         }
     }
 
-    /// Seeks on the global timeline, switching video parts as needed.
+    private func rebuildPartPicker() {
+        partPicker.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        partPickerRow.isHidden = playableParts.count <= 1
+        guard playableParts.count > 1 else { return }
+        for index in playableParts.indices {
+            let button = UIButton(type: .system)
+            // NSButton bridging cannot restyle plain→filled at runtime; force UIKit rendering
+            button.preferredBehavioralStyle = .pad
+            button.tag = index
+            button.setContentCompressionResistancePriority(.required, for: .vertical)
+            button.addAction(UIAction { [weak self] _ in
+                guard let self, self.playableParts.indices.contains(index) else { return }
+                self.seekGlobal(self.playableParts[index].globalStart, thenPlay: false)
+            }, for: .touchUpInside)
+            partPicker.addArrangedSubview(button)
+        }
+        stylePartPicker()
+    }
+
+    private func stylePartPicker() {
+        for (index, view) in partPicker.arrangedSubviews.enumerated() {
+            guard let button = view as? UIButton, playableParts.indices.contains(index) else { continue }
+            let selected = index == currentPartIndex
+            // .plain() never renders background/stroke on Catalyst — selected must be .filled()
+            var config = selected ? UIButton.Configuration.filled() : UIButton.Configuration.plain()
+            config.attributedTitle = AttributedString(
+                "第 \(index + 1) 段 · \(Self.timestamp(playableParts[index].duration))",
+                attributes: AttributeContainer([
+                    .font: RecapTheme.mono(11, weight: selected ? .semibold : .regular),
+                    .foregroundColor: selected ? RecapTheme.paper : RecapTheme.muted,
+                ]))
+            if selected {
+                config.baseBackgroundColor = RecapTheme.ink
+            }
+            config.background.cornerRadius = RecapTheme.radiusSM
+            config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 11, bottom: 6, trailing: 11)
+            button.configuration = config
+            button.tintColor = selected ? RecapTheme.paper : RecapTheme.muted
+        }
+    }
+
+    // Seeks on the global timeline, switching video parts as needed.
     private func seekGlobal(_ time: TimeInterval, thenPlay: Bool) {
         guard let player, !playableParts.isEmpty else { return }
         let clamped = max(0, min(time, duration - 0.5))
@@ -266,13 +353,14 @@ final class PlayerPaneView: UIView {
             currentPartIndex = index
             player.replaceCurrentItem(with: AVPlayerItem(url: playableParts[index].url))
             observePartEnd()
+            applyPart()
         }
         let local = clamped - playableParts[index].globalStart
         player.seek(to: CMTime(seconds: local, preferredTimescale: 600))
         if thenPlay { player.play() }
     }
 
-    /// Advances to the next part when the current one finishes.
+    // Advances to the next part when the current one finishes.
     private func observePartEnd() {
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = NotificationCenter.default.addObserver(
@@ -304,7 +392,7 @@ final class PlayerPaneView: UIView {
     private func tick(_ seconds: TimeInterval) {
         let globalTime = (playableParts.indices.contains(currentPartIndex)
             ? playableParts[currentPartIndex].globalStart : 0) + seconds
-        rail.playheadTime = globalTime
+        rail.playheadTime = seconds
         // Highlight the range the playhead is inside.
         if let inside = keyPoints.firstIndex(where: { globalTime >= $0.start && globalTime <= $0.end }),
            inside != selectedIndex {
@@ -314,7 +402,7 @@ final class PlayerPaneView: UIView {
 
     private func select(_ index: Int?, seek: Bool, play: Bool) {
         selectedIndex = index
-        rail.selectedIndex = index
+        rail.selectedIndex = index.flatMap { partKeyPointIndices.firstIndex(of: $0) }
         guard let index, index < keyPoints.count else {
             lensIndex.text = keyPoints.isEmpty ? "—" : nil
             lensTime.text = keyPoints.isEmpty ? "提取重点后，重点区间会出现在轨道上" : nil
@@ -348,6 +436,7 @@ final class PlayerPaneView: UIView {
     // MARK: - Helpers
 
     private func configureStep(_ button: UIButton, title: String, icon: String, iconLeading: Bool, action: @escaping () -> Void) {
+        button.preferredBehavioralStyle = .pad
         var config = UIButton.Configuration.plain()
         config.attributedTitle = AttributedString(title, attributes: AttributeContainer([
             .font: RecapTheme.body(11), .foregroundColor: RecapTheme.muted,
@@ -378,13 +467,17 @@ final class PlayerPaneView: UIView {
     }
 }
 
-/// Waveform + key-point ranges + playhead, all proportional to duration.
+// Waveform + key-point ranges + playhead, all proportional to duration.
 final class FocusRailView: UIView {
 
     var waveform: [Float] = [] {
         didSet { setNeedsDisplay() }
     }
     var ranges: [(start: TimeInterval, end: TimeInterval)] = [] {
+        didSet { rebuildRangeButtons() }
+    }
+    // Button labels; falls back to 1-based position when unset
+    var rangeTitles: [String] = [] {
         didSet { rebuildRangeButtons() }
     }
     var duration: TimeInterval = 0 {
@@ -396,13 +489,9 @@ final class FocusRailView: UIView {
     var selectedIndex: Int? {
         didSet { styleRangeButtons() }
     }
-    var partBoundaries: [TimeInterval] = [] {
-        didSet { rebuildBoundaryLines() }
-    }
     var onSelectRange: ((Int) -> Void)?
 
     private var rangeButtons: [UIButton] = []
-    private var boundaryLines: [UIView] = []
     private let playhead = UIView()
 
     override init(frame: CGRect) {
@@ -441,7 +530,7 @@ final class FocusRailView: UIView {
         rangeButtons = ranges.enumerated().map { index, _ in
             let button = UIButton(type: .custom)
             button.tag = index
-            button.setTitle("\(index + 1)", for: .normal)
+            button.setTitle(index < rangeTitles.count ? rangeTitles[index] : "\(index + 1)", for: .normal)
             button.titleLabel?.font = RecapTheme.mono(10, weight: .semibold)
             button.layer.cornerRadius = 4
             button.layer.cornerCurve = .continuous
@@ -466,23 +555,11 @@ final class FocusRailView: UIView {
         }
     }
 
-    private func rebuildBoundaryLines() {
-        boundaryLines.forEach { $0.removeFromSuperview() }
-        boundaryLines = partBoundaries.map { _ in
-            let line = UIView()
-            line.backgroundColor = RecapTheme.quiet.withAlphaComponent(0.5)
-            addSubview(line)
-            return line
-        }
-        setNeedsLayout()
-    }
-
     override func layoutSubviews() {
         super.layoutSubviews()
         guard duration > 0 else {
             playhead.frame = .zero
             rangeButtons.forEach { $0.frame = .zero }
-            boundaryLines.forEach { $0.frame = .zero }
             return
         }
         for (index, button) in rangeButtons.enumerated() {
@@ -490,10 +567,6 @@ final class FocusRailView: UIView {
             let left = bounds.width * CGFloat(range.start / duration)
             let width = max(18, bounds.width * CGFloat((range.end - range.start) / duration))
             button.frame = CGRect(x: left, y: 6, width: width, height: bounds.height - 12)
-        }
-        for (index, line) in boundaryLines.enumerated() {
-            let x = bounds.width * CGFloat(partBoundaries[index] / duration)
-            line.frame = CGRect(x: x - 0.5, y: 0, width: 1, height: bounds.height)
         }
         let x = bounds.width * CGFloat(min(1, playheadTime / duration))
         playhead.frame = CGRect(x: x - 0.75, y: 0, width: 1.5, height: bounds.height)
