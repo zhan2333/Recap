@@ -12,9 +12,7 @@ struct Course: Codable, Hashable, Identifiable {
     var name: String
 }
 
-/// One media file of a lecture. Lectures recorded in multiple videos keep an
-/// ordered part list; transcription concatenates them onto one global
-/// timeline so every downstream product stays single-lecture.
+// One media file of a lecture
 struct MediaPart: Codable, Hashable, Identifiable {
     let id: UUID
     var sourceURL: URL?
@@ -37,13 +35,7 @@ struct Lecture: Codable, Hashable, Identifiable {
     }
 }
 
-/// Owns the on-disk library:
-///
-///     Application Support/Recap/
-///     ├─ courses.json
-///     └─ <courseID>/
-///        ├─ lectures.json
-///        └─ <lectureID>.{mp4,srt,txt,segments.json}
+// Owns the on-disk library: Application Support/Recap/ ├─ courses.json └─ <courseID>/ ├─ lectures.json └─ <lectureID>.{mp4,srt,txt,segments.json}
 @MainActor
 final class LibraryStore {
 
@@ -52,7 +44,7 @@ final class LibraryStore {
     private(set) var courses: [Course] = []
     private var lecturesByCourse: [UUID: [Lecture]] = [:]
 
-    /// Fired after any mutation; UI reloads from it.
+    // Fired after any mutation
     var onChange: (() -> Void)?
 
     let root: URL
@@ -83,8 +75,7 @@ final class LibraryStore {
         return dir
     }
 
-    /// Places the bundled recap-review skill into the course directory so a
-    /// `claude` session started there picks up the working method.
+    // Places the bundled recap-review skill into the course directory so a `claude` session started there picks up the working method.
     private func installSkillIfNeeded(in courseDir: URL) {
         guard let source = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md") else { return }
         let skillDir = courseDir.appendingPathComponent(".claude/skills/recap-review", isDirectory: true)
@@ -105,8 +96,7 @@ final class LibraryStore {
         courseDirectory(course).appendingPathComponent("\(part.id.uuidString).mp4")
     }
 
-    /// Uniform media view: multi-part lectures list their parts; legacy
-    /// single-media lectures appear as one implicit part.
+    // Uniform media view: multi-part lectures list their parts
     func mediaParts(of lecture: Lecture, in course: Course) -> [(part: MediaPart, url: URL)] {
         if let parts = lecture.parts, !parts.isEmpty {
             return parts.map { ($0, partMediaURL($0, in: course)) }
@@ -119,7 +109,7 @@ final class LibraryStore {
         courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).\(ext)")
     }
 
-    /// Course-level files (textbook.txt, review.md).
+    // Course-level files (textbook.txt, review.md).
     func courseFileURL(_ course: Course, name: String) -> URL {
         courseDirectory(course).appendingPathComponent(name)
     }

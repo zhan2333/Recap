@@ -7,8 +7,7 @@
 
 import UIKit
 
-/// Simple form: whisper model path + OpenAI-compatible endpoint config.
-/// Values save as you type (UserDefaults / Keychain).
+// Simple form: whisper model path + OpenAI-compatible endpoint config
 final class SettingsViewController: UITableViewController {
 
     private struct Field {

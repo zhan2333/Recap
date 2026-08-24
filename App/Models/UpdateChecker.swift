@@ -7,8 +7,7 @@
 
 import UIKit
 
-/// Once-a-day check against the GitHub latest release. Silent on any failure
-/// (offline, private repo, rate limit) — a hook, not a nag.
+// Once-a-day check against the GitHub latest release
 enum UpdateChecker {
 
     private static let repo = "floonetio/Recap"

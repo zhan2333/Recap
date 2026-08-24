@@ -35,16 +35,13 @@ enum Settings {
         set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "llmModel") }
     }
 
-    // UserDefaults for now: ad-hoc re-signing on every debug build breaks
-    // Keychain ACLs (items become unreadable/undeletable). Move back to
-    // Keychain once the app ships with a stable signing identity.
+    // UserDefaults for now: ad-hoc re-signing breaks Keychain ACLs; move back once signing is stable
     static var llmAPIKey: String {
         get { UserDefaults.standard.string(forKey: "llmAPIKey") ?? "" }
         set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "llmAPIKey") }
     }
 
-    /// nil until base URL + key are configured. Model is optional — an empty
-    /// value lets the gateway pick its default.
+    // nil until base URL + key are configured
     static var chatConfig: ChatClient.Config? {
         let base = llmBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
         let key = llmAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)

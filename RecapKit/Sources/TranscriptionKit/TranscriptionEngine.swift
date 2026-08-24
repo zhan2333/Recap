@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// One recognized segment with source timestamps.
+// One recognized segment with source timestamps.
 public struct TranscriptSegment: Sendable, Codable, Equatable {
     public let start: TimeInterval
     public let end: TimeInterval
@@ -20,7 +20,7 @@ public struct TranscriptSegment: Sendable, Codable, Equatable {
     }
 }
 
-/// Full result of transcribing one piece of audio.
+// Full result of transcribing one piece of audio.
 public struct Transcript: Sendable, Codable {
     public let segments: [TranscriptSegment]
 
@@ -28,14 +28,14 @@ public struct Transcript: Sendable, Codable {
         self.segments = segments
     }
 
-    /// Plain text, one segment per line.
+    // Plain text, one segment per line.
     public var text: String {
         segments.map { $0.text.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
             .joined(separator: "\n")
     }
 
-    /// SubRip document with millisecond timestamps.
+    // SubRip document with millisecond timestamps.
     public var srt: String {
         var out = ""
         for (i, seg) in segments.enumerated() {
@@ -53,15 +53,15 @@ public struct Transcript: Sendable, Codable {
     }
 }
 
-/// Progress reported while a transcription is running.
+// Progress reported while a transcription is running.
 public enum TranscriptionEvent: Sendable {
     case segment(TranscriptSegment)
     case progress(Double) // 0...1
 }
 
-/// Abstraction over speech-to-text backends (whisper.cpp now; others later).
+// Abstraction over speech-to-text backends (whisper.cpp now
 public protocol TranscriptionEngine {
-    /// - Parameter samples: mono PCM, 16 kHz, Float32 in [-1, 1].
+    // - Parameter samples: mono PCM, 16 kHz, Float32 in [-1, 1].
     func transcribe(
         samples: [Float],
         language: String,

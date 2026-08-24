@@ -8,9 +8,7 @@
 import Foundation
 import PipelineKit
 
-/// Buckets the lecture audio into a normalized RMS envelope for the Focus
-/// Rail. Decoding a 1.5h file takes tens of seconds — results are cached as
-/// `<uuid>.waveform.json` next to the other lecture products.
+// Buckets the lecture audio into a normalized RMS envelope for the Focus Rail
 enum WaveformGenerator {
 
     static let bucketCount = 600

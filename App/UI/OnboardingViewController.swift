@@ -8,8 +8,7 @@
 import UIKit
 import UniformTypeIdentifiers
 
-/// First-run setup: make sure a whisper model is in place. Two paths —
-/// point at an existing ggml file, or copy a curl command to download one.
+// First-run setup: make sure a whisper model is in place
 final class OnboardingViewController: UIViewController {
 
     var onReady: (() -> Void)?
@@ -216,8 +215,7 @@ final class OnboardingViewController: UIViewController {
     }
 }
 
-/// Minimal read-only terminal: monospaced, dark ground, handles \r rewrites
-/// (curl progress) and strips ANSI escapes.
+// Minimal read-only terminal: monospaced, dark ground, handles \r rewrites (curl progress) and strips ANSI escapes.
 final class TerminalOutputView: UIView {
 
     private let textView = UITextView()

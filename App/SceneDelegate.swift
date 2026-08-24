@@ -56,8 +56,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 }
 
 #if targetEnvironment(macCatalyst)
-/// Puts the italic brand R (design-site mark, template-rendered so it follows
-/// light/dark) ahead of the window title in the unified titlebar.
+// Puts the italic brand R (design-site mark, template-rendered so it follows light/dark) ahead of the window title in the unified titlebar.
 final class BrandToolbarDelegate: NSObject, NSToolbarDelegate {
 
     static let brandID = NSToolbarItem.Identifier("recapBrandMark")

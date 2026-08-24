@@ -7,9 +7,7 @@
 
 import Foundation
 
-/// Matches extracted exam-signal quotes back to transcript segments so the
-/// Evidence Thread can point at real timestamps. The design mandate: never
-/// fake a time relationship — a signal that can't be matched carries no pin.
+// Matches extracted exam-signal quotes back to transcript segments so the Evidence Thread can point at real timestamps
 public struct EvidenceMatch: Sendable {
     public let signalIndex: Int      // index into LectureAnalysis.examSignals
     public let segmentIndex: Int     // index into the segment array
@@ -18,7 +16,7 @@ public struct EvidenceMatch: Sendable {
 
 public enum EvidenceMatcher {
 
-    /// - Parameter segments: (start, text) pairs in transcript order.
+    // - Parameter segments: (start, text) pairs in transcript order.
     public static func match(
         signals: [LectureAnalysis.ExamSignal],
         segments: [(start: TimeInterval, text: String)]
@@ -51,8 +49,7 @@ public enum EvidenceMatcher {
         return matches.sorted { $0.segmentIndex < $1.segmentIndex }
     }
 
-    /// Fraction of the quote covered by its longest common substring with the
-    /// segment. Robust to the LLM lightly rephrasing sentence edges.
+    // Fraction of the quote covered by its longest common substring with the segment
     static func overlapScore(quote: String, segment: String) -> Double {
         if segment.contains(quote) || quote.contains(segment) { return 1 }
         let a = Array(quote), b = Array(segment)
@@ -69,8 +66,7 @@ public enum EvidenceMatcher {
         return Double(longest) / Double(a.count)
     }
 
-    /// Strips whitespace and punctuation so tone particles and commas don't
-    /// break the match.
+    // Strips whitespace and punctuation so tone particles and commas don't break the match.
     static func normalize(_ text: String) -> String {
         String(text.unicodeScalars.filter {
             !CharacterSet.whitespacesAndNewlines.contains($0)

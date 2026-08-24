@@ -9,8 +9,7 @@ import UIKit
 import WebKit
 import UniformTypeIdentifiers
 
-/// Renders a Markdown document and exports it as a paginated PDF.
-/// Used for lecture handouts, the course exam digest, and imported textbooks.
+// Renders a Markdown document and exports it as a paginated PDF
 final class MarkdownViewController: UIViewController {
 
     private let markdown: String
@@ -43,8 +42,7 @@ final class MarkdownViewController: UIViewController {
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
-        // Conversion is line-by-line with regex passes — heavy for a full
-        // textbook (900KB+), so render off the main thread.
+        // Regex-pass conversion is heavy for a 900KB textbook — render off the main thread
         let source = markdown
         Task.detached(priority: .userInitiated) { [weak self] in
             let html = Self.html(from: source)
@@ -91,8 +89,7 @@ final class MarkdownViewController: UIViewController {
 
     // MARK: - Markdown → HTML
 
-    /// Minimal converter for the subset our prompts constrain the model to:
-    /// #/##/### headings, - lists, > quotes, **bold**, `code`, paragraphs.
+    // Minimal converter for the subset our prompts constrain the model to: #/##/### headings, - lists, > quotes, **bold**, `code`, paragraphs.
     static func html(from markdown: String) -> String {
         var body = ""
         var inList = false

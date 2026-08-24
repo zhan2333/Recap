@@ -7,9 +7,7 @@
 
 import Foundation
 
-/// Turns extraction results into human-readable review documents (Markdown).
-/// Two products, mirroring the proven pipeline: a per-lecture handout, and a
-/// course-wide exam-focus digest merged from every lecture's signals.
+// Turns extraction results into human-readable review documents (Markdown)
 public struct HandoutGenerator {
 
     public init() {}

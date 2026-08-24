@@ -4,17 +4,12 @@
 //
 //  Created by Rio on 2026/8/20.
 //
-//  Compiled as a plain macOS bundle and loaded into the Catalyst process at
-//  runtime — the classic glue-bundle workaround for Process being unavailable
-//  under Catalyst. Runs a shell command on a PTY so tools like curl render
-//  their progress output.
 
+// macOS glue bundle loaded into the Catalyst process; runs commands on a PTY
 import Foundation
 import Darwin
 
-/// Must mirror the host app's protocol byte-for-byte — @objc protocols unify
-/// by name at runtime, and the host's `as? ShellRunning.Type` cast checks
-/// this conformance.
+// Must mirror the host app's protocol byte-for-byte
 @objc(RSPShellRunning)
 public protocol ShellRunning {
     static func run(

@@ -7,18 +7,17 @@
 
 import Foundation
 
-/// Structured exam-focused extraction from one lecture transcript.
-/// Field set carried over from the proven shell-pipeline schema.
+// Structured exam-focused extraction from one lecture transcript
 public struct LectureAnalysis: Codable, Sendable {
 
     public struct ExamSignal: Codable, Sendable {
-        /// The teacher's literal words ("这个必考", "记住有效应力原理").
+        // The teacher's literal words ("这个必考", "记住有效应力原理").
         public var quote: String
-        /// 必考 / 重点 / 可能考
+        // 必考 / 重点 / 可能考
         public var strength: String
-        /// Question type if the teacher hinted one (计算题/简答/论述…).
+        // Question type if the teacher hinted one (计算题/简答/论述…).
         public var qtype: String?
-        /// What the signal is about.
+        // What the signal is about.
         public var topic: String?
     }
 
@@ -51,7 +50,7 @@ public struct LectureAnalyzer {
             }
         }
 
-        /// Full model output, for saving next to the lecture for diagnosis.
+        // Full model output, for saving next to the lecture for diagnosis.
         public var rawResponse: String {
             switch self {
             case .unparsableResponse(let raw, _): raw
@@ -89,8 +88,7 @@ public struct LectureAnalyzer {
         return try Self.parse(response)
     }
 
-    /// Tolerant of code fences, surrounding prose, and the most common LLM
-    /// JSON defect: raw control characters inside string literals.
+    // Tolerant of code fences, surrounding prose, and the most common LLM JSON defect: raw control characters inside string literals.
     static func parse(_ raw: String) throws -> LectureAnalysis {
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if text.hasPrefix("```") {
@@ -115,8 +113,7 @@ public struct LectureAnalyzer {
         throw AnalyzeError.unparsableResponse(raw: raw, detail: lastError)
     }
 
-    /// Escapes raw newlines/tabs that appear inside JSON string literals —
-    /// invalid JSON that models emit intermittently when pretty-printing.
+    // Escapes raw newlines/tabs that appear inside JSON string literals
     static func escapingControlCharacters(in text: String) -> String {
         var out = ""
         out.reserveCapacity(text.count)

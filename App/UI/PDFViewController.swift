@@ -8,7 +8,7 @@
 import UIKit
 import PDFKit
 
-/// Displays a compiled handout PDF with export and reveal actions.
+// Displays a compiled handout PDF with export and reveal actions.
 final class PDFViewController: UIViewController {
 
     private let fileURL: URL
@@ -27,8 +27,7 @@ final class PDFViewController: UIViewController {
         navigationController?.setNavigationBarHidden(false, animated: false)
     }
 
-    /// Night rendering: invert luminance but keep hues (invert + 180° hue
-    /// spin), so the warm paper turns dark and the signal color stays itself.
+    // Night rendering: invert luminance but keep hues (invert + 180° hue spin), so the warm paper turns dark and the signal color stays itself.
     private var invertsInDark = UserDefaults.standard.object(forKey: "pdfInvertsInDark") as? Bool ?? true {
         didSet {
             UserDefaults.standard.set(invertsInDark, forKey: "pdfInvertsInDark")
@@ -85,8 +84,7 @@ final class PDFViewController: UIViewController {
            let hue = CIFilter(name: "CIHueAdjust") {
             hue.setValue(CGFloat.pi, forKey: kCIInputAngleKey)
             pdfView.layer.filters = [invert, hue]
-            // The filter inverts the backdrop too — feed it the inverse of the
-            // dark canvas so it comes out right.
+            // The filter inverts the backdrop too — feed it the pre-inverted dark canvas
             pdfView.backgroundColor = UIColor(red: 0.878, green: 0.886, blue: 0.898, alpha: 1)
             invertButton.tintColor = RecapTheme.ink
         } else {

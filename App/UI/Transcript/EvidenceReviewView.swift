@@ -9,8 +9,7 @@ import UIKit
 import TranscriptionKit
 import AnalysisKit
 
-/// The segments mode: transcript rows | time rail with pins | review notes.
-/// The Evidence Thread — one active branch at a time, pins track their rows.
+// The segments mode: transcript rows | time rail with pins | review notes
 final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelegate {
 
     struct Evidence {
@@ -19,7 +18,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         let start: TimeInterval?
     }
 
-    /// Reading-friendly row merged from whisper's fragmented segments.
+    // Reading-friendly row merged from whisper's fragmented segments.
     struct DisplayRow {
         let start: TimeInterval
         let end: TimeInterval
@@ -190,8 +189,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
 
     // MARK: - Content
 
-    /// Merges fragments into rows: break on long pauses (semantic gaps),
-    /// sentence-ending punctuation past a minimum, or a length cap.
+    // Merges fragments into rows: break on long pauses (semantic gaps), sentence-ending punctuation past a minimum, or a length cap.
     static func mergeRows(_ segments: [TranscriptSegment]) -> [DisplayRow] {
         var rows: [DisplayRow] = []
         var buffer = ""
@@ -234,7 +232,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         evidences.firstIndex { $0.rowIndex == row }
     }
 
-    /// Rows and matches are prepared off the main thread by the controller.
+    // Rows and matches are prepared off the main thread by the controller.
     func update(rows: [DisplayRow], evidences: [Evidence]) {
         self.displayRows = rows
         self.evidences = evidences
@@ -307,8 +305,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         layoutBranch()
     }
 
-    /// The active branch: one horizontal rule crossing the rail from the
-    /// selected row to its note card (two-segment look from the design).
+    // The active branch: one horizontal rule crossing the rail from the selected row to its note card (two-segment look from the design).
     private func layoutBranch() {
         guard let selected = selectedEvidenceIndex,
               let pin = pinButtons.first(where: { $0.tag == selected }),
@@ -444,8 +441,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
     }
 }
 
-/// Transcript row: mono timecode column + body. Marked rows carry the
-/// signal rule, soft wash, serif quote type and an annotation line.
+// Transcript row: mono timecode column + body
 final class TranscriptRowCell: UITableViewCell {
 
     static let reuseID = "TranscriptRowCell"
@@ -555,7 +551,7 @@ final class TranscriptRowCell: UITableViewCell {
     }
 }
 
-/// Evidence note card in the review margin.
+// Evidence note card in the review margin.
 final class NoteCardButton: UIButton {
 
     var isActive = false {

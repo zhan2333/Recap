@@ -8,9 +8,7 @@
 import Foundation
 import whisper
 
-/// whisper.cpp (GGML, Metal) backend. Mirrors the proven CLI setup:
-/// `whisper-cli -l zh -mc 0` — language pinned, context carry-over disabled
-/// to avoid repetition loops on long lecture audio.
+// whisper.cpp (GGML, Metal) backend
 public final class WhisperCppEngine: TranscriptionEngine {
 
     public enum EngineError: Error, LocalizedError {
@@ -30,8 +28,7 @@ public final class WhisperCppEngine: TranscriptionEngine {
     public init(modelPath: URL) throws {
         var cparams = whisper_context_default_params()
         cparams.use_gpu = true
-        // Do NOT enable flash_attn: the v1.9.2 prebuilt xcframework returns
-        // zero segments with it on (verified by bisection, 2026-08-19).
+        // Do NOT enable flash_attn: the v1.9.2 prebuilt returns zero segments with it on (bisected)
         guard let ctx = whisper_init_from_file_with_params(modelPath.path, cparams) else {
             throw EngineError.modelLoadFailed(modelPath)
         }
@@ -79,7 +76,7 @@ public final class WhisperCppEngine: TranscriptionEngine {
     }
 }
 
-/// Bridges Swift closures through whisper's C function-pointer callbacks.
+// Bridges Swift closures through whisper's C function-pointer callbacks.
 private final class CallbackBox {
     let onEvent: (@Sendable (TranscriptionEvent) -> Void)?
 

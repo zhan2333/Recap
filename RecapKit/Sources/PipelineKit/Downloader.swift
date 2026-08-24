@@ -7,9 +7,7 @@
 
 import Foundation
 
-/// Streams a media URL to disk with the headers cloud-classroom servers
-/// require (UA + Referer), always bypassing the system proxy — domestic
-/// servers reject or throttle proxied connections.
+// Streams a media URL to disk with the headers cloud-classroom servers require (UA + Referer), always bypassing the system proxy
 public struct Downloader {
 
     public enum DownloadError: Error, LocalizedError {
@@ -48,9 +46,7 @@ public struct Downloader {
         session = URLSession(configuration: config)
     }
 
-    /// Downloads to `destination`, reporting fractional progress when the
-    /// server provides a Content-Length. Skips work if the file already
-    /// exists and is non-trivial (same guard the shell pipeline used).
+    // Downloads to `destination`, reporting fractional progress when the server provides a Content-Length
     public func download(
         _ request: Request,
         to destination: URL,

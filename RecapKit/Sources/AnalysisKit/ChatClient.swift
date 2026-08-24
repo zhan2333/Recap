@@ -7,9 +7,7 @@
 
 import Foundation
 
-/// Minimal OpenAI-compatible chat-completions client (single turn).
-/// Works with OpenRouter, self-hosted gateways, or Ollama — anything
-/// speaking the /v1/chat/completions dialect.
+// Minimal OpenAI-compatible chat-completions client (single turn)
 public struct ChatClient {
 
     public struct Config: Sendable {
@@ -51,9 +49,7 @@ public struct ChatClient {
         session = URLSession(configuration: sessionConfig)
     }
 
-    /// Normalizes whatever the user pasted into a chat/completions endpoint:
-    /// bare hosts get /v1; a full OpenAI endpoint passes through; a pasted
-    /// Anthropic-style /messages endpoint is swapped to the OpenAI path.
+    // Normalizes whatever the user pasted into a chat/completions endpoint: bare hosts get /v1
     private var endpoint: URL {
         var base = config.baseURL
         if base.path.isEmpty || base.path == "/" {
@@ -68,7 +64,7 @@ public struct ChatClient {
         return base.appendingPathComponent("chat/completions")
     }
 
-    /// One request, one answer. No tools, no streaming, no history.
+    // One request, one answer
     public func complete(system: String? = nil, user: String, temperature: Double = 0.2) async throws -> String {
         var messages: [[String: String]] = []
         if let system { messages.append(["role": "system", "content": system]) }

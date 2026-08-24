@@ -8,14 +8,7 @@
 import Foundation
 import AVFoundation
 
-/// Decodes the audio track of any AVFoundation-readable media into
-/// 16 kHz mono Float32 PCM — the exact input whisper expects.
-/// Replaces `ffmpeg -vn -ac 1 -ar 16000` without touching disk.
-///
-/// AVAssetReader only decompresses (Float32, source rate/channels kept);
-/// resampling + downmix go through AVAudioConverter. Asking the reader's
-/// outputSettings for 16 kHz directly yields silently corrupted samples
-/// for some sources (e.g. 22.05 kHz big-endian AIFC), so don't.
+// Decodes the audio track of any AVFoundation-readable media into 16 kHz mono Float32 PCM — the exact input whisper expects
 public enum AudioExtractor {
 
     public enum ExtractError: Error, LocalizedError {
@@ -39,8 +32,7 @@ public enum AudioExtractor {
         guard let track = try await asset.loadTracks(withMediaType: .audio).first else {
             throw ExtractError.noAudioTrack(url)
         }
-        // The decode loop is CPU-bound for minutes on a full lecture — keep it
-        // off the cooperative pool.
+        // The decode loop is CPU-bound for minutes — keep it off the cooperative pool
         return try await Task.detached(priority: .userInitiated) {
             try Self.decode(asset: asset, track: track)
         }.value
@@ -92,7 +84,7 @@ public enum AudioExtractor {
         return samples
     }
 
-    /// Wraps one CMSampleBuffer's interleaved Float32 data in an AVAudioPCMBuffer.
+    // Wraps one CMSampleBuffer's interleaved Float32 data in an AVAudioPCMBuffer.
     private static func pcmBuffer(from sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
         guard let formatDesc = CMSampleBufferGetFormatDescription(sampleBuffer),
               let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(formatDesc),
@@ -115,7 +107,7 @@ public enum AudioExtractor {
         return buffer
     }
 
-    /// Streams one chunk (or the end-of-stream flush) through the converter.
+    // Streams one chunk (or the end-of-stream flush) through the converter.
     private static func convert(
         _ chunk: AVAudioPCMBuffer?,
         with converter: AVAudioConverter,

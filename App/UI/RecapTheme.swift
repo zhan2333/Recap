@@ -7,9 +7,7 @@
 
 import UIKit
 
-/// Visual tokens ported from RecapDesignSite/public/designs/recap-tokens.css
-/// (Evidence Thread direction). Content-layer sizes follow the spec; chrome
-/// sizes are nudged to Mac-idiom system conventions.
+// Visual tokens ported from RecapDesignSite/public/designs/recap-tokens.css (Evidence Thread direction)
 enum RecapTheme {
 
     // MARK: - Core palette (light / dark from tokens css)
@@ -42,8 +40,7 @@ enum RecapTheme {
 
     // MARK: - Type
 
-    /// Editorial serif: New York for latin, Songti SC cascade for CJK.
-    /// Only for document titles and one-to-three-line teacher quotes.
+    // Editorial serif: New York for latin, Songti SC cascade for CJK
     static func display(_ size: CGFloat, weight: UIFont.Weight = .semibold) -> UIFont {
         let base = UIFont.systemFont(ofSize: size, weight: weight)
         guard let serif = base.fontDescriptor.withDesign(.serif) else { return base }
@@ -51,7 +48,7 @@ enum RecapTheme {
         return UIFont(descriptor: serif.addingAttributes([.cascadeList: [songti]]), size: size)
     }
 
-    /// SF Mono, timecodes only.
+    // SF Mono, timecodes only.
     static func mono(_ size: CGFloat, weight: UIFont.Weight = .semibold) -> UIFont {
         .monospacedSystemFont(ofSize: size, weight: weight)
     }
@@ -87,7 +84,7 @@ enum RecapTheme {
         )
     }
 
-    /// color-mix(in srgb, top amount%, base) — resolved per trait collection.
+    // color-mix(in srgb, top amount%, base)
     private static func blend(_ top: UIColor, into base: UIColor, amount: CGFloat) -> UIColor {
         UIColor { traits in
             var (tr, tg, tb, ta): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)

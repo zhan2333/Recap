@@ -9,9 +9,7 @@ import Foundation
 import PDFKit
 import Vision
 
-/// Extracts full text from a textbook PDF. Pages with a real text layer use
-/// it directly; scanned pages fall back to Vision OCR. Output keeps PDF page
-/// markers so answers can cite where they came from.
+// Extracts full text from a textbook PDF
 public struct TextbookImporter {
 
     public enum ImportError: Error, LocalizedError {
@@ -24,7 +22,7 @@ public struct TextbookImporter {
         }
     }
 
-    /// - Parameter onProgress: (finishedPages, totalPages), called on an arbitrary thread.
+    // - Parameter onProgress: (finishedPages, totalPages), called on an arbitrary thread.
     public static func extractText(
         from pdfURL: URL,
         onProgress: (@Sendable (Int, Int) -> Void)? = nil

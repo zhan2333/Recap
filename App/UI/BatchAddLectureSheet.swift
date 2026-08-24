@@ -7,14 +7,12 @@
 
 import UIKit
 
-/// Paste one lecture per line — `name<TAB>url` or a bare URL — and enqueue
-/// them all at once. Downloads run in parallel, so grab-then-paste beats the
-/// direct-link token expiry. Mirrors the proven urls.txt batch workflow.
+// Paste one lecture per line — `name<TAB>url` or a bare URL — and enqueue them all at once
 final class BatchAddLectureSheet: UIViewController {
 
     var onSubmit: (([(name: String, urls: [URL])]) -> Void)?
 
-    /// Used to auto-number unnamed lines ("第N讲").
+    // Used to auto-number unnamed lines ("第N讲").
     var existingLectureCount = 0
 
     private let textView = UITextView()
@@ -101,8 +99,7 @@ final class BatchAddLectureSheet: UIViewController {
         submitButton.isEnabled = !entries.isEmpty
     }
 
-    /// `名称<TAB或空格>URL`、当年 urls.txt 的 `name<TAB>date<TAB>url`、或纯 URL 行。
-    /// 行首 `+` 表示该视频是上一讲的续段。
+    // `名称<TAB或空格>URL`、当年 urls.txt 的 `name<TAB>date<TAB>url`、或纯 URL 行。
     static func parse(_ text: String, startNumber: Int) -> [(name: String, urls: [URL])] {
         var results: [(name: String, urls: [URL])] = []
         var autoNumber = startNumber

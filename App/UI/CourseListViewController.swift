@@ -7,7 +7,7 @@
 
 import UIKit
 
-/// Sidebar: course list, Evidence Thread chrome.
+// Sidebar: course list, Evidence Thread chrome.
 final class CourseListViewController: UIViewController, UICollectionViewDelegate {
 
     private enum Section { case main }
@@ -201,7 +201,7 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
     }
 }
 
-/// Shared 46pt pane header: bold title + trailing plus button.
+// Shared 46pt pane header: bold title + trailing plus button.
 final class PaneBar: UIView {
 
     let titleLabel = UILabel()
@@ -236,7 +236,7 @@ final class PaneBar: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 }
 
-/// Course row: spine glyph + name/stats + count, ink-tint selection.
+// Course row: spine glyph + name/stats + count, ink-tint selection.
 final class CourseCell: UICollectionViewCell {
 
     private let spine = CourseSpineView()
@@ -309,7 +309,7 @@ final class CourseCell: UICollectionViewCell {
     }
 }
 
-/// The little book-spine glyph from the design: rounded border + inner rule.
+// The little book-spine glyph from the design: rounded border + inner rule.
 final class CourseSpineView: UIView {
 
     override init(frame: CGRect) {

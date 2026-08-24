@@ -7,8 +7,7 @@
 
 import UIKit
 
-/// 52pt detail chrome: lecture title, centered mode tabs, local pill,
-/// overflow menu and the primary analyze button.
+// 52pt detail chrome: lecture title, centered mode tabs, local pill, overflow menu and the primary analyze button.
 final class DetailHeaderView: UIView {
 
     let titleLabel = UILabel()
@@ -128,7 +127,7 @@ final class DetailHeaderView: UIView {
     }
 }
 
-/// Pill-style segmented tabs: bordered track, paper-colored active thumb.
+// Pill-style segmented tabs: bordered track, paper-colored active thumb.
 final class ModeTabsView: UIView {
 
     var onSelect: ((Int) -> Void)?

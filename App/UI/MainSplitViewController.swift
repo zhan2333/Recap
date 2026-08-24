@@ -7,7 +7,7 @@
 
 import UIKit
 
-/// Three columns: courses | lectures | transcript.
+// Three columns: courses | lectures | transcript.
 final class MainSplitViewController: UISplitViewController {
 
     private let courseList = CourseListViewController()
@@ -47,7 +47,7 @@ final class MainSplitViewController: UISplitViewController {
     }
 }
 
-/// Neutral empty-state column.
+// Neutral empty-state column.
 final class PlaceholderViewController: UIViewController {
 
     private let text: String
