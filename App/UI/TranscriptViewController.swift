@@ -572,6 +572,9 @@ final class SignalsPageView: UIView {
             stack.widthAnchor.constraint(lessThanOrEqualToConstant: 760),
             stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -64)
                 .withPriority(.defaultHigh),
+            // Hard bounds: content must never escape the visible frame.
+            stack.leadingAnchor.constraint(greaterThanOrEqualTo: scroll.frameLayoutGuide.leadingAnchor, constant: 32),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: scroll.frameLayoutGuide.trailingAnchor, constant: -32),
         ])
     }
 
