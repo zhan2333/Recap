@@ -196,7 +196,13 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         sheet.onSubmit = { [weak self] entries in
             guard let self else { return }
             for entry in entries {
-                let lecture = LibraryStore.shared.addLecture(named: entry.name, url: entry.url, to: self.course)
+                let lecture: Lecture
+                if entry.urls.count > 1 {
+                    let parts = entry.urls.map { MediaPart(id: UUID(), sourceURL: $0, duration: nil) }
+                    lecture = LibraryStore.shared.addLecture(named: entry.name, url: nil, parts: parts, to: self.course)
+                } else {
+                    lecture = LibraryStore.shared.addLecture(named: entry.name, url: entry.urls[0], to: self.course)
+                }
                 LectureQueue.shared.enqueue(lecture, in: self.course)
             }
         }
@@ -476,22 +482,62 @@ extension LectureListViewController: UIDocumentPickerDelegate {
             importTextbook(from: first)
             return
         }
-        let store = LibraryStore.shared
-        for url in urls {
-            let name = url.deletingPathExtension().lastPathComponent
-            var lecture = store.addLecture(named: name, url: nil, to: course)
-            do {
-                try FileManager.default.copyItem(at: url, to: store.mediaURL(lecture, in: course))
-                lecture.phase = .downloaded
-                store.updateLecture(lecture, in: course)
-                LectureQueue.shared.retranscribe(lecture, in: course)
-            } catch {
-                lecture.phase = .failed
-                lecture.errorMessage = error.localizedDescription
-                store.updateLecture(lecture, in: course)
-            }
+        guard urls.count > 1 else {
+            urls.forEach { importAsSeparateLecture($0) }
+            reload()
+            return
         }
-        reload()
+        let alert = UIAlertController(
+            title: "导入 \(urls.count) 个文件",
+            message: "多段视频合并为一讲时，转写会拼成一份文稿，重点和讲义共用。",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "合并为一个讲次", style: .default) { [weak self] _ in
+            self?.importAsSingleLecture(urls)
+            self?.reload()
+        })
+        alert.addAction(UIAlertAction(title: "分别创建 \(urls.count) 个讲次", style: .default) { [weak self] _ in
+            urls.forEach { self?.importAsSeparateLecture($0) }
+            self?.reload()
+        })
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        present(alert, animated: true)
+    }
+
+    private func importAsSeparateLecture(_ url: URL) {
+        let store = LibraryStore.shared
+        let name = url.deletingPathExtension().lastPathComponent
+        var lecture = store.addLecture(named: name, url: nil, to: course)
+        do {
+            try FileManager.default.copyItem(at: url, to: store.mediaURL(lecture, in: course))
+            lecture.phase = .downloaded
+            store.updateLecture(lecture, in: course)
+            LectureQueue.shared.retranscribe(lecture, in: course)
+        } catch {
+            lecture.phase = .failed
+            lecture.errorMessage = error.localizedDescription
+            store.updateLecture(lecture, in: course)
+        }
+    }
+
+    private func importAsSingleLecture(_ urls: [URL]) {
+        let store = LibraryStore.shared
+        let sorted = urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        let parts = sorted.map { _ in MediaPart(id: UUID(), sourceURL: nil, duration: nil) }
+        let name = sorted[0].deletingPathExtension().lastPathComponent
+        var lecture = store.addLecture(named: name, url: nil, parts: parts, to: course)
+        do {
+            for (index, source) in sorted.enumerated() {
+                try FileManager.default.copyItem(at: source, to: store.partMediaURL(parts[index], in: course))
+            }
+            lecture.phase = .downloaded
+            store.updateLecture(lecture, in: course)
+            LectureQueue.shared.retranscribe(lecture, in: course)
+        } catch {
+            lecture.phase = .failed
+            lecture.errorMessage = error.localizedDescription
+            store.updateLecture(lecture, in: course)
+        }
     }
 }
 

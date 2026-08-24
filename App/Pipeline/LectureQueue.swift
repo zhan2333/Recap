@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AVFoundation
 import PipelineKit
 import TranscriptionKit
 import AnalysisKit
@@ -40,23 +41,39 @@ final class LectureQueue {
     }
 
     func enqueue(_ lecture: Lecture, in course: Course) {
-        guard let sourceURL = lecture.sourceURL else { return }
         let store = LibraryStore.shared
-        let mediaURL = store.mediaURL(lecture, in: course)
+        let parts = store.mediaParts(of: lecture, in: course)
+        guard parts.contains(where: { $0.part.sourceURL != nil }) else { return }
 
         Task {
             do {
                 setActivity(.downloading(0), for: lecture.id)
-                try await Downloader().download(
-                    .init(url: sourceURL, referer: "https://look.tongji.edu.cn/"),
-                    to: mediaURL
-                ) { [weak self] progress in
-                    Task { @MainActor in self?.setActivity(.downloading(progress), for: lecture.id) }
+                var partProgress = [Int: Double]()
+                let lectureID = lecture.id
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    for (index, entry) in parts.enumerated() {
+                        guard let sourceURL = entry.part.sourceURL else { continue }
+                        let destination = entry.url
+                        let total = parts.count
+                        group.addTask {
+                            try await Downloader().download(
+                                .init(url: sourceURL, referer: "https://look.tongji.edu.cn/"),
+                                to: destination
+                            ) { progress in
+                                Task { @MainActor in
+                                    partProgress[index] = progress
+                                    let aggregate = partProgress.values.reduce(0, +) / Double(total)
+                                    LectureQueue.shared.setActivity(.downloading(aggregate), for: lectureID)
+                                }
+                            }
+                        }
+                    }
+                    try await group.waitForAll()
                 }
                 self.mark(lecture, in: course) { $0.phase = .downloaded }
 
                 setActivity(.waitingToTranscribe, for: lecture.id)
-                await self.chainTranscription(of: lecture, in: course, mediaURL: mediaURL)
+                await self.chainTranscription(of: lecture, in: course)
             } catch {
                 self.fail(lecture, in: course, error: error)
             }
@@ -65,23 +82,26 @@ final class LectureQueue {
 
     /// Re-runs transcription for an already-downloaded lecture.
     func retranscribe(_ lecture: Lecture, in course: Course) {
-        let mediaURL = LibraryStore.shared.mediaURL(lecture, in: course)
-        guard FileManager.default.fileExists(atPath: mediaURL.path) else { return }
+        let store = LibraryStore.shared
+        let parts = store.mediaParts(of: lecture, in: course)
+        guard parts.contains(where: { FileManager.default.fileExists(atPath: $0.url.path) }) else { return }
         setActivity(.waitingToTranscribe, for: lecture.id)
-        Task { await chainTranscription(of: lecture, in: course, mediaURL: mediaURL) }
+        Task { await chainTranscription(of: lecture, in: course) }
     }
 
-    private func chainTranscription(of lecture: Lecture, in course: Course, mediaURL: URL) async {
+    private func chainTranscription(of lecture: Lecture, in course: Course) async {
         let previous = transcribeTail
         let task = Task {
             await previous?.value
-            await self.runTranscription(of: lecture, in: course, mediaURL: mediaURL)
+            await self.runTranscription(of: lecture, in: course)
         }
         transcribeTail = task
         await task.value
     }
 
-    private func runTranscription(of lecture: Lecture, in course: Course, mediaURL: URL) async {
+    /// Transcribes every part in order and concatenates onto one global
+    /// timeline — downstream products stay single-lecture.
+    private func runTranscription(of lecture: Lecture, in course: Course) async {
         let store = LibraryStore.shared
         let token = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .idleSystemSleepDisabled,
@@ -92,20 +112,48 @@ final class LectureQueue {
 
         do {
             setActivity(.transcribing(0), for: lecture.id)
-            let samples = try await AudioExtractor.pcm16kMono(from: mediaURL)
-
+            let parts = store.mediaParts(of: lecture, in: course)
+                .filter { FileManager.default.fileExists(atPath: $0.url.path) }
             let engine = try self.engine.get()
             let lectureID = lecture.id
-            let transcript = try await Self.transcribeOffMain(engine: engine, samples: samples) { [weak self] progress in
-                Task { @MainActor in self?.setActivity(.transcribing(progress), for: lectureID) }
+            let partCount = parts.count
+
+            var allSegments: [TranscriptSegment] = []
+            var updatedParts: [MediaPart] = []
+            var offset: TimeInterval = 0
+
+            for (index, entry) in parts.enumerated() {
+                let samples = try await AudioExtractor.pcm16kMono(from: entry.url)
+                let assetDuration = try? await AVURLAsset(url: entry.url).load(.duration).seconds
+                let transcript = try await Self.transcribeOffMain(engine: engine, samples: samples) { [weak self] progress in
+                    Task { @MainActor in
+                        self?.setActivity(.transcribing((Double(index) + progress) / Double(partCount)), for: lectureID)
+                    }
+                }
+                let currentOffset = offset
+                allSegments += transcript.segments.map {
+                    TranscriptSegment(start: $0.start + currentOffset, end: $0.end + currentOffset, text: $0.text)
+                }
+                let partDuration: TimeInterval
+                if let assetDuration, assetDuration.isFinite, assetDuration > 0 {
+                    partDuration = assetDuration
+                } else {
+                    partDuration = transcript.segments.last?.end ?? 0
+                }
+                var updated = entry.part
+                updated.duration = partDuration
+                updatedParts.append(updated)
+                offset += partDuration
             }
 
-            try transcript.srt.write(to: store.productURL(lecture, in: course, ext: "srt"), atomically: true, encoding: .utf8)
-            try transcript.text.write(to: store.productURL(lecture, in: course, ext: "txt"), atomically: true, encoding: .utf8)
-            try JSONEncoder().encode(transcript.segments)
+            let merged = Transcript(segments: allSegments)
+            try merged.srt.write(to: store.productURL(lecture, in: course, ext: "srt"), atomically: true, encoding: .utf8)
+            try merged.text.write(to: store.productURL(lecture, in: course, ext: "txt"), atomically: true, encoding: .utf8)
+            try JSONEncoder().encode(merged.segments)
                 .write(to: store.productURL(lecture, in: course, ext: "segments.json"), options: .atomic)
 
             mark(lecture, in: course) {
+                if $0.parts != nil { $0.parts = updatedParts }
                 $0.phase = .transcribed
                 $0.errorMessage = nil
             }

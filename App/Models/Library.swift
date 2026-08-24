@@ -12,12 +12,22 @@ struct Course: Codable, Hashable, Identifiable {
     var name: String
 }
 
+/// One media file of a lecture. Lectures recorded in multiple videos keep an
+/// ordered part list; transcription concatenates them onto one global
+/// timeline so every downstream product stays single-lecture.
+struct MediaPart: Codable, Hashable, Identifiable {
+    let id: UUID
+    var sourceURL: URL?
+    var duration: TimeInterval?   // known after transcription; offsets the next part
+}
+
 struct Lecture: Codable, Hashable, Identifiable {
     let id: UUID
     var name: String
     var sourceURL: URL?
     var phase: Phase
     var errorMessage: String?
+    var parts: [MediaPart]?       // nil = legacy single-media lecture
 
     enum Phase: String, Codable {
         case pending        // queued, nothing on disk yet
@@ -91,6 +101,20 @@ final class LibraryStore {
         courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).mp4")
     }
 
+    func partMediaURL(_ part: MediaPart, in course: Course) -> URL {
+        courseDirectory(course).appendingPathComponent("\(part.id.uuidString).mp4")
+    }
+
+    /// Uniform media view: multi-part lectures list their parts; legacy
+    /// single-media lectures appear as one implicit part.
+    func mediaParts(of lecture: Lecture, in course: Course) -> [(part: MediaPart, url: URL)] {
+        if let parts = lecture.parts, !parts.isEmpty {
+            return parts.map { ($0, partMediaURL($0, in: course)) }
+        }
+        let implicit = MediaPart(id: lecture.id, sourceURL: lecture.sourceURL, duration: nil)
+        return [(implicit, mediaURL(lecture, in: course))]
+    }
+
     func productURL(_ lecture: Lecture, in course: Course, ext: String) -> URL {
         courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).\(ext)")
     }
@@ -125,8 +149,8 @@ final class LibraryStore {
         notify()
     }
 
-    func addLecture(named name: String, url: URL?, to course: Course) -> Lecture {
-        let lecture = Lecture(id: UUID(), name: name, sourceURL: url, phase: .pending, errorMessage: nil)
+    func addLecture(named name: String, url: URL?, parts: [MediaPart]? = nil, to course: Course) -> Lecture {
+        let lecture = Lecture(id: UUID(), name: name, sourceURL: url, phase: .pending, errorMessage: nil, parts: parts)
         lecturesByCourse[course.id, default: []].append(lecture)
         persistLectures(of: course)
         notify()
@@ -144,8 +168,12 @@ final class LibraryStore {
 
     func deleteLecture(_ lecture: Lecture, in course: Course) {
         lecturesByCourse[course.id]?.removeAll { $0.id == lecture.id }
-        for ext in ["mp4", "srt", "txt", "segments.json"] {
+        for ext in ["mp4", "srt", "txt", "segments.json", "analysis.json", "analysis-raw.txt",
+                    "handout.pdf", "handout.tex", "handout.md", "waveform.json"] {
             try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
+        }
+        for part in lecture.parts ?? [] {
+            try? FileManager.default.removeItem(at: partMediaURL(part, in: course))
         }
         persistLectures(of: course)
         notify()

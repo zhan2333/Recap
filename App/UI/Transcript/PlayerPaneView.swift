@@ -21,6 +21,13 @@ final class PlayerPaneView: UIView {
         let end: TimeInterval
     }
 
+    /// One video file on the lecture's global timeline.
+    struct PlayablePart {
+        let url: URL
+        let globalStart: TimeInterval
+        let duration: TimeInterval
+    }
+
     /// Host must add this as a child view controller.
     let playerViewController = AVPlayerViewController()
 
@@ -28,9 +35,12 @@ final class PlayerPaneView: UIView {
 
     private var player: AVPlayer?
     private var timeObserver: Any?
+    private var endObserver: NSObjectProtocol?
     private var keyPoints: [KeyPoint] = []
     private var selectedIndex: Int?
     private var duration: TimeInterval = 0
+    private var playableParts: [PlayablePart] = []
+    private var currentPartIndex = 0
 
     private let rail = FocusRailView()
     private let railTitle = UILabel()
@@ -177,11 +187,17 @@ final class PlayerPaneView: UIView {
 
     deinit {
         if let observer = timeObserver { player?.removeTimeObserver(observer) }
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
     }
 
     // MARK: - Configuration
 
-    func configure(mediaURL: URL?, waveformCacheURL: URL?, rows: [EvidenceReviewView.DisplayRow], evidences: [EvidenceReviewView.Evidence]) {
+    func configure(
+        parts: [(url: URL, duration: TimeInterval?)],
+        waveformCacheURL: URL?,
+        rows: [EvidenceReviewView.DisplayRow],
+        evidences: [EvidenceReviewView.Evidence]
+    ) {
         // LLM signal order is arbitrary — the rail must be chronological.
         keyPoints = evidences.enumerated().compactMap { index, evidence -> KeyPoint? in
             guard let rowIndex = evidence.rowIndex, rowIndex < rows.count else { return nil }
@@ -190,7 +206,8 @@ final class PlayerPaneView: UIView {
         }
         .sorted { $0.start < $1.start }
 
-        guard let mediaURL, FileManager.default.fileExists(atPath: mediaURL.path) else {
+        let existing = parts.filter { FileManager.default.fileExists(atPath: $0.url.path) }
+        guard !existing.isEmpty else {
             content.isHidden = true
             emptyState.isHidden = false
             teardownPlayer()
@@ -199,46 +216,81 @@ final class PlayerPaneView: UIView {
         content.isHidden = false
         emptyState.isHidden = true
 
+        // Build the global timeline; transcript end covers a missing tail duration.
+        var offset: TimeInterval = 0
+        playableParts = existing.enumerated().map { index, entry in
+            let fallback = (index == existing.count - 1)
+                ? max(60, (rows.last?.end ?? 60) - offset)
+                : 60
+            let partDuration = entry.duration ?? fallback
+            let part = PlayablePart(url: entry.url, globalStart: offset, duration: partDuration)
+            offset += partDuration
+            return part
+        }
+        duration = max(offset, rows.last?.end ?? 0)
+        rail.duration = duration
+
         if player == nil {
-            let player = AVPlayer(url: mediaURL)
+            let player = AVPlayer(playerItem: AVPlayerItem(url: playableParts[0].url))
             self.player = player
+            currentPartIndex = 0
             playerViewController.player = player
             timeObserver = player.addPeriodicTimeObserver(
                 forInterval: CMTime(seconds: 0.5, preferredTimescale: 10), queue: .main
             ) { [weak self] time in
                 self?.tick(time.seconds)
             }
-            // Rail needs a duration before playback starts: seed from the
-            // transcript's end, then correct with the asset's real duration.
-            Task { [weak self] in
-                if let seconds = try? await player.currentItem?.asset.load(.duration).seconds,
-                   seconds.isFinite, seconds > 0 {
-                    self?.duration = seconds
-                    self?.rail.duration = seconds
-                }
-            }
-        }
-        if duration == 0, let transcriptEnd = rows.last?.end, transcriptEnd > 0 {
-            duration = transcriptEnd
-            rail.duration = transcriptEnd
+            observePartEnd()
         }
 
         rail.ranges = keyPoints.map { ($0.start, $0.end) }
+        rail.partBoundaries = playableParts.dropFirst().map(\.globalStart)
         select(keyPoints.isEmpty ? nil : 0, seek: false, play: false)
 
-        if let cacheURL = waveformCacheURL {
-            let sourceURL = mediaURL
+        if let cacheURL = waveformCacheURL, let first = playableParts.first {
+            // Waveform covers the first part; later parts show ranges only.
             Task { [weak self] in
-                if let buckets = try? await WaveformGenerator.waveform(for: sourceURL, cacheURL: cacheURL) {
+                if let buckets = try? await WaveformGenerator.waveform(for: first.url, cacheURL: cacheURL) {
                     self?.rail.waveform = buckets
                 }
             }
         }
     }
 
+    /// Seeks on the global timeline, switching video parts as needed.
+    private func seekGlobal(_ time: TimeInterval, thenPlay: Bool) {
+        guard let player, !playableParts.isEmpty else { return }
+        let clamped = max(0, min(time, duration - 0.5))
+        let index = playableParts.lastIndex { clamped >= $0.globalStart } ?? 0
+        if index != currentPartIndex {
+            currentPartIndex = index
+            player.replaceCurrentItem(with: AVPlayerItem(url: playableParts[index].url))
+            observePartEnd()
+        }
+        let local = clamped - playableParts[index].globalStart
+        player.seek(to: CMTime(seconds: local, preferredTimescale: 600))
+        if thenPlay { player.play() }
+    }
+
+    /// Advances to the next part when the current one finishes.
+    private func observePartEnd() {
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didPlayToEndTimeNotification,
+            object: player?.currentItem, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            let next = self.currentPartIndex + 1
+            guard next < self.playableParts.count else { return }
+            self.seekGlobal(self.playableParts[next].globalStart, thenPlay: true)
+        }
+    }
+
     private func teardownPlayer() {
         if let observer = timeObserver { player?.removeTimeObserver(observer) }
         timeObserver = nil
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = nil
         playerViewController.player = nil
         player = nil
     }
@@ -250,13 +302,11 @@ final class PlayerPaneView: UIView {
     // MARK: - Playback linkage
 
     private func tick(_ seconds: TimeInterval) {
-        if duration == 0, let total = player?.currentItem?.duration.seconds, total.isFinite, total > 0 {
-            duration = total
-            rail.duration = total
-        }
-        rail.playheadTime = seconds
+        let globalTime = (playableParts.indices.contains(currentPartIndex)
+            ? playableParts[currentPartIndex].globalStart : 0) + seconds
+        rail.playheadTime = globalTime
         // Highlight the range the playhead is inside.
-        if let inside = keyPoints.firstIndex(where: { seconds >= $0.start && seconds <= $0.end }),
+        if let inside = keyPoints.firstIndex(where: { globalTime >= $0.start && globalTime <= $0.end }),
            inside != selectedIndex {
             select(inside, seek: false, play: false)
         }
@@ -278,9 +328,8 @@ final class PlayerPaneView: UIView {
         lensQuote.text = "“\(point.signal.quote)”"
         playLeadInButton.isHidden = false
         if seek {
-            player?.seek(to: CMTime(seconds: max(0, point.start - 3), preferredTimescale: 600))
-        }
-        if play {
+            seekGlobal(max(0, point.start - 3), thenPlay: play)
+        } else if play {
             player?.play()
         }
     }
@@ -347,9 +396,13 @@ final class FocusRailView: UIView {
     var selectedIndex: Int? {
         didSet { styleRangeButtons() }
     }
+    var partBoundaries: [TimeInterval] = [] {
+        didSet { rebuildBoundaryLines() }
+    }
     var onSelectRange: ((Int) -> Void)?
 
     private var rangeButtons: [UIButton] = []
+    private var boundaryLines: [UIView] = []
     private let playhead = UIView()
 
     override init(frame: CGRect) {
@@ -413,11 +466,23 @@ final class FocusRailView: UIView {
         }
     }
 
+    private func rebuildBoundaryLines() {
+        boundaryLines.forEach { $0.removeFromSuperview() }
+        boundaryLines = partBoundaries.map { _ in
+            let line = UIView()
+            line.backgroundColor = RecapTheme.quiet.withAlphaComponent(0.5)
+            addSubview(line)
+            return line
+        }
+        setNeedsLayout()
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
         guard duration > 0 else {
             playhead.frame = .zero
             rangeButtons.forEach { $0.frame = .zero }
+            boundaryLines.forEach { $0.frame = .zero }
             return
         }
         for (index, button) in rangeButtons.enumerated() {
@@ -425,6 +490,10 @@ final class FocusRailView: UIView {
             let left = bounds.width * CGFloat(range.start / duration)
             let width = max(18, bounds.width * CGFloat((range.end - range.start) / duration))
             button.frame = CGRect(x: left, y: 6, width: width, height: bounds.height - 12)
+        }
+        for (index, line) in boundaryLines.enumerated() {
+            let x = bounds.width * CGFloat(partBoundaries[index] / duration)
+            line.frame = CGRect(x: x - 0.5, y: 0, width: 1, height: bounds.height)
         }
         let x = bounds.width * CGFloat(min(1, playheadTime / duration))
         playhead.frame = CGRect(x: x - 0.75, y: 0, width: 1.5, height: bounds.height)

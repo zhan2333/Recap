@@ -12,7 +12,7 @@ import UIKit
 /// direct-link token expiry. Mirrors the proven urls.txt batch workflow.
 final class BatchAddLectureSheet: UIViewController {
 
-    var onSubmit: (([(name: String, url: URL)]) -> Void)?
+    var onSubmit: (([(name: String, urls: [URL])]) -> Void)?
 
     /// Used to auto-number unnamed lines ("第N讲").
     var existingLectureCount = 0
@@ -27,7 +27,7 @@ final class BatchAddLectureSheet: UIViewController {
         title = "添加讲次"
 
         let hint = UILabel()
-        hint.text = "每行一条：讲次名 + 空格/Tab + 直链，或只贴直链（自动编号）。可一次粘贴整门课。"
+        hint.text = "每行一条：讲次名 + 空格/Tab + 直链，或只贴直链（自动编号）。行首加 + 表示上一讲的续段视频（多段视频合成一讲）。"
         hint.font = RecapTheme.body(12)
         hint.textColor = RecapTheme.muted
         hint.numberOfLines = 0
@@ -87,25 +87,42 @@ final class BatchAddLectureSheet: UIViewController {
     }
 
     private func refresh() {
-        let count = Self.parse(textView.text ?? "", startNumber: existingLectureCount + 1).count
-        countLabel.text = count == 0 ? "还没有可入队的直链" : "识别到 \(count) 条"
-        var title = AttributedString(count > 1 ? "全部入队（\(count) 条）" : "入队")
+        let entries = Self.parse(textView.text ?? "", startNumber: existingLectureCount + 1)
+        let partCount = entries.reduce(0) { $0 + $1.urls.count }
+        countLabel.text = entries.isEmpty
+            ? "还没有可入队的直链"
+            : partCount > entries.count
+                ? "识别到 \(entries.count) 讲（共 \(partCount) 段视频）"
+                : "识别到 \(entries.count) 条"
+        var title = AttributedString(entries.count > 1 ? "全部入队（\(entries.count) 讲）" : "入队")
         title.font = RecapTheme.body(13, weight: .semibold)
         title.foregroundColor = RecapTheme.paper
         submitButton.configuration?.attributedTitle = title
-        submitButton.isEnabled = count > 0
+        submitButton.isEnabled = !entries.isEmpty
     }
 
     /// `名称<TAB或空格>URL`、当年 urls.txt 的 `name<TAB>date<TAB>url`、或纯 URL 行。
-    static func parse(_ text: String, startNumber: Int) -> [(name: String, url: URL)] {
-        var results: [(String, URL)] = []
+    /// 行首 `+` 表示该视频是上一讲的续段。
+    static func parse(_ text: String, startNumber: Int) -> [(name: String, urls: [URL])] {
+        var results: [(name: String, urls: [URL])] = []
         var autoNumber = startNumber
         for rawLine in text.split(whereSeparator: \.isNewline) {
-            let line = rawLine.trimmingCharacters(in: .whitespaces)
-            guard !line.isEmpty, let httpRange = line.range(of: "http") else { continue }
+            var line = rawLine.trimmingCharacters(in: .whitespaces)
+            guard !line.isEmpty else { continue }
+            var isContinuation = false
+            if line.hasPrefix("+") || line.hasPrefix("＋") {
+                isContinuation = true
+                line = String(line.dropFirst()).trimmingCharacters(in: .whitespaces)
+            }
+            guard let httpRange = line.range(of: "http") else { continue }
             let urlCandidate = line[httpRange.lowerBound...]
                 .split(whereSeparator: \.isWhitespace).first.map(String.init) ?? ""
             guard let url = URL(string: urlCandidate), url.host != nil else { continue }
+
+            if isContinuation, !results.isEmpty {
+                results[results.count - 1].urls.append(url)
+                continue
+            }
             var name = String(line[..<httpRange.lowerBound])
                 .trimmingCharacters(in: .whitespaces)
                 .replacingOccurrences(of: "\t", with: " ")
@@ -113,7 +130,7 @@ final class BatchAddLectureSheet: UIViewController {
                 name = "第\(autoNumber)讲"
             }
             autoNumber += 1
-            results.append((name, url))
+            results.append((name, [url]))
         }
         return results
     }

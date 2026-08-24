@@ -111,7 +111,9 @@ final class TranscriptViewController: UIViewController {
         let segmentsURL = store.productURL(lecture, in: course, ext: "segments.json")
         let txtURL = store.productURL(lecture, in: course, ext: "txt")
         let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
-        let mediaURL = store.mediaURL(lecture, in: course)
+        let freshLecture = store.lecture(id: lecture.id, in: course) ?? lecture
+        let mediaParts = store.mediaParts(of: freshLecture, in: course)
+            .map { (url: $0.url, duration: $0.part.duration) }
         let waveformURL = store.productURL(lecture, in: course, ext: "waveform.json")
         let lectureName = lecture.name
         let courseName = course.name
@@ -155,7 +157,7 @@ final class TranscriptViewController: UIViewController {
                 self.reviewView.update(rows: rows, evidences: evidences)
                 self.readingView.update(title: lectureName, subtitle: courseName, rows: rows, quoteRows: quoteRows)
                 self.playerPane.configure(
-                    mediaURL: mediaURL, waveformCacheURL: waveformURL,
+                    parts: mediaParts, waveformCacheURL: waveformURL,
                     rows: rows, evidences: evidences)
                 self.signalsView.update(analysis: analysis)
                 self.metaBar.update(segments: segments, characterCount: plainText.count)
