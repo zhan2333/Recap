@@ -605,6 +605,8 @@ final class SignalsPageView: UIView {
         redoConfig.background.cornerRadius = RecapTheme.radiusSM
         redo.configuration = redoConfig
         redo.addAction(UIAction { [weak self] _ in self?.onReExtract?() }, for: .touchUpInside)
+        redo.setContentCompressionResistancePriority(.required, for: .horizontal)
+        count.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let headerRow = UIStackView(arrangedSubviews: [headerText, UIView(), redo])
         headerRow.axis = .horizontal

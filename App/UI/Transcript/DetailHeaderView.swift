@@ -34,6 +34,9 @@ final class DetailHeaderView: UIView {
         titleLabel.textColor = RecapTheme.ink
         subtitleLabel.font = RecapTheme.body(11)
         subtitleLabel.textColor = RecapTheme.quiet
+        // Titles truncate first when the column narrows; actions never do.
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let titles = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
         titles.axis = .vertical
@@ -84,6 +87,9 @@ final class DetailHeaderView: UIView {
         analyzeSpinner.isHidden = true
         analyzeSpinner.startAnimating()
 
+        analyzeButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        overflowButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+
         let trailing = UIStackView(arrangedSubviews: [localPill, overflowButton, analyzeButton, analyzeSpinner])
         trailing.axis = .horizontal
         trailing.alignment = .center
@@ -114,6 +120,12 @@ final class DetailHeaderView: UIView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // Narrow column: drop the decorative local pill to keep actions whole.
+        localPill.isHidden = bounds.width < 660
+    }
 }
 
 /// Pill-style segmented tabs: bordered track, paper-colored active thumb.

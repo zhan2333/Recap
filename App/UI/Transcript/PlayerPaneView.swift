@@ -93,6 +93,11 @@ final class PlayerPaneView: UIView {
         playLeadInButton.tintColor = RecapTheme.paper
         playLeadInButton.addAction(UIAction { [weak self] _ in self?.playFromLeadIn() }, for: .touchUpInside)
 
+        previousButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        nextButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        railTitle.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        railDetail.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
         let railHeader = UIStackView(arrangedSubviews: [
             vstack([railTitle, railDetail], spacing: 2), UIView(), previousButton, nextButton,
         ])
