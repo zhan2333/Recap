@@ -17,6 +17,8 @@
 		4E3B91489EB4E18760D2C223 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0BCD4FAA05DF20394776496E /* AppIcon.icon */; };
 		60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E37ED690FC7C2FF61570139 /* RecapTheme.swift */; };
 		69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006620A5F96466763716A77A /* CourseListViewController.swift */; };
+		6EFB38676CE7420CBA1BCDD7 /* WaveformGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42A50B7D1BB20A2E73F430D2 /* WaveformGenerator.swift */; };
+		884BC1A59B305A0ED4A992C9 /* PlayerPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183C419BA41CD015B08DCF87 /* PlayerPaneView.swift */; };
 		8A2C0198D72ED5F314B359EC /* recap-review-skill.md in Resources */ = {isa = PBXBuildFile; fileRef = 224A0D4835EA9FE5F416758A /* recap-review-skill.md */; };
 		8DB68D877F1B18A690D807B9 /* recap-r-mark.png in Resources */ = {isa = PBXBuildFile; fileRef = 5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */; };
 		9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B84F6FA84480A57562810F7 /* SceneDelegate.swift */; };
@@ -50,8 +52,10 @@
 		006620A5F96466763716A77A /* CourseListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseListViewController.swift; sourceTree = "<group>"; };
 		0BCD4FAA05DF20394776496E /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptViewController.swift; sourceTree = "<group>"; };
+		183C419BA41CD015B08DCF87 /* PlayerPaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerPaneView.swift; sourceTree = "<group>"; };
 		224A0D4835EA9FE5F416758A /* recap-review-skill.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "recap-review-skill.md"; sourceTree = "<group>"; };
 		3822695569806EF08ECC2E35 /* PDFViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFViewController.swift; sourceTree = "<group>"; };
+		42A50B7D1BB20A2E73F430D2 /* WaveformGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformGenerator.swift; sourceTree = "<group>"; };
 		456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		5E37ED690FC7C2FF61570139 /* RecapTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapTheme.swift; sourceTree = "<group>"; };
 		5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "recap-r-mark.png"; sourceTree = "<group>"; };
@@ -97,6 +101,7 @@
 				BE010D7F5C9CEB7CF7000C77 /* Settings.swift */,
 				8A01234BCEBBEF3102133BDF /* ShellBridge.swift */,
 				CF07F81006BA32EFA6020422 /* UpdateChecker.swift */,
+				42A50B7D1BB20A2E73F430D2 /* WaveformGenerator.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -129,6 +134,7 @@
 			children = (
 				A13099B29E78D6084BE81FFF /* DetailHeaderView.swift */,
 				A30AF5F43694C7E8CFA4DE5C /* EvidenceReviewView.swift */,
+				183C419BA41CD015B08DCF87 /* PlayerPaneView.swift */,
 			);
 			path = Transcript;
 			sourceTree = "<group>";
@@ -301,6 +307,7 @@
 				ABA1677873A7AC347D8C1E34 /* MarkdownViewController.swift in Sources */,
 				F401865D77202AD7C57F7A81 /* OnboardingViewController.swift in Sources */,
 				10FCF05C75C867182052A765 /* PDFViewController.swift in Sources */,
+				884BC1A59B305A0ED4A992C9 /* PlayerPaneView.swift in Sources */,
 				60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */,
 				9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */,
 				D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */,
@@ -308,6 +315,7 @@
 				BAF5469021701803372AF638 /* ShellBridge.swift in Sources */,
 				1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */,
 				AC5C00D0EE7A17E4F256C4D0 /* UpdateChecker.swift in Sources */,
+				6EFB38676CE7420CBA1BCDD7 /* WaveformGenerator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

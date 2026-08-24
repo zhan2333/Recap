@@ -25,6 +25,7 @@ final class TranscriptViewController: UIViewController {
     private let metaBar = TranscriptMetaBar()
     private let reviewView = EvidenceReviewView()
     private let readingView = ReadingPageView()
+    private let playerPane = PlayerPaneView()
     private let signalsView = SignalsPageView()
     private let emptyLabel = UILabel()
 
@@ -59,7 +60,7 @@ final class TranscriptViewController: UIViewController {
 
         signalsView.onReExtract = { [weak self] in self?.analyze() }
 
-        for subview in [header, metaBar, reviewView, readingView, signalsView, emptyLabel] as [UIView] {
+        for subview in [header, metaBar, reviewView, readingView, playerPane, signalsView, emptyLabel] as [UIView] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(subview)
         }
@@ -72,7 +73,13 @@ final class TranscriptViewController: UIViewController {
             metaBar.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
             metaBar.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
         ])
-        for pane in [reviewView, readingView, signalsView] as [UIView] {
+        addChild(playerPane.playerViewController)
+        playerPane.playerViewController.didMove(toParent: self)
+        playerPane.onRequestRedownload = { [weak self] in
+            guard let self else { return }
+            LectureQueue.shared.enqueue(self.lecture, in: self.course)
+        }
+        for pane in [reviewView, readingView, playerPane, signalsView] as [UIView] {
             NSLayoutConstraint.activate([
                 pane.topAnchor.constraint(equalTo: metaBar.bottomAnchor),
                 pane.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -104,6 +111,8 @@ final class TranscriptViewController: UIViewController {
         let segmentsURL = store.productURL(lecture, in: course, ext: "segments.json")
         let txtURL = store.productURL(lecture, in: course, ext: "txt")
         let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
+        let mediaURL = store.mediaURL(lecture, in: course)
+        let waveformURL = store.productURL(lecture, in: course, ext: "waveform.json")
         let lectureName = lecture.name
         let courseName = course.name
 
@@ -145,6 +154,9 @@ final class TranscriptViewController: UIViewController {
                 self.analysis = analysis
                 self.reviewView.update(rows: rows, evidences: evidences)
                 self.readingView.update(title: lectureName, subtitle: courseName, rows: rows, quoteRows: quoteRows)
+                self.playerPane.configure(
+                    mediaURL: mediaURL, waveformCacheURL: waveformURL,
+                    rows: rows, evidences: evidences)
                 self.signalsView.update(analysis: analysis)
                 self.metaBar.update(segments: segments, characterCount: plainText.count)
                 self.isLoading = false
@@ -197,6 +209,7 @@ final class TranscriptViewController: UIViewController {
         let mode = header.modeTabs.selectedIndex
         reviewView.isHidden = true
         readingView.isHidden = true
+        playerPane.isHidden = true
         signalsView.isHidden = true
         emptyLabel.isHidden = true
 
@@ -210,11 +223,13 @@ final class TranscriptViewController: UIViewController {
             reviewView.isHidden = false
         case 1 where !plainText.isEmpty:
             readingView.isHidden = false
-        case 2 where analysis != nil:
+        case 2:
+            playerPane.isHidden = false
+        case 3 where analysis != nil:
             signalsView.isHidden = false
         default:
             emptyLabel.isHidden = false
-            if mode == 2 {
+            if mode == 3 {
                 emptyLabel.text = isAnalyzing
                     ? "正在读取文稿，提取老师强调的重点…"
                     : plainText.isEmpty ? "先完成转写，再提取重点" : "文稿已就绪 · 点右上角提取本讲重点"
@@ -246,7 +261,7 @@ final class TranscriptViewController: UIViewController {
         }
         isAnalyzing = true
         refreshChrome()
-        header.modeTabs.select(2)
+        header.modeTabs.select(3)
 
         let transcript = plainText
         Task {

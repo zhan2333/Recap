@@ -22,6 +22,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
     /// Reading-friendly row merged from whisper's fragmented segments.
     struct DisplayRow {
         let start: TimeInterval
+        let end: TimeInterval
         let text: String
         let segmentRange: Range<Int>   // original segment indices
     }
@@ -201,7 +202,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         func flush(upTo endIndex: Int) {
             let trimmed = buffer.trimmingCharacters(in: .whitespaces)
             if !trimmed.isEmpty {
-                rows.append(DisplayRow(start: bufferStart, text: trimmed, segmentRange: rangeStart..<endIndex))
+                rows.append(DisplayRow(start: bufferStart, end: lastEnd, text: trimmed, segmentRange: rangeStart..<endIndex))
             }
             buffer = ""
             rangeStart = endIndex

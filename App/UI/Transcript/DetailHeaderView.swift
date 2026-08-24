@@ -13,7 +13,7 @@ final class DetailHeaderView: UIView {
 
     let titleLabel = UILabel()
     let subtitleLabel = UILabel()
-    let modeTabs = ModeTabsView(items: ["分段", "全文", "重点"])
+    let modeTabs = ModeTabsView(items: ["分段", "全文", "播放", "重点"])
     let overflowButton = UIButton(type: .system)
     let analyzeButton = UIButton(type: .system)
     private let analyzeSpinner = UIActivityIndicatorView(style: .medium)

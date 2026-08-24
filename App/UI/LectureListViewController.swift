@@ -410,6 +410,9 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         let rename = UIAction(title: "重命名…", image: UIImage(systemName: "pencil")) { [weak self] _ in
             self?.promptRename(lecture)
         }
+        let updateLink = UIAction(title: "更新直链…", image: UIImage(systemName: "link.badge.plus")) { [weak self] _ in
+            self?.promptUpdateLink(lecture)
+        }
         let reveal = UIAction(title: "在访达中显示", image: UIImage(systemName: "folder")) { [weak self] _ in
             guard let self else { return }
             let dir = store.courseDirectory(self.course)
@@ -423,9 +426,31 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
         return UIMenu(children: [
             UIMenu(options: .displayInline, children: workActions),
-            UIMenu(options: .displayInline, children: [rename, reveal]),
+            UIMenu(options: .displayInline, children: [rename, updateLink, reveal]),
             UIMenu(options: .displayInline, children: [delete]),
         ])
+    }
+
+    private func promptUpdateLink(_ lecture: Lecture) {
+        let alert = UIAlertController(
+            title: "更新直链",
+            message: "直链 token 过期后，从云课堂重新抓取并粘贴到这里。",
+            preferredStyle: .alert
+        )
+        alert.addTextField {
+            $0.text = lecture.sourceURL?.absoluteString
+            $0.placeholder = "https://look.tongji.edu.cn/...mp4?...."
+        }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "保存", style: .default) { [weak self, weak alert] _ in
+            guard let self,
+                  let urlString = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
+                  let url = URL(string: urlString), url.host != nil else { return }
+            var updated = lecture
+            updated.sourceURL = url
+            LibraryStore.shared.updateLecture(updated, in: self.course)
+        })
+        present(alert, animated: true)
     }
 
     private func promptRename(_ lecture: Lecture) {
