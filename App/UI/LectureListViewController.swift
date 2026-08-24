@@ -8,7 +8,7 @@
 import UIKit
 import AnalysisKit
 
-/// Middle column: lectures of one course, with live queue state.
+// Middle column: lectures of one course, with live queue state.
 final class LectureListViewController: UIViewController, UICollectionViewDelegate {
 
     private enum Section { case main }
@@ -116,7 +116,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         reload()
     }
 
-    /// Cell configuration path — cache so scrolling never touches disk.
+    // Cell configuration path
     private var keyPointCounts: [UUID: Int?] = [:]
 
     private func keyPointCount(of lecture: Lecture) -> Int? {
@@ -179,8 +179,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     // MARK: - Add lecture
 
-    /// Queueing without a model would just fail at transcription — steer to
-    /// onboarding first.
+    // Queueing without a model would just fail at transcription
     private func ensureModelReady() -> Bool {
         guard !Settings.modelExists else { return true }
         let onboarding = OnboardingViewController()
@@ -413,6 +412,18 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             }
         }
 
+        var appendActions: [UIAction] = []
+        if !isBusy {
+            appendActions = [
+                UIAction(title: "追加视频直链…", image: UIImage(systemName: "text.append")) { [weak self] _ in
+                    self?.promptAppendLink(lecture)
+                },
+                UIAction(title: "追加视频文件…", image: UIImage(systemName: "folder.badge.plus")) { [weak self] _ in
+                    self?.pickAppendFiles(lecture)
+                },
+            ]
+        }
+
         let rename = UIAction(title: "重命名…", image: UIImage(systemName: "pencil")) { [weak self] _ in
             self?.promptRename(lecture)
         }
@@ -432,9 +443,74 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
         return UIMenu(children: [
             UIMenu(options: .displayInline, children: workActions),
+            UIMenu(options: .displayInline, children: appendActions),
             UIMenu(options: .displayInline, children: [rename, updateLink, reveal]),
             UIMenu(options: .displayInline, children: [delete]),
         ])
+    }
+
+    // MARK: - Appending parts to an existing lecture
+
+    // Legacy single-media lectures migrate to explicit parts
+    private func migratedToParts(_ lecture: Lecture) -> Lecture {
+        guard lecture.parts == nil else { return lecture }
+        var updated = lecture
+        updated.parts = [MediaPart(id: lecture.id, sourceURL: lecture.sourceURL, duration: nil)]
+        return updated
+    }
+
+    private func promptAppendLink(_ lecture: Lecture) {
+        let alert = UIAlertController(
+            title: "追加视频直链",
+            message: "新视频会接在本讲末尾，转写完成后文稿自动拼接。",
+            preferredStyle: .alert
+        )
+        alert.addTextField {
+            $0.placeholder = "https://look.tongji.edu.cn/...mp4?...."
+            if let paste = UIPasteboard.general.string, paste.hasPrefix("http") {
+                $0.text = paste
+            }
+        }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "追加并转写", style: .default) { [weak self, weak alert] _ in
+            guard let self,
+                  let urlString = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
+                  let url = URL(string: urlString), url.host != nil else { return }
+            var updated = self.migratedToParts(lecture)
+            updated.parts?.append(MediaPart(id: UUID(), sourceURL: url, duration: nil))
+            LibraryStore.shared.updateLecture(updated, in: self.course)
+            LectureQueue.shared.enqueue(updated, in: self.course)
+        })
+        present(alert, animated: true)
+    }
+
+    private var pendingAppendLecture: Lecture?
+
+    private func pickAppendFiles(_ lecture: Lecture) {
+        pendingAppendLecture = lecture
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .audio], asCopy: true)
+        picker.allowsMultipleSelection = true
+        picker.delegate = self
+        present(picker, animated: true)
+    }
+
+    private func appendFiles(_ urls: [URL], to lecture: Lecture) {
+        let store = LibraryStore.shared
+        var updated = migratedToParts(lecture)
+        let sorted = urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        do {
+            for source in sorted {
+                let part = MediaPart(id: UUID(), sourceURL: nil, duration: nil)
+                try FileManager.default.copyItem(at: source, to: store.partMediaURL(part, in: course))
+                updated.parts?.append(part)
+            }
+            store.updateLecture(updated, in: course)
+            LectureQueue.shared.retranscribe(updated, in: course)
+        } catch {
+            updated.errorMessage = error.localizedDescription
+            store.updateLecture(updated, in: course)
+        }
+        reload()
     }
 
     private func promptUpdateLink(_ lecture: Lecture) {
@@ -478,6 +554,11 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 extension LectureListViewController: UIDocumentPickerDelegate {
 
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        if let target = pendingAppendLecture {
+            pendingAppendLecture = nil
+            appendFiles(urls, to: target)
+            return
+        }
         if let first = urls.first, first.pathExtension.lowercased() == "pdf" {
             importTextbook(from: first)
             return
@@ -541,8 +622,7 @@ extension LectureListViewController: UIDocumentPickerDelegate {
     }
 }
 
-/// Two-line header: course name over lecture count, one quiet add button
-/// trailing (its menu carries both lecture sources and course tools).
+// Two-line header: course name over lecture count, one quiet add button trailing (its menu carries both lecture sources and course tools).
 final class LectureHeaderBar: UIView {
 
     let courseLabel = UILabel()
@@ -610,8 +690,7 @@ final class LectureHeaderBar: UIView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 }
 
-/// Lecture row: number column, title/status, trailing state glyph,
-/// inline progress while transcribing, active left rule.
+// Lecture row: number column, title/status, trailing state glyph, inline progress while transcribing, active left rule.
 final class LectureCell: UICollectionViewCell {
 
     private let numberLabel = UILabel()
