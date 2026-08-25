@@ -262,8 +262,15 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         actions.append(UIAction(title: String(localized: "生成考试重点"), image: UIImage(systemName: "star.circle")) { [weak self] _ in
             self?.generateDigest()
         })
-        if let digest = try? String(contentsOf: store.courseFileURL(course, name: "review.md"), encoding: .utf8),
-           !digest.isEmpty {
+        let reviewPDF = store.courseFileURL(course, name: "review.pdf")
+        if FileManager.default.fileExists(atPath: reviewPDF.path) {
+            actions.append(UIAction(title: String(localized: "查看考试重点"), image: UIImage(systemName: "star.fill")) { [weak self] _ in
+                guard let self else { return }
+                (self.splitViewController as? MainSplitViewController)?
+                    .show(pdfAt: reviewPDF, title: String(localized: "\(self.course.name)考试重点"))
+            })
+        } else if let digest = try? String(contentsOf: store.courseFileURL(course, name: "review.md"), encoding: .utf8),
+                  !digest.isEmpty {
             actions.append(UIAction(title: String(localized: "查看考试重点"), image: UIImage(systemName: "star.fill")) { [weak self] _ in
                 guard let self else { return }
                 (self.splitViewController as? MainSplitViewController)?
@@ -321,19 +328,27 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         isWorking = true
         refreshToolsMenu()
         let courseName = course.name
+        let courseDir = store.courseDirectory(course)
+        let texURL = store.courseFileURL(course, name: "review.tex")
+        let pdfURL = store.courseFileURL(course, name: "review.pdf")
         Task {
             do {
-                let markdown = try await HandoutGenerator().courseDigest(
+                guard let skillURL = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md"),
+                      let skill = try? String(contentsOf: skillURL, encoding: .utf8) else {
+                    throw NSError(domain: "Recap", code: 1, userInfo: [
+                        NSLocalizedDescriptionKey: String(localized: "内置 skill 缺失"),
+                    ])
+                }
+                let tex = try await HandoutGenerator().courseLaTeX(
                     courseName: courseName,
                     lectures: inputs,
+                    skill: skill,
                     client: ChatClient(config: config)
                 )
-                try markdown.write(
-                    to: store.courseFileURL(course, name: "review.md"),
-                    atomically: true, encoding: .utf8
-                )
+                try tex.write(to: texURL, atomically: true, encoding: .utf8)
+                try await LaTeXCompiler.compile(texURL: texURL, in: courseDir)
                 (splitViewController as? MainSplitViewController)?
-                    .show(markdown: markdown, title: String(localized: "\(courseName)考试重点"))
+                    .show(pdfAt: pdfURL, title: String(localized: "\(courseName)考试重点"))
             } catch {
                 presentInfo(title: String(localized: "生成失败"), message: error.localizedDescription)
             }

@@ -105,6 +105,34 @@ public struct HandoutGenerator {
     - 语言平实直接。
     """
 
+    // Course digest as LaTeX, spec'd by the same bundled skill as the lecture handout
+    public func courseLaTeX(
+        courseName: String,
+        lectures: [(title: String, analysis: LectureAnalysis)],
+        skill: String,
+        client: ChatClient
+    ) async throws -> String {
+        let system = """
+        \(skill)
+
+        现在执行考试重点汇总：把下面各讲的考点提取结果合并成一份「\(courseName)考试重点」总表（跨讲重复的知识点合并并标注「多次强调」，保留老师原话的关键表述，附各讲要点索引），并按上面 skill 中「生成讲义」任务的 LaTeX 排版规范排版。你不在文件系统环境中：不要读写文件、不要执行其他任务、不要输出解释或 markdown 代码块围栏，直接输出完整的 .tex 文件内容（从 \\documentclass 到 \\end{document}）。
+        """
+        var user = "课程名：\(courseName)\n\n以下是各讲的考点提取结果：\n"
+        for lecture in lectures {
+            user += "\n### \(lecture.title)\n\(Self.encodeJSON(lecture.analysis))\n"
+        }
+        var tex = try await client.complete(system: system, user: user, temperature: 0.3)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if tex.hasPrefix("```") {
+            tex = tex
+                .replacingOccurrences(of: "```latex", with: "")
+                .replacingOccurrences(of: "```tex", with: "")
+                .replacingOccurrences(of: "```", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return tex
+    }
+
     public func courseDigest(
         courseName: String,
         lectures: [(title: String, analysis: LectureAnalysis)],

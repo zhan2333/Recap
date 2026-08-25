@@ -17,6 +17,7 @@
 		4DA6C44E3E4A5BE360117666 /* ShellRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83E85A621F54206094AFF288 /* ShellRunner.swift */; };
 		4E3B91489EB4E18760D2C223 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0BCD4FAA05DF20394776496E /* AppIcon.icon */; };
 		60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E37ED690FC7C2FF61570139 /* RecapTheme.swift */; };
+		67BA261954B3EAA1F4221CB9 /* LaTeXCompiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA68D9332A939536EEE3D92 /* LaTeXCompiler.swift */; };
 		69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006620A5F96466763716A77A /* CourseListViewController.swift */; };
 		6EFB38676CE7420CBA1BCDD7 /* WaveformGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42A50B7D1BB20A2E73F430D2 /* WaveformGenerator.swift */; };
 		714AD98FBDBC84F14A500546 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = F596D0AE81FB36CC9976B7C9 /* Localizable.xcstrings */; };
@@ -59,6 +60,7 @@
 		3822695569806EF08ECC2E35 /* PDFViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFViewController.swift; sourceTree = "<group>"; };
 		42A50B7D1BB20A2E73F430D2 /* WaveformGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformGenerator.swift; sourceTree = "<group>"; };
 		456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
+		4CA68D9332A939536EEE3D92 /* LaTeXCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaTeXCompiler.swift; sourceTree = "<group>"; };
 		5E37ED690FC7C2FF61570139 /* RecapTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapTheme.swift; sourceTree = "<group>"; };
 		5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "recap-r-mark.png"; sourceTree = "<group>"; };
 		616F809051DE4C0195CAA00B /* RecapKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecapKit; path = RecapKit; sourceTree = SOURCE_ROOT; };
@@ -101,6 +103,7 @@
 		2D876CE734FE66D53F1EE665 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				4CA68D9332A939536EEE3D92 /* LaTeXCompiler.swift */,
 				7EAA252231B59F41A4E68A2A /* Library.swift */,
 				BE010D7F5C9CEB7CF7000C77 /* Settings.swift */,
 				8A01234BCEBBEF3102133BDF /* ShellBridge.swift */,
@@ -308,6 +311,7 @@
 				69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */,
 				DB5005A472A2861E6E97225C /* DetailHeaderView.swift in Sources */,
 				B5C337CBDA7637648DF120FD /* EvidenceReviewView.swift in Sources */,
+				67BA261954B3EAA1F4221CB9 /* LaTeXCompiler.swift in Sources */,
 				08C426EB553D45A214CA1172 /* LectureListViewController.swift in Sources */,
 				D742402BFA22E5EB83E20B00 /* LectureQueue.swift in Sources */,
 				F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */,

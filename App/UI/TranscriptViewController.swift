@@ -357,7 +357,7 @@ final class TranscriptViewController: UIViewController {
                     client: ChatClient(config: config)
                 )
                 try tex.write(to: texURL, atomically: true, encoding: .utf8)
-                try await Self.compileLaTeX(texURL: texURL, in: courseDir)
+                try await LaTeXCompiler.compile(texURL: texURL, in: courseDir)
                 isAnalyzing = false
                 refreshChrome()
                 showHandout()
@@ -366,22 +366,6 @@ final class TranscriptViewController: UIViewController {
                 refreshChrome()
                 presentInfo(title: String(localized: "生成失败"), message: error.localizedDescription)
             }
-        }
-    }
-
-    private static func compileLaTeX(texURL: URL, in directory: URL) async throws {
-        let command = """
-        cd '\(directory.path)' && XL=$(command -v xelatex || echo /Library/TeX/texbin/xelatex) && "$XL" -interaction=nonstopmode '\(texURL.lastPathComponent)' && "$XL" -interaction=nonstopmode '\(texURL.lastPathComponent)'
-        """
-        var log = ""
-        let code = await withCheckedContinuation { continuation in
-            ShellBridge.run(command, onOutput: { log += $0 }, onExit: { continuation.resume(returning: $0) })
-        }
-        guard code == 0 else {
-            let tail = log.split(separator: "\n").suffix(12).joined(separator: "\n")
-            throw NSError(domain: "Recap", code: Int(code), userInfo: [
-                NSLocalizedDescriptionKey: String(localized: "LaTeX 编译失败（需要本机已安装 BasicTeX/xelatex）：") + "\n" + tail,
-            ])
         }
     }
 

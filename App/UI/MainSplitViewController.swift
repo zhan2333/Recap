@@ -45,6 +45,11 @@ final class MainSplitViewController: UISplitViewController {
         let viewer = MarkdownViewController(markdown: markdown, title: title)
         setViewController(UINavigationController(rootViewController: viewer), for: .secondary)
     }
+
+    func show(pdfAt url: URL, title: String) {
+        let viewer = PDFViewController(fileURL: url, title: title)
+        setViewController(UINavigationController(rootViewController: viewer), for: .secondary)
+    }
 }
 
 // Neutral empty-state column.
