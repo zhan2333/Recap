@@ -10,11 +10,13 @@ import Foundation
 // Mirror of the plugin's interface
 @objc(RSPShellRunning)
 protocol ShellRunning {
+    @discardableResult
     static func run(
         _ command: String,
         onOutput: @escaping (String) -> Void,
         onExit: @escaping (Int32) -> Void
-    )
+    ) -> Int32
+    static func terminate(_ pid: Int32)
 }
 
 // Loads the macOS glue bundle that provides subprocess support (Process is unavailable in Catalyst itself).
@@ -33,15 +35,20 @@ enum ShellBridge {
 
     static var isAvailable: Bool { runner != nil }
 
+    @discardableResult
     static func run(
         _ command: String,
         onOutput: @escaping (String) -> Void,
         onExit: @escaping (Int32) -> Void
-    ) {
+    ) -> Int32 {
         guard let runner else {
             onExit(-1)
-            return
+            return -1
         }
-        runner.run(command, onOutput: onOutput, onExit: onExit)
+        return runner.run(command, onOutput: onOutput, onExit: onExit)
+    }
+
+    static func terminate(_ pid: Int32) {
+        runner?.terminate(pid)
     }
 }

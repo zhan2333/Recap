@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    "\n⏹ 已请求停止…\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\n⏹ Stop requested…\n"
+          }
+        }
+      }
+    },
     "\n✔ 下载完成\n": {
       "localizations": {
         "en": {
@@ -331,6 +341,16 @@
         }
       }
     },
+    "停止": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
+          }
+        }
+      }
+    },
     "先完成转写，再提取重点": {
       "localizations": {
         "en": {
@@ -527,6 +547,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        }
+      }
+    },
+    "只读上下文 · 产物写入课程目录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read-only context · Artifacts land in the course folder"
           }
         }
       }
@@ -981,6 +1011,16 @@
         }
       }
     },
+    "新会话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New session"
+          }
+        }
+      }
+    },
     "新建课程": {
       "localizations": {
         "en": {
@@ -1167,6 +1207,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Core concepts"
+          }
+        }
+      }
+    },
+    "检查术语": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check terminology"
           }
         }
       }
@@ -1547,6 +1597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Exam key points"
+          }
+        }
+      }
+    },
+    "补示意图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add diagrams"
           }
         }
       }
