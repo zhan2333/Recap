@@ -75,17 +75,35 @@ final class LibraryStore {
         return dir
     }
 
-    // Places the bundled recap-review skill into the course directory so a `claude` session started there picks up the working method.
+    // Places the bundled skill where each CLI agent discovers it: .claude/skills for claude, AGENTS.md for codex
     private func installSkillIfNeeded(in courseDir: URL) {
         guard let source = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md") else { return }
+        func modified(_ url: URL) -> Date {
+            (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+        }
+        let sourceModified = modified(source)
+
         let skillDir = courseDir.appendingPathComponent(".claude/skills/recap-review", isDirectory: true)
-        let target = skillDir.appendingPathComponent("SKILL.md")
-        let sourceModified = (try? source.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
-        let targetModified = (try? target.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
-        guard sourceModified > targetModified else { return }
-        try? FileManager.default.createDirectory(at: skillDir, withIntermediateDirectories: true)
-        try? FileManager.default.removeItem(at: target)
-        try? FileManager.default.copyItem(at: source, to: target)
+        let skillTarget = skillDir.appendingPathComponent("SKILL.md")
+        if sourceModified > modified(skillTarget) {
+            try? FileManager.default.createDirectory(at: skillDir, withIntermediateDirectories: true)
+            try? FileManager.default.removeItem(at: skillTarget)
+            try? FileManager.default.copyItem(at: source, to: skillTarget)
+        }
+
+        let agentsTarget = courseDir.appendingPathComponent("AGENTS.md")
+        if sourceModified > modified(agentsTarget),
+           let text = try? String(contentsOf: source, encoding: .utf8) {
+            try? Self.strippingFrontmatter(text).write(to: agentsTarget, atomically: true, encoding: .utf8)
+        }
+    }
+
+    private static func strippingFrontmatter(_ text: String) -> String {
+        guard text.hasPrefix("---") else { return text }
+        let parts = text.components(separatedBy: "\n---\n")
+        guard parts.count >= 2 else { return text }
+        return parts.dropFirst().joined(separator: "\n---\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
     }
 
     func mediaURL(_ lecture: Lecture, in course: Course) -> URL {

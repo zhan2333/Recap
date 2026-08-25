@@ -321,8 +321,8 @@ final class TranscriptViewController: UIViewController {
             message: String(localized: "两种方式产出同一份 PDF 讲义：claude 按内置 skill 生成，或用已配置的 API 接口按同一 skill 生成、在本机编译。"),
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: String(localized: "用 claude 生成"), style: .default) { [weak self] _ in
-            self?.presentClaudeHandoutGuide()
+        alert.addAction(UIAlertAction(title: String(localized: "用 claude / codex 生成"), style: .default) { [weak self] _ in
+            self?.presentCLIHandoutGuide()
         })
         alert.addAction(UIAlertAction(title: String(localized: "用 API 生成"), style: .default) { [weak self] _ in
             self?.generateHandoutViaAPI()
@@ -385,15 +385,19 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
-    private func presentClaudeHandoutGuide() {
-        let command = "claude \"为「\(lecture.name)」生成讲义\""
-        UIPasteboard.general.string = command
+    private func presentCLIHandoutGuide() {
+        let claudeCommand = "claude \"为「\(lecture.name)」生成讲义\""
+        let codexCommand = "codex \"为「\(lecture.name)」生成讲义\""
+        UIPasteboard.general.string = claudeCommand
         let alert = UIAlertController(
-            title: String(localized: "用 claude 生成讲义"),
-            message: String(localized: "讲义由 claude 按内置 skill 生成（LaTeX 排版编译为 PDF）。命令已复制：\n\n\(command)\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。"),
+            title: String(localized: "用 CLI 生成讲义"),
+            message: String(localized: "讲义由 CLI agent 按课程目录内置的 skill 生成（LaTeX 排版编译为 PDF）。claude 命令已复制：\n\n\(claudeCommand)\n\n也支持 codex（读取同目录 AGENTS.md）：\n\n\(codexCommand)\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。"),
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: String(localized: "好"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "复制 codex 命令"), style: .default) { _ in
+            UIPasteboard.general.string = codexCommand
+        })
         alert.addAction(UIAlertAction(title: String(localized: "打开课程目录"), style: .default) { [weak self] _ in
             guard let self else { return }
             let dir = LibraryStore.shared.courseDirectory(self.course)
