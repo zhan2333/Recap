@@ -159,7 +159,7 @@ final class LibraryStore {
     func deleteLecture(_ lecture: Lecture, in course: Course) {
         lecturesByCourse[course.id]?.removeAll { $0.id == lecture.id }
         for ext in ["mp4", "srt", "txt", "segments.json", "analysis.json", "analysis-raw.txt",
-                    "handout.pdf", "handout.tex", "handout.md", "waveform.json"] {
+                    "handout.pdf", "handout.tex", "handout.md", "waveform.json", "matches.json"] {
             try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
         }
         for part in lecture.parts ?? [] {

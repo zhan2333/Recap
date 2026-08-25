@@ -123,6 +123,7 @@ final class TranscriptViewController: UIViewController {
         let segmentsURL = store.productURL(lecture, in: course, ext: "segments.json")
         let txtURL = store.productURL(lecture, in: course, ext: "txt")
         let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
+        let matchCacheURL = store.productURL(lecture, in: course, ext: "matches.json")
         let courseDirectory = store.courseDirectory(course)
         let mediaParts = store.mediaParts(of: lecture, in: course)
             .map { (url: $0.url, duration: $0.part.duration,
@@ -146,10 +147,24 @@ final class TranscriptViewController: UIViewController {
             let rows = EvidenceReviewView.mergeRows(segments)
             var evidences: [EvidenceReviewView.Evidence] = []
             if let analysis {
-                let matches = EvidenceMatcher.match(
-                    signals: analysis.examSignals,
-                    segments: rows.map { ($0.start, $0.text) }
-                )
+                func modified(_ url: URL) -> Date {
+                    (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                }
+                let segmentsModified = modified(segmentsURL)
+                let analysisModified = modified(analysisURL)
+                let matches: [EvidenceMatch]
+                if let cached = EvidenceMatcher.cachedMatches(
+                    at: matchCacheURL, segmentsModified: segmentsModified, analysisModified: analysisModified) {
+                    matches = cached
+                } else {
+                    matches = EvidenceMatcher.match(
+                        signals: analysis.examSignals,
+                        segments: rows.map { ($0.start, $0.text) }
+                    )
+                    EvidenceMatcher.cache(
+                        matches, at: matchCacheURL,
+                        segmentsModified: segmentsModified, analysisModified: analysisModified)
+                }
                 let matchBySignal = Dictionary(uniqueKeysWithValues: matches.map { ($0.signalIndex, $0) })
                 evidences = analysis.examSignals.enumerated().map { index, signal in
                     EvidenceReviewView.Evidence(

@@ -8,7 +8,7 @@
 import Foundation
 
 // Matches extracted exam-signal quotes back to transcript segments so the Evidence Thread can point at real timestamps
-public struct EvidenceMatch: Sendable {
+public struct EvidenceMatch: Codable, Sendable {
     public let signalIndex: Int      // index into LectureAnalysis.examSignals
     public let segmentIndex: Int     // index into the segment array
     public let start: TimeInterval   // segment start time
@@ -47,6 +47,35 @@ public enum EvidenceMatcher {
             }
         }
         return matches.sorted { $0.segmentIndex < $1.segmentIndex }
+    }
+
+    // MARK: - Result cache
+
+    private struct CacheEnvelope: Codable {
+        let segmentsModified: TimeInterval
+        let analysisModified: TimeInterval
+        let matches: [EvidenceMatch]
+    }
+
+    // Matching is O(quotes × rows × LCS) — reuse the result while both inputs are unchanged
+    public static func cachedMatches(at url: URL, segmentsModified: Date, analysisModified: Date) -> [EvidenceMatch]? {
+        guard let data = try? Data(contentsOf: url),
+              let envelope = try? JSONDecoder().decode(CacheEnvelope.self, from: data),
+              abs(envelope.segmentsModified - segmentsModified.timeIntervalSince1970) < 0.001,
+              abs(envelope.analysisModified - analysisModified.timeIntervalSince1970) < 0.001
+        else { return nil }
+        return envelope.matches
+    }
+
+    public static func cache(_ matches: [EvidenceMatch], at url: URL, segmentsModified: Date, analysisModified: Date) {
+        let envelope = CacheEnvelope(
+            segmentsModified: segmentsModified.timeIntervalSince1970,
+            analysisModified: analysisModified.timeIntervalSince1970,
+            matches: matches
+        )
+        if let data = try? JSONEncoder().encode(envelope) {
+            try? data.write(to: url, options: .atomic)
+        }
     }
 
     // Fraction of the quote covered by its longest common substring with the segment
