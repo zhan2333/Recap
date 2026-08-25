@@ -4,3 +4,4 @@ xcuserdata/
 .DS_Store
 DerivedData/
 RecapKit/Vendor/whisper.xcframework/
+dist/
