@@ -147,7 +147,6 @@ final class ModeTabsView: UIView {
 
         let stack = UIStackView()
         stack.axis = .horizontal
-        stack.distribution = .fillEqually
         stack.spacing = 0
         for (index, item) in items.enumerated() {
             let button = UIButton(type: .custom)
@@ -156,7 +155,11 @@ final class ModeTabsView: UIView {
             button.layer.cornerRadius = 5
             button.layer.cornerCurve = .continuous
             button.addAction(UIAction { [weak self] _ in self?.select(index) }, for: .touchUpInside)
+            // Width follows each title (e.g. "Full transcript") instead of a fixed CJK-sized slot
             button.widthAnchor.constraint(greaterThanOrEqualToConstant: 58).isActive = true
+            if let titleLabel = button.titleLabel {
+                button.widthAnchor.constraint(greaterThanOrEqualTo: titleLabel.widthAnchor, constant: 24).isActive = true
+            }
             button.heightAnchor.constraint(equalToConstant: 24).isActive = true
             buttons.append(button)
             stack.addArrangedSubview(button)
