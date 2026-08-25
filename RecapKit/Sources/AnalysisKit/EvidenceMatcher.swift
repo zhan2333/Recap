@@ -51,7 +51,11 @@ public enum EvidenceMatcher {
 
     // MARK: - Result cache
 
+    // Bump when the scoring changes so stale cached matches recompute
+    private static let algorithmVersion = 2
+
     private struct CacheEnvelope: Codable {
+        var version: Int?
         let segmentsModified: TimeInterval
         let analysisModified: TimeInterval
         let matches: [EvidenceMatch]
@@ -61,6 +65,7 @@ public enum EvidenceMatcher {
     public static func cachedMatches(at url: URL, segmentsModified: Date, analysisModified: Date) -> [EvidenceMatch]? {
         guard let data = try? Data(contentsOf: url),
               let envelope = try? JSONDecoder().decode(CacheEnvelope.self, from: data),
+              envelope.version == algorithmVersion,
               abs(envelope.segmentsModified - segmentsModified.timeIntervalSince1970) < 0.001,
               abs(envelope.analysisModified - analysisModified.timeIntervalSince1970) < 0.001
         else { return nil }
@@ -69,6 +74,7 @@ public enum EvidenceMatcher {
 
     public static func cache(_ matches: [EvidenceMatch], at url: URL, segmentsModified: Date, analysisModified: Date) {
         let envelope = CacheEnvelope(
+            version: algorithmVersion,
             segmentsModified: segmentsModified.timeIntervalSince1970,
             analysisModified: analysisModified.timeIntervalSince1970,
             matches: matches
@@ -78,7 +84,8 @@ public enum EvidenceMatcher {
         }
     }
 
-    // Fraction of the quote covered by its longest common substring with the segment
+    // Best of two views: longest common substring (exact spans) and bigram overlap
+    // (robust to the scattered single-character fixes LLMs apply to whisper output)
     static func overlapScore(quote: String, segment: String) -> Double {
         if segment.contains(quote) || quote.contains(segment) { return 1 }
         let a = Array(quote), b = Array(segment)
@@ -92,7 +99,17 @@ public enum EvidenceMatcher {
             }
             previous = current
         }
-        return Double(longest) / Double(a.count)
+        let substring = Double(longest) / Double(a.count)
+        return max(substring, bigramScore(quote: a, segment: b))
+    }
+
+    private static func bigramScore(quote: [Character], segment: [Character]) -> Double {
+        guard quote.count >= 2, segment.count >= 2 else { return 0 }
+        var quoteBigrams = Set<String>()
+        for i in 0..<(quote.count - 1) { quoteBigrams.insert(String(quote[i...i + 1])) }
+        var segmentBigrams = Set<String>()
+        for i in 0..<(segment.count - 1) { segmentBigrams.insert(String(segment[i...i + 1])) }
+        return Double(quoteBigrams.intersection(segmentBigrams).count) / Double(quoteBigrams.count)
     }
 
     // Strips whitespace and punctuation so tone particles and commas don't break the match.
