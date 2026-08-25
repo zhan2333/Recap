@@ -24,8 +24,8 @@ final class MainSplitViewController: UISplitViewController {
         preferredSupplementaryColumnWidth = 300
 
         setViewController(UINavigationController(rootViewController: courseList), for: .primary)
-        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: "这里还没有内容，但第一步很轻。\n先新建一门课程。")), for: .supplementary)
-        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: "选择一个讲次查看文稿")), for: .secondary)
+        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: String(localized: "这里还没有内容，但第一步很轻。\n先新建一门课程。"))), for: .supplementary)
+        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: String(localized: "选择一个讲次查看文稿"))), for: .secondary)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -33,7 +33,7 @@ final class MainSplitViewController: UISplitViewController {
     func show(course: Course) {
         let lectures = LectureListViewController(course: course)
         setViewController(UINavigationController(rootViewController: lectures), for: .supplementary)
-        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: "选择一个讲次查看文稿")), for: .secondary)
+        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: String(localized: "选择一个讲次查看文稿"))), for: .secondary)
     }
 
     func show(lecture: Lecture, in course: Course) {

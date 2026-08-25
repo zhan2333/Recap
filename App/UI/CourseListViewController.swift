@@ -18,11 +18,11 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "课程"
+        title = String(localized: "课程")
         view.backgroundColor = RecapTheme.surface
         navigationController?.navigationBar.isHidden = true
 
-        let paneBar = PaneBar(title: "课程")
+        let paneBar = PaneBar(title: String(localized: "课程"))
         paneBar.addButton.addAction(UIAction { [weak self] _ in self?.promptNewCourse() }, for: .touchUpInside)
 
         var listConfig = UICollectionLayoutListConfiguration(appearance: .plain)
@@ -43,11 +43,11 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
         let settingsButton = UIButton(type: .system)
         var settingsConfig = UIButton.Configuration.plain()
         settingsConfig.image = UIImage(systemName: "gearshape", withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .medium))
-        settingsConfig.title = "设置…"
+        settingsConfig.title = String(localized: "设置…")
         settingsConfig.imagePadding = 7
         settingsConfig.baseForegroundColor = RecapTheme.muted
         settingsConfig.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8)
-        settingsConfig.attributedTitle = AttributedString("设置…", attributes: AttributeContainer([
+        settingsConfig.attributedTitle = AttributedString(String(localized: "设置…"), attributes: AttributeContainer([
             .font: RecapTheme.body(12), .foregroundColor: RecapTheme.muted,
         ]))
         settingsButton.configuration = settingsConfig
@@ -110,10 +110,10 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
     }
 
     private func promptNewCourse() {
-        let alert = UIAlertController(title: "新建课程", message: nil, preferredStyle: .alert)
-        alert.addTextField { $0.placeholder = "课程名（如：习概）" }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "创建", style: .default) { [weak self, weak alert] _ in
+        let alert = UIAlertController(title: String(localized: "新建课程"), message: nil, preferredStyle: .alert)
+        alert.addTextField { $0.placeholder = String(localized: "课程名（如：习概）") }
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "创建"), style: .default) { [weak self, weak alert] _ in
             guard let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   !name.isEmpty else { return }
             let course = LibraryStore.shared.addCourse(named: name)
@@ -125,7 +125,7 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
     private func deleteActions(at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard let courseID = dataSource.itemIdentifier(for: indexPath),
               let course = LibraryStore.shared.courses.first(where: { $0.id == courseID }) else { return nil }
-        let delete = UIContextualAction(style: .destructive, title: "删除") { _, _, done in
+        let delete = UIContextualAction(style: .destructive, title: String(localized: "删除")) { _, _, done in
             LibraryStore.shared.deleteCourse(course)
             done(true)
         }
@@ -154,14 +154,14 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
         guard let courseID = dataSource.itemIdentifier(for: indexPath),
               let course = LibraryStore.shared.courses.first(where: { $0.id == courseID }) else { return nil }
         return UIContextMenuConfiguration(actionProvider: { [weak self] _ in
-            let rename = UIAction(title: "重命名…", image: UIImage(systemName: "pencil")) { _ in
+            let rename = UIAction(title: String(localized: "重命名…"), image: UIImage(systemName: "pencil")) { _ in
                 self?.promptRename(course)
             }
-            let reveal = UIAction(title: "在访达中显示", image: UIImage(systemName: "folder")) { _ in
+            let reveal = UIAction(title: String(localized: "在访达中显示"), image: UIImage(systemName: "folder")) { _ in
                 let dir = LibraryStore.shared.courseDirectory(course)
                 UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
             }
-            let delete = UIAction(title: "删除课程", image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
+            let delete = UIAction(title: String(localized: "删除课程"), image: UIImage(systemName: "trash"), attributes: .destructive) { _ in
                 self?.confirmDelete(course)
             }
             return UIMenu(children: [
@@ -172,10 +172,10 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
     }
 
     private func promptRename(_ course: Course) {
-        let alert = UIAlertController(title: "重命名课程", message: nil, preferredStyle: .alert)
+        let alert = UIAlertController(title: String(localized: "重命名课程"), message: nil, preferredStyle: .alert)
         alert.addTextField { $0.text = course.name }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "确定", style: .default) { [weak self, weak alert] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "确定"), style: .default) { [weak self, weak alert] _ in
             guard let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   !name.isEmpty else { return }
             var renamed = course
@@ -189,12 +189,12 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
     private func confirmDelete(_ course: Course) {
         let lectureCount = LibraryStore.shared.lectures(in: course).count
         let alert = UIAlertController(
-            title: "删除「\(course.name)」？",
-            message: lectureCount > 0 ? "该课程的 \(lectureCount) 个讲次及全部文稿、重点、讲义都会一并删除。" : nil,
+            title: String(localized: "删除「\(course.name)」？"),
+            message: lectureCount > 0 ? String(localized: "该课程的 \(lectureCount) 个讲次及全部文稿、重点、讲义都会一并删除。") : nil,
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "删除", style: .destructive) { _ in
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "删除"), style: .destructive) { _ in
             LibraryStore.shared.deleteCourse(course)
         })
         present(alert, animated: true)
@@ -287,13 +287,13 @@ final class CourseCell: UICollectionViewCell {
     func configure(name: String, lectureCount: Int, analyzedCount: Int, isActive: Bool) {
         nameLabel.text = name
         if lectureCount == 0 {
-            statsLabel.text = "还没有讲次"
+            statsLabel.text = String(localized: "还没有讲次")
         } else if analyzedCount == lectureCount {
-            statsLabel.text = "\(lectureCount) 个讲次 · 已完成"
+            statsLabel.text = String(localized: "\(lectureCount) 个讲次 · 已完成")
         } else if analyzedCount > 0 {
-            statsLabel.text = "\(lectureCount) 个讲次 · \(analyzedCount) 已分析"
+            statsLabel.text = String(localized: "\(lectureCount) 个讲次 · \(analyzedCount) 已分析")
         } else {
-            statsLabel.text = "\(lectureCount) 个讲次"
+            statsLabel.text = String(localized: "\(lectureCount) 个讲次")
         }
         countLabel.text = lectureCount > 0 ? "\(lectureCount)" : ""
         nameLabel.textColor = isActive ? RecapTheme.ink : RecapTheme.muted

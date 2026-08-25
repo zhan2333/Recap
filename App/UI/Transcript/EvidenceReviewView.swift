@@ -77,7 +77,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         notesPane.backgroundColor = RecapTheme.notesPane
 
         let heading = UILabel()
-        heading.text = "证据线索"
+        heading.text = String(localized: "证据线索")
         heading.font = RecapTheme.body(13, weight: .semibold)
         heading.textColor = RecapTheme.ink
         notesCountLabel.font = RecapTheme.body(11)
@@ -260,7 +260,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         for (index, evidence) in evidences.enumerated() where evidence.rowIndex != nil {
             let pin = UIButton(type: .custom)
             pin.tag = index
-            pin.accessibilityLabel = "选择 \(Self.timestamp(evidence.start ?? 0)) 重点线索"
+            pin.accessibilityLabel = String(localized: "选择 \(Self.timestamp(evidence.start ?? 0)) 重点线索")
             pin.addAction(UIAction { [weak self] action in
                 guard let button = action.sender as? UIButton else { return }
                 self?.select(evidenceIndex: button.tag, scrollToRow: true)
@@ -328,11 +328,11 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         notesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         noteCards = []
 
-        notesCountLabel.text = evidences.isEmpty ? "" : "\(evidences.count) 条线索"
+        notesCountLabel.text = evidences.isEmpty ? "" : String(localized: "\(evidences.count) 条线索")
 
         if evidences.isEmpty {
             let empty = UILabel()
-            empty.text = displayRows.isEmpty ? "" : "提取重点后，证据线索会出现在这里。"
+            empty.text = displayRows.isEmpty ? "" : String(localized: "提取重点后，证据线索会出现在这里。")
             empty.font = RecapTheme.body(11)
             empty.textColor = RecapTheme.quiet
             empty.numberOfLines = 0
@@ -354,7 +354,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         let generate = UIButton(type: .system)
         var config = UIButton.Configuration.plain()
         config.attributedTitle = AttributedString(
-            "生成本讲讲义 →", attributes: AttributeContainer([
+            String(localized: "生成本讲讲义 →"), attributes: AttributeContainer([
                 .font: RecapTheme.body(11, weight: .semibold), .foregroundColor: RecapTheme.ink,
             ]))
         config.baseForegroundColor = RecapTheme.ink
@@ -371,7 +371,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
 
     private func updateSelectionStatus() {
         guard let index = selectedEvidenceIndex else {
-            selectionStatusLabel.text = evidences.isEmpty ? " " : "选择一条证据"
+            selectionStatusLabel.text = evidences.isEmpty ? " " : String(localized: "选择一条证据")
             return
         }
         let evidence = evidences[index]
@@ -379,7 +379,7 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
         if let start = evidence.start { parts.append(Self.timestamp(start)) }
         parts.append(evidence.signal.strength)
         if let topic = evidence.signal.topic, !topic.isEmpty { parts.append(topic) }
-        selectionStatusLabel.text = "当前证据：" + parts.joined(separator: " · ")
+        selectionStatusLabel.text = String(localized: "当前证据：") + parts.joined(separator: " · ")
     }
 
     // MARK: - Selection
@@ -518,7 +518,7 @@ final class TranscriptRowCell: UITableViewCell {
             let annotation = NSMutableAttributedString(
                 string: evidence.signal.strength + "  ",
                 attributes: [.font: RecapTheme.body(11, weight: .semibold), .foregroundColor: RecapTheme.signalText])
-            var detail = "老师原话已保留"
+            var detail = String(localized: "老师原话已保留")
             if let qtype = evidence.signal.qtype, !qtype.isEmpty { detail += " · \(qtype)" }
             annotation.append(NSAttributedString(
                 string: detail,
@@ -591,7 +591,7 @@ final class NoteCardButton: UIButton {
 
         if let start = evidence.start {
             let back = UILabel()
-            back.text = "回到 \(EvidenceReviewView.timestamp(start))"
+            back.text = String(localized: "回到 \(EvidenceReviewView.timestamp(start))")
             back.font = RecapTheme.body(11, weight: .medium)
             back.textColor = RecapTheme.time
             stack.addArrangedSubview(back)

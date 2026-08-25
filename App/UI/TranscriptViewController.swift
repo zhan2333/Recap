@@ -191,8 +191,8 @@ final class TranscriptViewController: UIViewController {
     private func refreshChrome() {
         header.isAnalyzing = isAnalyzing
 
-        var title = "提取重点"
-        if analysis != nil { title = hasHandout ? "查看讲义" : "生成讲义" }
+        var title = String(localized: "提取重点")
+        if analysis != nil { title = hasHandout ? String(localized: "查看讲义") : String(localized: "生成讲义") }
         header.analyzeButton.configuration?.attributedTitle = AttributedString(
             title, attributes: AttributeContainer([
                 .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
@@ -201,15 +201,15 @@ final class TranscriptViewController: UIViewController {
 
         var actions: [UIAction] = []
         if analysis != nil {
-            actions.append(UIAction(title: "重新提取重点", image: UIImage(systemName: "text.magnifyingglass")) { [weak self] _ in
+            actions.append(UIAction(title: String(localized: "重新提取重点"), image: UIImage(systemName: "text.magnifyingglass")) { [weak self] _ in
                 self?.analyze()
             })
-            actions.append(UIAction(title: "生成本讲讲义", image: UIImage(systemName: "doc.text")) { [weak self] _ in
+            actions.append(UIAction(title: String(localized: "生成本讲讲义"), image: UIImage(systemName: "doc.text")) { [weak self] _ in
                 self?.generateHandout()
             })
         }
         if hasHandout {
-            actions.append(UIAction(title: "查看本讲讲义", image: UIImage(systemName: "doc.richtext")) { [weak self] _ in
+            actions.append(UIAction(title: String(localized: "查看本讲讲义"), image: UIImage(systemName: "doc.richtext")) { [weak self] _ in
                 self?.showHandout()
             })
         }
@@ -228,7 +228,7 @@ final class TranscriptViewController: UIViewController {
         // A background refresh must not flash the loading state over live content
         if isLoading && segments.isEmpty {
             emptyLabel.isHidden = false
-            emptyLabel.text = "正在载入文稿…"
+            emptyLabel.text = String(localized: "正在载入文稿…")
             return
         }
         switch mode {
@@ -244,12 +244,12 @@ final class TranscriptViewController: UIViewController {
             emptyLabel.isHidden = false
             if mode == 3 {
                 emptyLabel.text = isAnalyzing
-                    ? "正在读取文稿，提取老师强调的重点…"
-                    : plainText.isEmpty ? "先完成转写，再提取重点" : "文稿已就绪 · 点右上角提取本讲重点"
+                    ? String(localized: "正在读取文稿，提取老师强调的重点…")
+                    : plainText.isEmpty ? String(localized: "先完成转写，再提取重点") : String(localized: "文稿已就绪 · 点右上角提取本讲重点")
             } else {
                 emptyLabel.text = lecture.phase == .failed
-                    ? "转写失败：\(lecture.errorMessage ?? "未知错误")"
-                    : "尚无文稿——转写完成后在这里查看"
+                    ? String(localized: "转写失败：\(lecture.errorMessage ?? String(localized: "未知错误"))")
+                    : String(localized: "尚无文稿——转写完成后在这里查看")
             }
         }
     }
@@ -289,9 +289,9 @@ final class TranscriptViewController: UIViewController {
                 if let analyzeError = error as? LectureAnalyzer.AnalyzeError {
                     let rawURL = LibraryStore.shared.productURL(lecture, in: course, ext: "analysis-raw.txt")
                     try? analyzeError.rawResponse.write(to: rawURL, atomically: true, encoding: .utf8)
-                    message += "\n完整响应已保存到课程目录 analysis-raw.txt。"
+                    message += String(localized: "\n完整响应已保存到课程目录 analysis-raw.txt。")
                 }
-                presentInfo(title: "提取失败", message: message)
+                presentInfo(title: String(localized: "提取失败"), message: message)
             }
             isAnalyzing = false
             refreshChrome()
@@ -304,12 +304,12 @@ final class TranscriptViewController: UIViewController {
         let command = "claude \"为「\(lecture.name)」生成讲义\""
         UIPasteboard.general.string = command
         let alert = UIAlertController(
-            title: "用 claude 生成讲义",
-            message: "讲义由 claude 按内置 skill 生成（LaTeX 排版编译为 PDF）。命令已复制：\n\n\(command)\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。",
+            title: String(localized: "用 claude 生成讲义"),
+            message: String(localized: "讲义由 claude 按内置 skill 生成（LaTeX 排版编译为 PDF）。命令已复制：\n\n\(command)\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。"),
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "好", style: .cancel))
-        alert.addAction(UIAlertAction(title: "打开课程目录", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "好"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "打开课程目录"), style: .default) { [weak self] _ in
             guard let self else { return }
             let dir = LibraryStore.shared.courseDirectory(self.course)
             UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
@@ -321,19 +321,19 @@ final class TranscriptViewController: UIViewController {
         guard hasHandout else { return }
         navigationController?.navigationBar.isHidden = false
         navigationController?.pushViewController(
-            PDFViewController(fileURL: handoutURL, title: "\(lecture.name) 讲义"),
+            PDFViewController(fileURL: handoutURL, title: String(localized: "\(lecture.name) 讲义")),
             animated: true
         )
     }
 
     private func presentConfigureAlert() {
         let alert = UIAlertController(
-            title: "先配置 AI 接口",
-            message: "在设置里填写 Base URL、API Key 和 Model。",
+            title: String(localized: "先配置 AI 接口"),
+            message: String(localized: "在设置里填写 Base URL、API Key 和 Model。"),
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "去设置", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "去设置"), style: .default) { [weak self] _ in
             self?.present(UINavigationController(rootViewController: SettingsViewController()), animated: true)
         })
         present(alert, animated: true)
@@ -341,7 +341,7 @@ final class TranscriptViewController: UIViewController {
 
     private func presentInfo(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "好", style: .default))
+        alert.addAction(UIAlertAction(title: String(localized: "好"), style: .default))
         present(alert, animated: true)
     }
 }
@@ -365,7 +365,7 @@ final class TranscriptMetaBar: UIView {
             label.font = RecapTheme.body(11)
             label.textColor = RecapTheme.quiet
         }
-        stateLabel.text = "本地转写完成"
+        stateLabel.text = String(localized: "本地转写完成")
 
         let bottomLine = UIView()
         bottomLine.backgroundColor = RecapTheme.line
@@ -400,16 +400,16 @@ final class TranscriptMetaBar: UIView {
         guard let last = segments.last else {
             statsLabel.text = nil
             modelLabel.text = nil
-            stateLabel.text = "等待转写"
+            stateLabel.text = String(localized: "等待转写")
             return
         }
-        stateLabel.text = "本地转写完成"
+        stateLabel.text = String(localized: "本地转写完成")
         let total = Int(last.end)
         let duration = total >= 3600
             ? String(format: "%d:%02d:%02d", total / 3600, total / 60 % 60, total % 60)
             : String(format: "%02d:%02d", total / 60, total % 60)
-        statsLabel.text = "\(duration) · \(characterCount) 字"
-        modelLabel.text = "模型：large-v3-turbo"
+        statsLabel.text = String(localized: "\(duration) · \(characterCount) 字")
+        modelLabel.text = String(localized: "模型：large-v3-turbo")
     }
 }
 
@@ -448,7 +448,7 @@ final class ReadingPageView: UIView, UITableViewDataSource {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func update(title: String, subtitle: String, rows displayRows: [EvidenceReviewView.DisplayRow], quoteRows: Set<Int>) {
-        rows = [.eyebrow("\(subtitle) · 完整文稿"), .title(title)]
+        rows = [.eyebrow(String(localized: "\(subtitle) · 完整文稿")), .title(title)]
         var buffer = ""
         func flush() {
             let trimmed = buffer.trimmingCharacters(in: .whitespaces)
@@ -598,11 +598,11 @@ final class SignalsPageView: UIView {
 
         // Header
         let eyebrow = UILabel()
-        eyebrow.text = "本讲共提取"
+        eyebrow.text = String(localized: "本讲共提取")
         eyebrow.font = RecapTheme.body(11)
         eyebrow.textColor = RecapTheme.muted
         let count = UILabel()
-        count.text = "\(analysis.examSignals.count) 个重点"
+        count.text = String(localized: "\(analysis.examSignals.count) 个重点")
         count.font = RecapTheme.display(28, weight: .semibold)
         count.textColor = RecapTheme.ink
         let headerText = UIStackView(arrangedSubviews: [eyebrow, count])
@@ -611,7 +611,7 @@ final class SignalsPageView: UIView {
 
         let redo = UIButton(type: .system)
         var redoConfig = UIButton.Configuration.plain()
-        redoConfig.attributedTitle = AttributedString("重新提取", attributes: AttributeContainer([
+        redoConfig.attributedTitle = AttributedString(String(localized: "重新提取"), attributes: AttributeContainer([
             .font: RecapTheme.body(11), .foregroundColor: RecapTheme.muted,
         ]))
         redoConfig.baseForegroundColor = RecapTheme.muted
@@ -632,7 +632,7 @@ final class SignalsPageView: UIView {
         // Quote cards
         if !analysis.examSignals.isEmpty {
             let sectionTitle = UILabel()
-            sectionTitle.text = "重点（老师原话）"
+            sectionTitle.text = String(localized: "重点（老师原话）")
             sectionTitle.font = RecapTheme.body(13, weight: .semibold)
             sectionTitle.textColor = RecapTheme.ink
             stack.addArrangedSubview(sectionTitle)
@@ -645,10 +645,10 @@ final class SignalsPageView: UIView {
 
         // 2×2 grid of list sections
         let gridPairs: [(String, [String])] = [
-            ("核心概念", analysis.keyConcepts),
-            ("解题方法", analysis.answerApproaches),
-            ("易混易错", analysis.confusablePoints),
-            ("作业 / 思考题", analysis.assignments),
+            (String(localized: "核心概念"), analysis.keyConcepts),
+            (String(localized: "解题方法"), analysis.answerApproaches),
+            (String(localized: "易混易错"), analysis.confusablePoints),
+            (String(localized: "作业 / 思考题"), analysis.assignments),
         ].filter { !$0.1.isEmpty }
 
         if !gridPairs.isEmpty {
@@ -675,7 +675,7 @@ final class SignalsPageView: UIView {
 
         if !analysis.mustMemorize.isEmpty {
             stack.setCustomSpacing(24, after: stack.arrangedSubviews.last ?? stack)
-            stack.addArrangedSubview(GridSectionView(title: "必背", items: analysis.mustMemorize))
+            stack.addArrangedSubview(GridSectionView(title: String(localized: "必背"), items: analysis.mustMemorize))
         }
     }
 
@@ -696,7 +696,7 @@ final class SignalsPageView: UIView {
             quote.numberOfLines = 0
 
             let topic = UILabel()
-            topic.text = signal.topic.map { "知识点：\($0)" }
+            topic.text = signal.topic.map { String(localized: "知识点：\($0)") }
             topic.font = RecapTheme.body(11)
             topic.textColor = RecapTheme.muted
 

@@ -38,7 +38,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         headerBar.courseLabel.text = course.name
         headerBar.addButton.showsMenuAsPrimaryAction = true
 
-        searchField.placeholder = "搜索讲次"
+        searchField.placeholder = String(localized: "搜索讲次")
         searchField.font = RecapTheme.body(12)
         searchField.backgroundColor = RecapTheme.paper.withAlphaComponent(0.72)
         searchField.addAction(UIAction { [weak self] _ in
@@ -65,8 +65,8 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         footer.axis = .horizontal
         footer.spacing = 6
         footer.distribution = .fillEqually
-        footer.addArrangedSubview(footerButton(title: "粘贴直链") { [weak self] in self?.promptNewLecture() })
-        footer.addArrangedSubview(footerButton(title: "导入文件…") { [weak self] in self?.pickLocalFile() })
+        footer.addArrangedSubview(footerButton(title: String(localized: "粘贴直链")) { [weak self] in self?.promptNewLecture() })
+        footer.addArrangedSubview(footerButton(title: String(localized: "导入文件…")) { [weak self] in self?.pickLocalFile() })
 
         for subview in [headerBar, searchField, collectionView, footer] as [UIView] {
             subview.translatesAutoresizingMaskIntoConstraints = false
@@ -158,8 +158,8 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         keyPointCounts.removeAll()
         let lectures = visibleLectures
         headerBar.countLabel.text = lectures.isEmpty && searchText.isEmpty
-            ? "还没有讲次"
-            : "\(lectures.count) 个讲次"
+            ? String(localized: "还没有讲次")
+            : String(localized: "\(lectures.count) 个讲次")
         var snapshot = NSDiffableDataSourceSnapshot<Section, UUID>()
         snapshot.appendSections([.main])
         snapshot.appendItems(lectures.map(\.id))
@@ -224,14 +224,14 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     private func refreshToolsMenu() {
         let addActions = [
-            UIAction(title: "粘贴直链入队", image: UIImage(systemName: "link")) { [weak self] _ in
+            UIAction(title: String(localized: "粘贴直链入队"), image: UIImage(systemName: "link")) { [weak self] _ in
                 self?.promptNewLecture()
             },
-            UIAction(title: "导入本地文件", image: UIImage(systemName: "folder")) { [weak self] _ in
+            UIAction(title: String(localized: "导入本地文件"), image: UIImage(systemName: "folder")) { [weak self] _ in
                 self?.pickLocalFile()
             },
         ]
-        let revealAction = UIAction(title: "在访达中显示课程目录", image: UIImage(systemName: "folder.badge.gearshape")) { [weak self] _ in
+        let revealAction = UIAction(title: String(localized: "在访达中显示课程目录"), image: UIImage(systemName: "folder.badge.gearshape")) { [weak self] _ in
             guard let self else { return }
             let dir = LibraryStore.shared.courseDirectory(self.course)
             UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
@@ -247,27 +247,27 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     private var courseToolActions: [UIAction] {
         let store = LibraryStore.shared
         var actions: [UIAction] = [
-            UIAction(title: "导入教材 PDF", image: UIImage(systemName: "doc.badge.plus")) { [weak self] _ in
+            UIAction(title: String(localized: "导入教材 PDF"), image: UIImage(systemName: "doc.badge.plus")) { [weak self] _ in
                 self?.pickTextbook()
             },
         ]
         if let text = try? String(contentsOf: store.courseFileURL(course, name: "textbook.txt"), encoding: .utf8),
            !text.isEmpty {
-            actions.append(UIAction(title: "查看教材全文", image: UIImage(systemName: "text.book.closed")) { [weak self] _ in
+            actions.append(UIAction(title: String(localized: "查看教材全文"), image: UIImage(systemName: "text.book.closed")) { [weak self] _ in
                 guard let self else { return }
                 (self.splitViewController as? MainSplitViewController)?
-                    .show(markdown: text, title: "\(self.course.name) 教材")
+                    .show(markdown: text, title: String(localized: "\(self.course.name) 教材"))
             })
         }
-        actions.append(UIAction(title: "生成考试重点", image: UIImage(systemName: "star.circle")) { [weak self] _ in
+        actions.append(UIAction(title: String(localized: "生成考试重点"), image: UIImage(systemName: "star.circle")) { [weak self] _ in
             self?.generateDigest()
         })
         if let digest = try? String(contentsOf: store.courseFileURL(course, name: "review.md"), encoding: .utf8),
            !digest.isEmpty {
-            actions.append(UIAction(title: "查看考试重点", image: UIImage(systemName: "star.fill")) { [weak self] _ in
+            actions.append(UIAction(title: String(localized: "查看考试重点"), image: UIImage(systemName: "star.fill")) { [weak self] _ in
                 guard let self else { return }
                 (self.splitViewController as? MainSplitViewController)?
-                    .show(markdown: digest, title: "\(self.course.name)考试重点")
+                    .show(markdown: digest, title: String(localized: "\(self.course.name)考试重点"))
             })
         }
         return actions
@@ -291,9 +291,9 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                     atomically: true, encoding: .utf8
                 )
                 let pages = text.components(separatedBy: "【第").count - 1
-                presentInfo(title: "教材导入完成", message: "共提取 \(pages) 页文本。")
+                presentInfo(title: String(localized: "教材导入完成"), message: String(localized: "共提取 \(pages) 页文本。"))
             } catch {
-                presentInfo(title: "导入失败", message: error.localizedDescription)
+                presentInfo(title: String(localized: "导入失败"), message: error.localizedDescription)
             }
             isWorking = false
             refreshToolsMenu()
@@ -303,7 +303,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     private func generateDigest() {
         guard !isWorking else { return }
         guard let config = Settings.chatConfig else {
-            presentInfo(title: "先配置 AI 接口", message: "在设置里填写 Base URL、API Key 和 Model。")
+            presentInfo(title: String(localized: "先配置 AI 接口"), message: String(localized: "在设置里填写 Base URL、API Key 和 Model。"))
             return
         }
         let store = LibraryStore.shared
@@ -314,7 +314,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             return (lecture.name, analysis)
         }
         guard !inputs.isEmpty else {
-            presentInfo(title: "没有可汇总的讲次", message: "先对讲次逐个「提取重点」，再生成考试重点。")
+            presentInfo(title: String(localized: "没有可汇总的讲次"), message: String(localized: "先对讲次逐个「提取重点」，再生成考试重点。"))
             return
         }
 
@@ -333,9 +333,9 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                     atomically: true, encoding: .utf8
                 )
                 (splitViewController as? MainSplitViewController)?
-                    .show(markdown: markdown, title: "\(courseName)考试重点")
+                    .show(markdown: markdown, title: String(localized: "\(courseName)考试重点"))
             } catch {
-                presentInfo(title: "生成失败", message: error.localizedDescription)
+                presentInfo(title: String(localized: "生成失败"), message: error.localizedDescription)
             }
             isWorking = false
             refreshToolsMenu()
@@ -344,14 +344,14 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     private func presentInfo(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "好", style: .default))
+        alert.addAction(UIAlertAction(title: String(localized: "好"), style: .default))
         present(alert, animated: true)
     }
 
     private func swipeActions(at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard let lectureID = dataSource.itemIdentifier(for: indexPath),
               let lecture = LibraryStore.shared.lecture(id: lectureID, in: course) else { return nil }
-        let delete = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, done in
+        let delete = UIContextualAction(style: .destructive, title: String(localized: "删除")) { [weak self] _, _, done in
             guard let self else { return done(false) }
             LibraryStore.shared.deleteLecture(lecture, in: self.course)
             self.reload()
@@ -392,9 +392,9 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             if mediaExists {
                 let title: String
                 switch lecture.phase {
-                case .transcribed: title = "重新转写"
-                case .failed: title = "重试转写"
-                default: title = "开始转写"
+                case .transcribed: title = String(localized: "重新转写")
+                case .failed: title = String(localized: "重试转写")
+                default: title = String(localized: "开始转写")
                 }
                 workActions.append(UIAction(title: title, image: UIImage(systemName: "waveform")) { [weak self] _ in
                     guard let self else { return }
@@ -403,7 +403,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             }
             if lecture.sourceURL != nil {
                 workActions.append(UIAction(
-                    title: mediaExists ? "重新下载并转写" : "下载并转写",
+                    title: mediaExists ? String(localized: "重新下载并转写") : String(localized: "下载并转写"),
                     image: UIImage(systemName: "arrow.down.circle")
                 ) { [weak self] _ in
                     guard let self else { return }
@@ -415,27 +415,27 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         var appendActions: [UIAction] = []
         if !isBusy {
             appendActions = [
-                UIAction(title: "追加视频直链…", image: UIImage(systemName: "text.append")) { [weak self] _ in
+                UIAction(title: String(localized: "追加视频直链…"), image: UIImage(systemName: "text.append")) { [weak self] _ in
                     self?.promptAppendLink(lecture)
                 },
-                UIAction(title: "追加视频文件…", image: UIImage(systemName: "folder.badge.plus")) { [weak self] _ in
+                UIAction(title: String(localized: "追加视频文件…"), image: UIImage(systemName: "folder.badge.plus")) { [weak self] _ in
                     self?.pickAppendFiles(lecture)
                 },
             ]
         }
 
-        let rename = UIAction(title: "重命名…", image: UIImage(systemName: "pencil")) { [weak self] _ in
+        let rename = UIAction(title: String(localized: "重命名…"), image: UIImage(systemName: "pencil")) { [weak self] _ in
             self?.promptRename(lecture)
         }
-        let updateLink = UIAction(title: "更新直链…", image: UIImage(systemName: "link.badge.plus")) { [weak self] _ in
+        let updateLink = UIAction(title: String(localized: "更新直链…"), image: UIImage(systemName: "link.badge.plus")) { [weak self] _ in
             self?.promptUpdateLink(lecture)
         }
-        let reveal = UIAction(title: "在访达中显示", image: UIImage(systemName: "folder")) { [weak self] _ in
+        let reveal = UIAction(title: String(localized: "在访达中显示"), image: UIImage(systemName: "folder")) { [weak self] _ in
             guard let self else { return }
             let dir = store.courseDirectory(self.course)
             UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
         }
-        let delete = UIAction(title: "删除", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
+        let delete = UIAction(title: String(localized: "删除"), image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
             guard let self else { return }
             LibraryStore.shared.deleteLecture(lecture, in: self.course)
             self.reload()
@@ -461,8 +461,8 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     private func promptAppendLink(_ lecture: Lecture) {
         let alert = UIAlertController(
-            title: "追加视频直链",
-            message: "新视频会接在本讲末尾，转写完成后文稿自动拼接。",
+            title: String(localized: "追加视频直链"),
+            message: String(localized: "新视频会接在本讲末尾，转写完成后文稿自动拼接。"),
             preferredStyle: .alert
         )
         alert.addTextField {
@@ -471,8 +471,8 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                 $0.text = paste
             }
         }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "追加并转写", style: .default) { [weak self, weak alert] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "追加并转写"), style: .default) { [weak self, weak alert] _ in
             guard let self,
                   let urlString = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   let url = URL(string: urlString), url.host != nil else { return }
@@ -515,16 +515,16 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     private func promptUpdateLink(_ lecture: Lecture) {
         let alert = UIAlertController(
-            title: "更新直链",
-            message: "直链 token 过期后，从云课堂重新抓取并粘贴到这里。",
+            title: String(localized: "更新直链"),
+            message: String(localized: "直链 token 过期后，从云课堂重新抓取并粘贴到这里。"),
             preferredStyle: .alert
         )
         alert.addTextField {
             $0.text = lecture.sourceURL?.absoluteString
             $0.placeholder = "https://look.tongji.edu.cn/...mp4?...."
         }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "保存", style: .default) { [weak self, weak alert] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "保存"), style: .default) { [weak self, weak alert] _ in
             guard let self,
                   let urlString = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   let url = URL(string: urlString), url.host != nil else { return }
@@ -536,10 +536,10 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     }
 
     private func promptRename(_ lecture: Lecture) {
-        let alert = UIAlertController(title: "重命名讲次", message: nil, preferredStyle: .alert)
+        let alert = UIAlertController(title: String(localized: "重命名讲次"), message: nil, preferredStyle: .alert)
         alert.addTextField { $0.text = lecture.name }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "确定", style: .default) { [weak self, weak alert] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "确定"), style: .default) { [weak self, weak alert] _ in
             guard let self,
                   let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   !name.isEmpty else { return }
@@ -569,19 +569,19 @@ extension LectureListViewController: UIDocumentPickerDelegate {
             return
         }
         let alert = UIAlertController(
-            title: "导入 \(urls.count) 个文件",
-            message: "多段视频合并为一讲时，转写会拼成一份文稿，重点和讲义共用。",
+            title: String(localized: "导入 \(urls.count) 个文件"),
+            message: String(localized: "多段视频合并为一讲时，转写会拼成一份文稿，重点和讲义共用。"),
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "合并为一个讲次", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "合并为一个讲次"), style: .default) { [weak self] _ in
             self?.importAsSingleLecture(urls)
             self?.reload()
         })
-        alert.addAction(UIAlertAction(title: "分别创建 \(urls.count) 个讲次", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "分别创建 \(urls.count) 个讲次"), style: .default) { [weak self] _ in
             urls.forEach { self?.importAsSeparateLecture($0) }
             self?.reload()
         })
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
         present(alert, animated: true)
     }
 
@@ -651,7 +651,7 @@ final class LectureHeaderBar: UIView {
 
         var addConfig = UIButton.Configuration.plain()
         addConfig.image = UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(pointSize: 11, weight: .medium))
-        addConfig.attributedTitle = AttributedString("添加讲次", attributes: AttributeContainer([
+        addConfig.attributedTitle = AttributedString(String(localized: "添加讲次"), attributes: AttributeContainer([
             .font: RecapTheme.body(12), .foregroundColor: RecapTheme.muted,
         ]))
         addConfig.imagePadding = 4
@@ -782,44 +782,44 @@ final class LectureCell: UICollectionViewCell {
         if let activity {
             switch activity {
             case .downloading(let value):
-                statusLabel.text = "下载中 \(Int(value * 100))%"
+                statusLabel.text = String(localized: "下载中 \(Int(value * 100))%")
                 progress = value
                 stateLabel.text = "\(Int(value * 100))"
                 stateLabel.textColor = RecapTheme.quiet
             case .waitingToTranscribe:
-                statusLabel.text = "排队等待转写"
+                statusLabel.text = String(localized: "排队等待转写")
                 stateLabel.text = "·"
                 stateLabel.textColor = RecapTheme.quiet
             case .transcribing(let value):
-                statusLabel.text = "转写中 \(Int(value * 100))%"
+                statusLabel.text = String(localized: "转写中 \(Int(value * 100))%")
                 progress = value
                 stateLabel.text = "\(Int(value * 100))"
                 stateLabel.textColor = RecapTheme.quiet
             case .analyzing:
-                statusLabel.text = "正在提取重点…"
+                statusLabel.text = String(localized: "正在提取重点…")
                 stateLabel.text = "✦"
                 stateLabel.textColor = RecapTheme.signalText
             }
         } else {
             switch lecture.phase {
             case .pending:
-                statusLabel.text = "等待处理"
+                statusLabel.text = String(localized: "等待处理")
                 stateLabel.text = "·"
                 stateLabel.textColor = RecapTheme.quiet
             case .downloaded:
-                statusLabel.text = "文稿未转写"
+                statusLabel.text = String(localized: "文稿未转写")
                 stateLabel.text = "·"
                 stateLabel.textColor = RecapTheme.quiet
             case .transcribed:
                 if let keyPointCount, keyPointCount > 0 {
-                    statusLabel.text = "已完成 · \(keyPointCount) 个重点"
+                    statusLabel.text = String(localized: "已完成 · \(keyPointCount) 个重点")
                 } else {
-                    statusLabel.text = "文稿已就绪 · 等待提取重点"
+                    statusLabel.text = String(localized: "文稿已就绪 · 等待提取重点")
                 }
                 stateLabel.text = keyPointCount == nil ? "◆" : "✓"
                 stateLabel.textColor = keyPointCount == nil ? RecapTheme.time : RecapTheme.complete
             case .failed:
-                statusLabel.text = "失败：\(lecture.errorMessage ?? "未知错误")"
+                statusLabel.text = String(localized: "失败：\(lecture.errorMessage ?? String(localized: "未知错误"))")
                 stateLabel.text = "!"
                 stateLabel.textColor = RecapTheme.error
             }

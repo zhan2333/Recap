@@ -1,0 +1,1636 @@
+{
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "\n✔ 下载完成\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\n✔ Download complete\n"
+          }
+        }
+      }
+    },
+    "\n✘ 退出码 %d——可复制下方命令自己在终端重试\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\n✘ Exit code %d — copy the command below and retry in your own terminal\n"
+          }
+        }
+      }
+    },
+    "\n完整响应已保存到课程目录 analysis-raw.txt。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\nThe full response was saved to analysis-raw.txt in the course folder."
+          }
+        }
+      }
+    },
+    "%@ · %lld 字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld characters"
+          }
+        }
+      }
+    },
+    "%@ · 完整文稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Full transcript"
+          }
+        }
+      }
+    },
+    "%@ 教材": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ textbook"
+          }
+        }
+      }
+    },
+    "%@ 讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ lecture notes"
+          }
+        }
+      }
+    },
+    "%@考试重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ exam review"
+          }
+        }
+      }
+    },
+    "%lld 个讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lectures"
+          }
+        }
+      }
+    },
+    "%lld 个讲次 · %lld 已分析": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lectures · %lld analyzed"
+          }
+        }
+      }
+    },
+    "%lld 个讲次 · 已完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lectures · Complete"
+          }
+        }
+      }
+    },
+    "%lld 个重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld key points"
+          }
+        }
+      }
+    },
+    "%lld 条线索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld notes"
+          }
+        }
+      }
+    },
+    "AI 分析": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI analysis"
+          }
+        }
+      }
+    },
+    "Focus Rail · 重点轨道": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Focus Rail · Key Points"
+          }
+        }
+      }
+    },
+    "ggml 格式的 whisper 模型文件路径。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Path to a ggml-format whisper model file."
+          }
+        }
+      }
+    },
+    "上一重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous Key Point"
+          }
+        }
+      }
+    },
+    "下一重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next Key Point"
+          }
+        }
+      }
+    },
+    "下载中 %lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading %lld%%"
+          }
+        }
+      }
+    },
+    "下载并转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download and transcribe"
+          }
+        }
+      }
+    },
+    "从原话前 3 秒播放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play from 3 seconds before the quote"
+          }
+        }
+      }
+    },
+    "任何 OpenAI-compatible 接口：OpenRouter、自建网关，或本地 Ollama。API Key 保存在本机。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any OpenAI-compatible endpoint: OpenRouter, a private gateway, or local Ollama. The API Key stays on this device."
+          }
+        }
+      }
+    },
+    "作业 / 思考题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assignment"
+          }
+        }
+      }
+    },
+    "保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "先完成转写，再提取重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish transcription first, then extract key points"
+          }
+        }
+      }
+    },
+    "先对讲次逐个「提取重点」，再生成考试重点。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract key points from each lecture first, then generate the exam review."
+          }
+        }
+      }
+    },
+    "先配置 AI 接口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up the AI endpoint first"
+          }
+        }
+      }
+    },
+    "入队": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enqueue"
+          }
+        }
+      }
+    },
+    "全文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full transcript"
+          }
+        }
+      }
+    },
+    "全部入队（%lld 讲）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enqueue all (%lld lectures)"
+          }
+        }
+      }
+    },
+    "共提取 %lld 页文本。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extracted text from %lld pages."
+          }
+        }
+      }
+    },
+    "内置终端执行下载，实时显示进度，走 HF 镜像": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The built-in terminal downloads via the HF mirror and shows live progress"
+          }
+        }
+      }
+    },
+    "分别创建 %lld 个讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create %lld separate lectures"
+          }
+        }
+      }
+    },
+    "分段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segments"
+          }
+        }
+      }
+    },
+    "创建": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create"
+          }
+        }
+      }
+    },
+    "删除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "删除「%@」？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete “%@”?"
+          }
+        }
+      }
+    },
+    "删除课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete course"
+          }
+        }
+      }
+    },
+    "前往下载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download"
+          }
+        }
+      }
+    },
+    "去设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        }
+      }
+    },
+    "取消": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "合并为一个讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge into one lecture"
+          }
+        }
+      }
+    },
+    "回到 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to %@"
+          }
+        }
+      }
+    },
+    "在 app 内下载（约 1.5GB）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download in the app (about 1.5 GB)"
+          }
+        }
+      }
+    },
+    "在设置里填写 Base URL、API Key 和 Model。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the Base URL, API Key, and Model in Settings."
+          }
+        }
+      }
+    },
+    "在访达中显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        }
+      }
+    },
+    "在访达中显示课程目录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show course folder in Finder"
+          }
+        }
+      }
+    },
+    "复制命令": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy command"
+          }
+        }
+      }
+    },
+    "多段视频合并为一讲时，转写会拼成一份文稿，重点和讲义共用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merged into one lecture, the videos become a single transcript with shared key points and lecture notes."
+          }
+        }
+      }
+    },
+    "失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed: %@"
+          }
+        }
+      }
+    },
+    "好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "导入 %lld 个文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import %lld files"
+          }
+        }
+      }
+    },
+    "导入失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import failed"
+          }
+        }
+      }
+    },
+    "导入教材 PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import textbook PDF"
+          }
+        }
+      }
+    },
+    "导入文件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import file…"
+          }
+        }
+      }
+    },
+    "导入本地文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import local files"
+          }
+        }
+      }
+    },
+    "尚无文稿——转写完成后在这里查看": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transcript yet — it appears here once transcription finishes"
+          }
+        }
+      }
+    },
+    "已复制，下载完成后回到这里": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied — come back once the download finishes"
+          }
+        }
+      }
+    },
+    "已完成 · %lld 个重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete · %lld key points"
+          }
+        }
+      }
+    },
+    "开始使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get started"
+          }
+        }
+      }
+    },
+    "开始转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start transcription"
+          }
+        }
+      }
+    },
+    "当前版本 %@。前往 GitHub 下载最新的 dmg。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have %@. Download the latest dmg from GitHub."
+          }
+        }
+      }
+    },
+    "当前证据：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current evidence: "
+          }
+        }
+      }
+    },
+    "必背": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memorize"
+          }
+        }
+      }
+    },
+    "我已有模型文件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I already have a model file…"
+          }
+        }
+      }
+    },
+    "或者复制命令自己在终端跑：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Or copy the command and run it in your own terminal:"
+          }
+        }
+      }
+    },
+    "打开课程目录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open course folder"
+          }
+        }
+      }
+    },
+    "排队等待转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Queued for transcription"
+          }
+        }
+      }
+    },
+    "提取失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extraction failed"
+          }
+        }
+      }
+    },
+    "提取重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract key points"
+          }
+        }
+      }
+    },
+    "提取重点后，证据线索会出现在这里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract key points to see the Evidence Thread here."
+          }
+        }
+      }
+    },
+    "提取重点后，重点区间会出现在轨道上": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract key points to see their ranges on the rail"
+          }
+        }
+      }
+    },
+    "搜索讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search lectures"
+          }
+        }
+      }
+    },
+    "播放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Player"
+          }
+        }
+      }
+    },
+    "教材导入完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textbook imported"
+          }
+        }
+      }
+    },
+    "文稿已就绪 · 点右上角提取本讲重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript ready · Extract this lecture's key points from the top right"
+          }
+        }
+      }
+    },
+    "文稿已就绪 · 等待提取重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript ready · Key points not extracted"
+          }
+        }
+      }
+    },
+    "文稿未转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not transcribed"
+          }
+        }
+      }
+    },
+    "新建课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New course"
+          }
+        }
+      }
+    },
+    "新版本 %@ 可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ is available"
+          }
+        }
+      }
+    },
+    "新视频会接在本讲末尾，转写完成后文稿自动拼接。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The new video joins the end of this lecture. Once transcribed, the transcripts merge automatically."
+          }
+        }
+      }
+    },
+    "易混易错": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common mix-ups"
+          }
+        }
+      }
+    },
+    "更新直链": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update link"
+          }
+        }
+      }
+    },
+    "更新直链…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update link…"
+          }
+        }
+      }
+    },
+    "未知错误": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown error"
+          }
+        }
+      }
+    },
+    "本地": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On device"
+          }
+        }
+      }
+    },
+    "本地转写完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device transcription complete"
+          }
+        }
+      }
+    },
+    "本讲共提取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extracted from this lecture"
+          }
+        }
+      }
+    },
+    "查看教材全文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View full textbook"
+          }
+        }
+      }
+    },
+    "查看本讲讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View this lecture's notes"
+          }
+        }
+      }
+    },
+    "查看考试重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View exam review"
+          }
+        }
+      }
+    },
+    "查看讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View lecture notes"
+          }
+        }
+      }
+    },
+    "核心概念": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Core concepts"
+          }
+        }
+      }
+    },
+    "模型已就绪": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model ready"
+          }
+        }
+      }
+    },
+    "模型路径": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model path"
+          }
+        }
+      }
+    },
+    "模型：large-v3-turbo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model: large-v3-turbo"
+          }
+        }
+      }
+    },
+    "正在提取重点…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extracting key points…"
+          }
+        }
+      }
+    },
+    "正在读取文稿，提取老师强调的重点…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading the transcript and extracting the points the teacher emphasized…"
+          }
+        }
+      }
+    },
+    "正在载入文稿…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading transcript…"
+          }
+        }
+      }
+    },
+    "每行一条：讲次名 + 空格/Tab + 直链，或只贴直链（自动编号）。行首加 + 表示上一讲的续段视频（多段视频合成一讲）。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One per line: lecture name + space/tab + link, or just the link (auto-numbered). Start a line with + to continue the previous lecture (multiple videos merge into one lecture)."
+          }
+        }
+      }
+    },
+    "没有可汇总的讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No lectures to summarize"
+          }
+        }
+      }
+    },
+    "波形来自课堂音频，色块表示老师原话所在区间。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The waveform comes from the lecture audio. Highlighted ranges show where the teacher's exact words occur."
+          }
+        }
+      }
+    },
+    "添加讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add lecture"
+          }
+        }
+      }
+    },
+    "生成失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generation failed"
+          }
+        }
+      }
+    },
+    "生成本讲讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate this lecture's notes"
+          }
+        }
+      }
+    },
+    "生成本讲讲义 →": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate Lecture notes →"
+          }
+        }
+      }
+    },
+    "生成考试重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate exam review"
+          }
+        }
+      }
+    },
+    "生成讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate lecture notes"
+          }
+        }
+      }
+    },
+    "用 claude 生成讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate lecture notes with claude"
+          }
+        }
+      }
+    },
+    "用命令行下载（约 1.5GB，走 HF 镜像）：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download from the command line (about 1.5 GB, via the HF mirror):"
+          }
+        }
+      }
+    },
+    "留空用接口默认模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave empty for the endpoint's default model"
+          }
+        }
+      }
+    },
+    "直链 token 有时效——若下载失败，重新从云课堂抓取直链后在讲次右键「更新直链」再试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direct links expire. If the download failed, copy a fresh link from the course platform, then right-click the lecture and choose Update Link."
+          }
+        }
+      }
+    },
+    "直链 token 过期后，从云课堂重新抓取并粘贴到这里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When the link token expires, copy a fresh one from the course platform and paste it here."
+          }
+        }
+      }
+    },
+    "知识点：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Topic: %@"
+          }
+        }
+      }
+    },
+    "确定": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "稍后": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        }
+      }
+    },
+    "第 %lld 段 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part %lld · %@"
+          }
+        }
+      }
+    },
+    "第%lld讲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture %lld"
+          }
+        }
+      }
+    },
+    "等待处理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting to process"
+          }
+        }
+      }
+    },
+    "等待模型就绪…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for the model…"
+          }
+        }
+      }
+    },
+    "等待转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for transcription"
+          }
+        }
+      }
+    },
+    "粘贴直链": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste link"
+          }
+        }
+      }
+    },
+    "粘贴直链入队": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste links to enqueue"
+          }
+        }
+      }
+    },
+    "老师原话已保留": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teacher's exact words preserved"
+          }
+        }
+      }
+    },
+    "视频文件不在本机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video not on this device"
+          }
+        }
+      }
+    },
+    "解题方法": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solution path"
+          }
+        }
+      }
+    },
+    "讲义由 claude 按内置 skill 生成（LaTeX 排版编译为 PDF）。命令已复制：\n\n%@\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture notes are produced by claude following the bundled skill (LaTeX typeset into a PDF). The command was copied:\n\n%@\n\nOpen a terminal in the course folder, paste and run it, then come back here."
+          }
+        }
+      }
+    },
+    "设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings…"
+          }
+        }
+      }
+    },
+    "证据线索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evidence Thread"
+          }
+        }
+      }
+    },
+    "识别到 %lld 条": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found %lld"
+          }
+        }
+      }
+    },
+    "识别到 %lld 讲（共 %lld 段视频）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found %lld lectures (%lld video parts)"
+          }
+        }
+      }
+    },
+    "该课程的 %lld 个讲次及全部文稿、重点、讲义都会一并删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This deletes the course's %lld lectures with every transcript, key point, and lecture note."
+          }
+        }
+      }
+    },
+    "课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Courses"
+          }
+        }
+      }
+    },
+    "课程名（如：习概）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course name"
+          }
+        }
+      }
+    },
+    "课程回放在本机转写成文稿，重点和讲义都从老师原话出发。转写用 whisper 模型，全程离线。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course replays become transcripts on this device. Key points and lecture notes all start from the teacher's exact words. Transcription runs a whisper model, fully offline."
+          }
+        }
+      }
+    },
+    "跳过此版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip this version"
+          }
+        }
+      }
+    },
+    "转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcription"
+          }
+        }
+      }
+    },
+    "转写中 %lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribing %lld%%"
+          }
+        }
+      }
+    },
+    "转写失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcription failed: %@"
+          }
+        }
+      }
+    },
+    "还没有可入队的直链": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No links to enqueue yet"
+          }
+        }
+      }
+    },
+    "还没有找到 whisper 模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No whisper model found yet"
+          }
+        }
+      }
+    },
+    "还没有讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No lectures yet"
+          }
+        }
+      }
+    },
+    "这里还没有内容，但第一步很轻。\n先新建一门课程。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There's nothing here yet, but getting started is easy.\nCreate a course first."
+          }
+        }
+      }
+    },
+    "追加并转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Append and transcribe"
+          }
+        }
+      }
+    },
+    "追加视频文件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Append video files…"
+          }
+        }
+      }
+    },
+    "追加视频直链": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Append video link"
+          }
+        }
+      }
+    },
+    "追加视频直链…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Append video link…"
+          }
+        }
+      }
+    },
+    "选择 %@ 重点线索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select key point at %@"
+          }
+        }
+      }
+    },
+    "选择 ggml 格式的 .bin（如 ggml-large-v3-turbo.bin）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a ggml .bin (e.g. ggml-large-v3-turbo.bin)"
+          }
+        }
+      }
+    },
+    "选择一个讲次查看文稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a lecture to view its transcript"
+          }
+        }
+      }
+    },
+    "选择一条证据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select evidence"
+          }
+        }
+      }
+    },
+    "重命名…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename…"
+          }
+        }
+      }
+    },
+    "重命名讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename lecture"
+          }
+        }
+      }
+    },
+    "重命名课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename course"
+          }
+        }
+      }
+    },
+    "重新下载并转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redownload and transcribe"
+          }
+        }
+      }
+    },
+    "重新下载视频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redownload video"
+          }
+        }
+      }
+    },
+    "重新提取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract again"
+          }
+        }
+      }
+    },
+    "重新提取重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract key points again"
+          }
+        }
+      }
+    },
+    "重新转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribe again"
+          }
+        }
+      }
+    },
+    "重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key points"
+          }
+        }
+      }
+    },
+    "重点（老师原话）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key points in the lecturer's words"
+          }
+        }
+      }
+    },
+    "重试转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry transcription"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -34,17 +34,17 @@ enum UpdateChecker {
             await MainActor.run {
                 guard let root = window?.rootViewController else { return }
                 let alert = UIAlertController(
-                    title: "新版本 \(tag) 可用",
-                    message: "当前版本 \(current)。前往 GitHub 下载最新的 dmg。",
+                    title: String(localized: "新版本 \(tag) 可用"),
+                    message: String(localized: "当前版本 \(current)。前往 GitHub 下载最新的 dmg。"),
                     preferredStyle: .alert
                 )
-                alert.addAction(UIAlertAction(title: "前往下载", style: .default) { _ in
+                alert.addAction(UIAlertAction(title: String(localized: "前往下载"), style: .default) { _ in
                     UIApplication.shared.open(htmlURL)
                 })
-                alert.addAction(UIAlertAction(title: "跳过此版本", style: .default) { _ in
+                alert.addAction(UIAlertAction(title: String(localized: "跳过此版本"), style: .default) { _ in
                     UserDefaults.standard.set(latest, forKey: "skippedVersion")
                 })
-                alert.addAction(UIAlertAction(title: "稍后", style: .cancel))
+                alert.addAction(UIAlertAction(title: String(localized: "稍后"), style: .cancel))
                 var presenter = root
                 while let presented = presenter.presentedViewController { presenter = presented }
                 presenter.present(alert, animated: true)

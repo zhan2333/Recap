@@ -65,17 +65,17 @@ final class PlayerPaneView: UIView {
         playerViewController.view.layer.cornerCurve = .continuous
         playerViewController.view.clipsToBounds = true
 
-        railTitle.text = "Focus Rail · 重点轨道"
+        railTitle.text = String(localized: "Focus Rail · 重点轨道")
         railTitle.font = RecapTheme.body(13, weight: .semibold)
         railTitle.textColor = RecapTheme.ink
-        railDetail.text = "波形来自课堂音频，色块表示老师原话所在区间。"
+        railDetail.text = String(localized: "波形来自课堂音频，色块表示老师原话所在区间。")
         railDetail.font = RecapTheme.body(11)
         railDetail.textColor = RecapTheme.quiet
 
-        configureStep(previousButton, title: "上一重点", icon: "chevron.left", iconLeading: true) { [weak self] in
+        configureStep(previousButton, title: String(localized: "上一重点"), icon: "chevron.left", iconLeading: true) { [weak self] in
             self?.step(-1)
         }
-        configureStep(nextButton, title: "下一重点", icon: "chevron.right", iconLeading: false) { [weak self] in
+        configureStep(nextButton, title: String(localized: "下一重点"), icon: "chevron.right", iconLeading: false) { [weak self] in
             self?.step(1)
         }
 
@@ -98,7 +98,7 @@ final class PlayerPaneView: UIView {
         playConfig.background.cornerRadius = RecapTheme.radiusSM
         playConfig.image = UIImage(systemName: "play.fill", withConfiguration: UIImage.SymbolConfiguration(pointSize: 11))
         playConfig.imagePadding = 7
-        playConfig.attributedTitle = AttributedString("从原话前 3 秒播放", attributes: AttributeContainer([
+        playConfig.attributedTitle = AttributedString(String(localized: "从原话前 3 秒播放"), attributes: AttributeContainer([
             .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
         ]))
         playConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
@@ -151,11 +151,11 @@ final class PlayerPaneView: UIView {
         emptyIcon.tintColor = RecapTheme.quiet
         emptyIcon.contentMode = .scaleAspectFit
         let emptyTitle = UILabel()
-        emptyTitle.text = "视频文件不在本机"
+        emptyTitle.text = String(localized: "视频文件不在本机")
         emptyTitle.font = RecapTheme.body(14, weight: .semibold)
         emptyTitle.textColor = RecapTheme.ink
         let emptyDetail = UILabel()
-        emptyDetail.text = "直链 token 有时效——若下载失败，重新从云课堂抓取直链后在讲次右键「更新直链」再试。"
+        emptyDetail.text = String(localized: "直链 token 有时效——若下载失败，重新从云课堂抓取直链后在讲次右键「更新直链」再试。")
         emptyDetail.font = RecapTheme.body(12)
         emptyDetail.textColor = RecapTheme.muted
         emptyDetail.numberOfLines = 0
@@ -164,7 +164,7 @@ final class PlayerPaneView: UIView {
         redownloadConfig.baseBackgroundColor = RecapTheme.ink
         redownloadConfig.baseForegroundColor = RecapTheme.paper
         redownloadConfig.background.cornerRadius = RecapTheme.radiusSM
-        redownloadConfig.attributedTitle = AttributedString("重新下载视频", attributes: AttributeContainer([
+        redownloadConfig.attributedTitle = AttributedString(String(localized: "重新下载视频"), attributes: AttributeContainer([
             .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
         ]))
         redownloadConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
@@ -329,7 +329,7 @@ final class PlayerPaneView: UIView {
             // .plain() never renders background/stroke on Catalyst — selected must be .filled()
             var config = selected ? UIButton.Configuration.filled() : UIButton.Configuration.plain()
             config.attributedTitle = AttributedString(
-                "第 \(index + 1) 段 · \(Self.timestamp(playableParts[index].duration))",
+                String(localized: "第 \(index + 1) 段 · \(Self.timestamp(playableParts[index].duration))"),
                 attributes: AttributeContainer([
                     .font: RecapTheme.mono(11, weight: selected ? .semibold : .regular),
                     .foregroundColor: selected ? RecapTheme.paper : RecapTheme.muted,
@@ -405,7 +405,7 @@ final class PlayerPaneView: UIView {
         rail.selectedIndex = index.flatMap { partKeyPointIndices.firstIndex(of: $0) }
         guard let index, index < keyPoints.count else {
             lensIndex.text = keyPoints.isEmpty ? "—" : nil
-            lensTime.text = keyPoints.isEmpty ? "提取重点后，重点区间会出现在轨道上" : nil
+            lensTime.text = keyPoints.isEmpty ? String(localized: "提取重点后，重点区间会出现在轨道上") : nil
             lensQuote.text = nil
             playLeadInButton.isHidden = true
             return

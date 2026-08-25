@@ -3,6 +3,7 @@
 name: RecapApp
 options:
   bundleIdPrefix: com.rio
+  developmentLanguage: zh-Hans
   deploymentTarget:
     iOS: "17.0"
 packages:
@@ -64,3 +65,4 @@ targets:
         CODE_SIGN_STYLE: Manual
         SWIFT_VERSION: "5.9"
         MARKETING_VERSION: "0.1.0"
+        SWIFT_EMIT_LOC_STRINGS: true

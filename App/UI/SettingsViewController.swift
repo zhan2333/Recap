@@ -26,23 +26,23 @@ final class SettingsViewController: UITableViewController {
 
     private lazy var sections: [Section] = [
         Section(
-            header: "转写",
-            footer: "ggml 格式的 whisper 模型文件路径。",
+            header: String(localized: "转写"),
+            footer: String(localized: "ggml 格式的 whisper 模型文件路径。"),
             fields: [
-                Field(title: "模型路径", placeholder: "~/whisper-models/ggml-large-v3-turbo.bin", secure: false,
+                Field(title: String(localized: "模型路径"), placeholder: "~/whisper-models/ggml-large-v3-turbo.bin", secure: false,
                       get: { Settings.modelPath.path },
                       set: { Settings.modelPath = URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }),
             ]
         ),
         Section(
-            header: "AI 分析",
-            footer: "任何 OpenAI-compatible 接口：OpenRouter、自建网关，或本地 Ollama。API Key 保存在本机。",
+            header: String(localized: "AI 分析"),
+            footer: String(localized: "任何 OpenAI-compatible 接口：OpenRouter、自建网关，或本地 Ollama。API Key 保存在本机。"),
             fields: [
                 Field(title: "Base URL", placeholder: "https://openrouter.ai/api/v1", secure: false,
                       get: { Settings.llmBaseURL }, set: { Settings.llmBaseURL = $0 }),
                 Field(title: "API Key", placeholder: "sk-…", secure: true,
                       get: { Settings.llmAPIKey }, set: { Settings.llmAPIKey = $0 }),
-                Field(title: "Model", placeholder: "留空用接口默认模型", secure: false,
+                Field(title: "Model", placeholder: String(localized: "留空用接口默认模型"), secure: false,
                       get: { Settings.llmModel }, set: { Settings.llmModel = $0 }),
             ]
         ),
@@ -50,7 +50,7 @@ final class SettingsViewController: UITableViewController {
 
     init() {
         super.init(style: .insetGrouped)
-        title = "设置"
+        title = String(localized: "设置")
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }

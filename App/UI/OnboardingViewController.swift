@@ -43,7 +43,7 @@ final class OnboardingViewController: UIViewController {
         titleLabel.textColor = RecapTheme.ink
 
         let subtitle = UILabel()
-        subtitle.text = "课程回放在本机转写成文稿，重点和讲义都从老师原话出发。转写用 whisper 模型，全程离线。"
+        subtitle.text = String(localized: "课程回放在本机转写成文稿，重点和讲义都从老师原话出发。转写用 whisper 模型，全程离线。")
         subtitle.font = RecapTheme.body(13)
         subtitle.textColor = RecapTheme.muted
         subtitle.numberOfLines = 0
@@ -63,14 +63,14 @@ final class OnboardingViewController: UIViewController {
 
         // Option 1: pick an existing model
         let pickButton = optionButton(
-            title: "我已有模型文件…",
-            detail: "选择 ggml 格式的 .bin（如 ggml-large-v3-turbo.bin）"
+            title: String(localized: "我已有模型文件…"),
+            detail: String(localized: "选择 ggml 格式的 .bin（如 ggml-large-v3-turbo.bin）")
         ) { [weak self] in self?.pickModel() }
 
         // Option 2: download inside the app (glue-bundle terminal)
         let autoButton = optionButton(
-            title: "在 app 内下载（约 1.5GB）",
-            detail: "内置终端执行下载，实时显示进度，走 HF 镜像"
+            title: String(localized: "在 app 内下载（约 1.5GB）"),
+            detail: String(localized: "内置终端执行下载，实时显示进度，走 HF 镜像")
         ) { [weak self] in self?.startDownload() }
         autoButton.isHidden = !ShellBridge.isAvailable
         self.autoDownloadButton = autoButton
@@ -79,7 +79,7 @@ final class OnboardingViewController: UIViewController {
 
         // Option 3: copy the command and run it yourself
         let downloadTitle = UILabel()
-        downloadTitle.text = ShellBridge.isAvailable ? "或者复制命令自己在终端跑：" : "用命令行下载（约 1.5GB，走 HF 镜像）："
+        downloadTitle.text = ShellBridge.isAvailable ? String(localized: "或者复制命令自己在终端跑：") : String(localized: "用命令行下载（约 1.5GB，走 HF 镜像）：")
         downloadTitle.font = RecapTheme.body(12)
         downloadTitle.textColor = RecapTheme.muted
 
@@ -93,7 +93,7 @@ final class OnboardingViewController: UIViewController {
         commandView.textContainerInset = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
 
         var copyConfig = UIButton.Configuration.plain()
-        copyConfig.attributedTitle = AttributedString("复制命令", attributes: AttributeContainer([
+        copyConfig.attributedTitle = AttributedString(String(localized: "复制命令"), attributes: AttributeContainer([
             .font: RecapTheme.body(12), .foregroundColor: RecapTheme.muted,
         ]))
         copyConfig.image = UIImage(systemName: "doc.on.doc", withConfiguration: UIImage.SymbolConfiguration(pointSize: 11))
@@ -103,7 +103,7 @@ final class OnboardingViewController: UIViewController {
         copyButton.tintColor = RecapTheme.muted
         copyButton.addAction(UIAction { [weak self] _ in
             UIPasteboard.general.string = Self.downloadCommand.replacingOccurrences(of: " \\\n  ", with: " ")
-            self?.copyButton.configuration?.attributedTitle = AttributedString("已复制，下载完成后回到这里", attributes: AttributeContainer([
+            self?.copyButton.configuration?.attributedTitle = AttributedString(String(localized: "已复制，下载完成后回到这里"), attributes: AttributeContainer([
                 .font: RecapTheme.body(12), .foregroundColor: RecapTheme.complete,
             ]))
         }, for: .touchUpInside)
@@ -178,12 +178,12 @@ final class OnboardingViewController: UIViewController {
     @objc private func refreshStatus() {
         let exists = Settings.modelExists
         statusDot.backgroundColor = exists ? RecapTheme.complete : RecapTheme.error
-        statusLabel.text = exists ? "模型已就绪" : "还没有找到 whisper 模型"
+        statusLabel.text = exists ? String(localized: "模型已就绪") : String(localized: "还没有找到 whisper 模型")
         statusLabel.textColor = exists ? RecapTheme.complete : RecapTheme.error
         pathLabel.text = Settings.modelPath.path
         startButton.isEnabled = exists
         startButton.configuration?.attributedTitle = AttributedString(
-            exists ? "开始使用" : "等待模型就绪…",
+            exists ? String(localized: "开始使用") : String(localized: "等待模型就绪…"),
             attributes: AttributeContainer([
                 .font: RecapTheme.body(13, weight: .semibold), .foregroundColor: RecapTheme.paper,
             ]))
@@ -209,7 +209,7 @@ final class OnboardingViewController: UIViewController {
             guard let self else { return }
             self.isDownloading = false
             self.autoDownloadButton?.isEnabled = true
-            self.terminal.append(code == 0 ? "\n✔ 下载完成\n" : "\n✘ 退出码 \(code)——可复制下方命令自己在终端重试\n")
+            self.terminal.append(code == 0 ? String(localized: "\n✔ 下载完成\n") : String(localized: "\n✘ 退出码 \(code)——可复制下方命令自己在终端重试\n"))
             self.refreshStatus()
         }
     }

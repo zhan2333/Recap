@@ -12,7 +12,10 @@ final class DetailHeaderView: UIView {
 
     let titleLabel = UILabel()
     let subtitleLabel = UILabel()
-    let modeTabs = ModeTabsView(items: ["分段", "全文", "播放", "重点"])
+    let modeTabs = ModeTabsView(items: [
+        String(localized: "分段"), String(localized: "全文"),
+        String(localized: "播放"), String(localized: "重点"),
+    ])
     let overflowButton = UIButton(type: .system)
     let analyzeButton = UIButton(type: .system)
     private let analyzeSpinner = UIActivityIndicatorView(style: .medium)
@@ -46,7 +49,7 @@ final class DetailHeaderView: UIView {
         dot.backgroundColor = RecapTheme.complete
         dot.layer.cornerRadius = 3.5
         let localLabel = UILabel()
-        localLabel.text = "本地"
+        localLabel.text = String(localized: "本地")
         localLabel.font = RecapTheme.body(11)
         localLabel.textColor = RecapTheme.muted
         dot.translatesAutoresizingMaskIntoConstraints = false
@@ -73,7 +76,7 @@ final class DetailHeaderView: UIView {
 
         var analyzeConfig = UIButton.Configuration.filled()
         analyzeConfig.attributedTitle = AttributedString(
-            "提取重点", attributes: AttributeContainer([
+            String(localized: "提取重点"), attributes: AttributeContainer([
                 .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
             ]))
         analyzeConfig.baseBackgroundColor = RecapTheme.ink

@@ -22,10 +22,10 @@ final class BatchAddLectureSheet: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = RecapTheme.paper
-        title = "添加讲次"
+        title = String(localized: "添加讲次")
 
         let hint = UILabel()
-        hint.text = "每行一条：讲次名 + 空格/Tab + 直链，或只贴直链（自动编号）。行首加 + 表示上一讲的续段视频（多段视频合成一讲）。"
+        hint.text = String(localized: "每行一条：讲次名 + 空格/Tab + 直链，或只贴直链（自动编号）。行首加 + 表示上一讲的续段视频（多段视频合成一讲）。")
         hint.font = RecapTheme.body(12)
         hint.textColor = RecapTheme.muted
         hint.numberOfLines = 0
@@ -88,11 +88,11 @@ final class BatchAddLectureSheet: UIViewController {
         let entries = Self.parse(textView.text ?? "", startNumber: existingLectureCount + 1)
         let partCount = entries.reduce(0) { $0 + $1.urls.count }
         countLabel.text = entries.isEmpty
-            ? "还没有可入队的直链"
+            ? String(localized: "还没有可入队的直链")
             : partCount > entries.count
-                ? "识别到 \(entries.count) 讲（共 \(partCount) 段视频）"
-                : "识别到 \(entries.count) 条"
-        var title = AttributedString(entries.count > 1 ? "全部入队（\(entries.count) 讲）" : "入队")
+                ? String(localized: "识别到 \(entries.count) 讲（共 \(partCount) 段视频）")
+                : String(localized: "识别到 \(entries.count) 条")
+        var title = AttributedString(entries.count > 1 ? String(localized: "全部入队（\(entries.count) 讲）") : String(localized: "入队"))
         title.font = RecapTheme.body(13, weight: .semibold)
         title.foregroundColor = RecapTheme.paper
         submitButton.configuration?.attributedTitle = title
@@ -124,7 +124,7 @@ final class BatchAddLectureSheet: UIViewController {
                 .trimmingCharacters(in: .whitespaces)
                 .replacingOccurrences(of: "\t", with: " ")
             if name.isEmpty {
-                name = "第\(autoNumber)讲"
+                name = String(localized: "第\(autoNumber)讲")
             }
             autoNumber += 1
             results.append((name, [url]))
