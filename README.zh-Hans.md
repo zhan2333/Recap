@@ -5,12 +5,12 @@
 <h1 align="center">Recap</h1>
 
 <p align="center">
-  <b>Follow the source. Return to the lecture.</b><br>
-  <i>把一节课，收束成一条复习路径。</i>
+  <b>把一节课，收束成一条复习路径。</b><br>
+  <i>Follow the source. Return to the lecture.</i>
 </p>
 
 <p align="center">
-  English · <a href="README.zh-Hans.md">简体中文</a>
+  <a href="README.md">English</a> · 简体中文
 </p>
 
 <p align="center">
@@ -22,41 +22,41 @@
 
 ![Recap](docs/hero.png)
 
-Course replay → on-device transcript → exam key points → lecture-note PDF, all inside one native Mac app. Transcription runs a whisper model fully offline; only the optional analysis step talks to an LLM endpoint you configure yourself — no ffmpeg, no Python, no external binaries.
+课堂回放 → 本机转写 → 考试重点 → 讲义 PDF，全流程在一个原生 Mac app 里完成。转写全程离线跑 whisper 模型，只有可选的分析步骤走你自己配置的 LLM 接口——没有 ffmpeg，没有 Python，没有外部二进制。
 
-## Course workspace · Evidence Thread
+## 课堂工作台 · Evidence Thread
 
 ![Course workspace](docs/workspace.png)
 
-- Paste direct links to classroom replays or import local audio/video; whisper transcribes on this device. Batch-paste many links at once, and merge multi-part videos into a single lecture
-- **Evidence Thread**: every extracted key point links back to the teacher's exact words in the transcript — takeaways are reading entry points, never posing as something the teacher said
-- The key-points page collects must-memorize items, core concepts, solution paths, common mix-ups, and assignments; a course-wide exam review is one click away
+- 粘贴云课堂视频直链或导入本地音视频，whisper 在本机离线转写；批量粘贴多条直链一次入队，多段视频可合成一个讲次
+- **证据线索**：AI 提取的每条考试重点都连回老师原话所在的文稿位置——结论是阅读入口，不伪装成老师亲口说过的话
+- 重点页汇总必背、核心概念、解题方法、易混易错与作业；课程级考试重点一键汇总
 
-## Learning player · Focus Rail
+## 学习播放器 · Focus Rail
 
 ![Learning player](docs/player.png)
 
-- Playback keeps AVKit semantics and presents multi-part lectures part by part; the Focus Rail waveform marks the teacher's exact words as **ranges**, not single points
-- Selecting a key point starts 3 seconds before the quote to preserve the lead-in; previous/next stepping crosses parts automatically, and parts auto-advance when one ends
+- 播放器保持 AVKit 习惯，分段呈现多个视频；Focus Rail 波形轨道用**区间**标出老师原话所在位置
+- 点击重点跳到原话前 3 秒，保留老师铺垫；上一/下一重点跨段自动切换视频，段播完自动接续
 
-## Lecture notes · claude skill
+## 讲义 · claude skill
 
-Each course folder ships a bundled [claude](https://claude.com/claude-code) skill — one command produces LaTeX-typeset lecture notes as a PDF (with TikZ diagrams), rendered right inside the app with a night mode:
+讲次目录内置 [claude](https://claude.com/claude-code) skill——一条命令生成 LaTeX 排版的本讲讲义 PDF（含 TikZ 示意图），app 内直接阅读，支持夜间模式：
 
 ```sh
 claude "为「第一周」生成讲义"
 ```
 
-Or pick "Generate with API" in the app: your configured endpoint follows the same skill to write the LaTeX, compiled locally into the same PDF.
+也可以在 app 内选择「用 API 生成」：已配置的接口按同一份 skill 生成 LaTeX，本机编译出同样的 PDF。
 
-## Getting started
+## 快速开始
 
-1. Download the dmg from [Releases](https://github.com/floonetio/Recap/releases) and drag it into Applications; on first launch, right-click → Open (or `xattr -d com.apple.quarantine /Applications/Recap.app`)
-2. The onboarding flow downloads a whisper model (about 1.5 GB) through its built-in terminal, or point it at your own ggml `.bin`
-3. In Settings, configure any OpenAI-compatible endpoint (OpenRouter, a private gateway, or local Ollama) for key-point extraction
-4. Create a course → add lectures → extract key points once transcription finishes
+1. 从 [Releases](https://github.com/floonetio/Recap/releases) 下载 dmg，拖入「应用程序」；首次打开右键选「打开」（或 `xattr -d com.apple.quarantine /Applications/Recap.app`）
+2. 引导页内置终端直接下载 whisper 模型（约 1.5 GB，走 HF 镜像），也可以选择自备的 ggml `.bin`
+3. 「设置」里配置任意 OpenAI-compatible 接口（OpenRouter、自建网关或本地 Ollama），用于提取重点
+4. 新建课程 → 添加讲次 → 转写完成后提取重点
 
-The interface is bilingual (English / Simplified Chinese), following the system language.
+界面中英双语，跟随系统语言。
 
 <p align="center">
   <img src="docs/icon-default.png" width="88" alt="Default icon">
