@@ -51,6 +51,40 @@ public struct HandoutGenerator {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    // LaTeX channel: the bundled claude skill doubles as the spec; the model only runs its handout task
+    public func lectureLaTeX(
+        title: String,
+        transcript: String,
+        analysis: LectureAnalysis,
+        skill: String,
+        client: ChatClient
+    ) async throws -> String {
+        let system = """
+        \(skill)
+
+        现在只执行上面 skill 中「生成讲义」任务的 LaTeX 排版规范。你不在文件系统环境中：不要读写文件、不要执行其他任务、不要输出解释或 markdown 代码块围栏，直接输出完整的 .tex 文件内容（从 \\documentclass 到 \\end{document}）。
+        """
+        let user = """
+        讲次标题：\(title)
+
+        考点提取结果（JSON）：
+        \(Self.encodeJSON(analysis))
+
+        完整转写稿：
+        \(transcript)
+        """
+        var tex = try await client.complete(system: system, user: user, temperature: 0.3)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if tex.hasPrefix("```") {
+            tex = tex
+                .replacingOccurrences(of: "```latex", with: "")
+                .replacingOccurrences(of: "```tex", with: "")
+                .replacingOccurrences(of: "```", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return tex
+    }
+
     // MARK: - Course-wide exam digest
 
     private static let courseSystemPrompt = """

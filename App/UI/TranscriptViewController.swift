@@ -299,8 +299,78 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
-    // Handouts are produced by the claude CLI (LaTeX → PDF, per the bundled skill)
+    // Two channels: claude CLI (LaTeX → PDF, per the bundled skill) or the configured API (Markdown)
     private func generateHandout() {
+        let alert = UIAlertController(
+            title: String(localized: "生成本讲讲义"),
+            message: String(localized: "两种方式产出同一份 PDF 讲义：claude 按内置 skill 生成，或用已配置的 API 接口按同一 skill 生成、在本机编译。"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: String(localized: "用 claude 生成"), style: .default) { [weak self] _ in
+            self?.presentClaudeHandoutGuide()
+        })
+        alert.addAction(UIAlertAction(title: String(localized: "用 API 生成"), style: .default) { [weak self] _ in
+            self?.generateHandoutViaAPI()
+        })
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        present(alert, animated: true)
+    }
+
+    // API channel follows the same bundled skill: LLM writes the .tex, xelatex compiles it locally
+    private func generateHandoutViaAPI() {
+        guard !plainText.isEmpty, let analysis else { return }
+        guard let config = Settings.chatConfig else {
+            presentConfigureAlert()
+            return
+        }
+        isAnalyzing = true
+        refreshChrome()
+        let title = lecture.name
+        let transcript = plainText
+        let texURL = LibraryStore.shared.productURL(lecture, in: course, ext: "handout.tex")
+        let courseDir = LibraryStore.shared.courseDirectory(course)
+        Task {
+            do {
+                guard let skillURL = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md"),
+                      let skill = try? String(contentsOf: skillURL, encoding: .utf8) else {
+                    throw NSError(domain: "Recap", code: 1, userInfo: [
+                        NSLocalizedDescriptionKey: String(localized: "内置 skill 缺失"),
+                    ])
+                }
+                let tex = try await HandoutGenerator().lectureLaTeX(
+                    title: title, transcript: transcript, analysis: analysis, skill: skill,
+                    client: ChatClient(config: config)
+                )
+                try tex.write(to: texURL, atomically: true, encoding: .utf8)
+                try await Self.compileLaTeX(texURL: texURL, in: courseDir)
+                isAnalyzing = false
+                refreshChrome()
+                showHandout()
+            } catch {
+                isAnalyzing = false
+                refreshChrome()
+                presentInfo(title: String(localized: "生成失败"), message: error.localizedDescription)
+            }
+        }
+    }
+
+    private static func compileLaTeX(texURL: URL, in directory: URL) async throws {
+        let command = """
+        cd '\(directory.path)' && XL=$(command -v xelatex || echo /Library/TeX/texbin/xelatex) && "$XL" -interaction=nonstopmode '\(texURL.lastPathComponent)' && "$XL" -interaction=nonstopmode '\(texURL.lastPathComponent)'
+        """
+        var log = ""
+        let code = await withCheckedContinuation { continuation in
+            ShellBridge.run(command, onOutput: { log += $0 }, onExit: { continuation.resume(returning: $0) })
+        }
+        guard code == 0 else {
+            let tail = log.split(separator: "\n").suffix(12).joined(separator: "\n")
+            throw NSError(domain: "Recap", code: Int(code), userInfo: [
+                NSLocalizedDescriptionKey: String(localized: "LaTeX 编译失败（需要本机已安装 BasicTeX/xelatex）：") + "\n" + tail,
+            ])
+        }
+    }
+
+    private func presentClaudeHandoutGuide() {
         let command = "claude \"为「\(lecture.name)」生成讲义\""
         UIPasteboard.general.string = command
         let alert = UIAlertController(
