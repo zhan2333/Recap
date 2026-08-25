@@ -322,7 +322,7 @@ final class TranscriptViewController: UIViewController {
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: String(localized: "用 CLI agent 生成"), style: .default) { [weak self] _ in
-            self?.presentCLIHandoutGuide()
+            self?.presentTerminalStudio()
         })
         alert.addAction(UIAlertAction(title: String(localized: "用 API 生成"), style: .default) { [weak self] _ in
             self?.generateHandoutViaAPI()
@@ -385,25 +385,11 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
-    private func presentCLIHandoutGuide() {
-        let claudeCommand = "claude \"为「\(lecture.name)」生成讲义\""
-        let codexCommand = "codex \"为「\(lecture.name)」生成讲义\""
-        UIPasteboard.general.string = claudeCommand
-        let alert = UIAlertController(
-            title: String(localized: "用 CLI 生成讲义"),
-            message: String(localized: "讲义由 CLI agent 按课程目录内置的 skill 生成（LaTeX 排版编译为 PDF）。claude 命令已复制：\n\n\(claudeCommand)\n\ncodex、grok、kimi、gemini 等同样可用（读取目录里的 AGENTS.md / GEMINI.md）：\n\n\(codexCommand)\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。"),
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: String(localized: "好"), style: .cancel))
-        alert.addAction(UIAlertAction(title: String(localized: "复制 codex 命令"), style: .default) { _ in
-            UIPasteboard.general.string = codexCommand
-        })
-        alert.addAction(UIAlertAction(title: String(localized: "打开课程目录"), style: .default) { [weak self] _ in
-            guard let self else { return }
-            let dir = LibraryStore.shared.courseDirectory(self.course)
-            UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
-        })
-        present(alert, animated: true)
+    private func presentTerminalStudio() {
+        let studio = TerminalStudioViewController(lecture: lecture, course: course) { [weak self] in
+            self?.showHandout()
+        }
+        present(studio, animated: true)
     }
 
     private func showHandout() {

@@ -11,6 +11,36 @@
         }
       }
     },
+    "\n✔ 完成（本次运行没有更新讲义 PDF）\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\n✔ Done (this run did not update the lecture-note PDF)\n"
+          }
+        }
+      }
+    },
+    "\n✔ 讲义 PDF 已就绪\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\n✔ Lecture-note PDF is ready\n"
+          }
+        }
+      }
+    },
+    "\n✘ 退出码 %d\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\n✘ Exit code %d\n"
+          }
+        }
+      }
+    },
     "\n✘ 退出码 %d——可复制下方命令自己在终端重试\n": {
       "localizations": {
         "en": {
@@ -121,6 +151,26 @@
         }
       }
     },
+    "%lld 字 · 已转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld characters · Transcribed"
+          }
+        }
+      }
+    },
+    "%lld 条 · 已提取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld items · Extracted"
+          }
+        }
+      }
+    },
     "%lld 条线索": {
       "localizations": {
         "en": {
@@ -161,12 +211,32 @@
         }
       }
     },
+    "Terminal Studio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminal Studio"
+          }
+        }
+      }
+    },
     "ggml 格式的 whisper 模型文件路径。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Path to a ggml-format whisper model file."
+          }
+        }
+      }
+    },
+    "❯ 已附加课程上下文（skill · 文稿 · 重点）。输入任务并运行。\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "❯ Course context attached (skill · transcript · key points). Enter a task and run.\n"
           }
         }
       }
@@ -341,12 +411,32 @@
         }
       }
     },
+    "内置终端不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built-in terminal unavailable"
+          }
+        }
+      }
+    },
     "内置终端执行下载，实时显示进度，走 HF 镜像": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The built-in terminal downloads via the HF mirror and shows live progress"
+          }
+        }
+      }
+    },
+    "内置终端组件加载失败。可在课程目录自行运行 CLI：\n  claude \"为「%@」生成讲义\"\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The built-in terminal component failed to load. Run a CLI yourself in the course folder:\n  claude \"为「%@」生成讲义\"\n"
           }
         }
       }
@@ -501,16 +591,6 @@
         }
       }
     },
-    "复制 codex 命令": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Copy codex command"
-          }
-        }
-      }
-    },
     "复制命令": {
       "localizations": {
         "en": {
@@ -547,6 +627,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "完整文稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full transcript"
           }
         }
       }
@@ -611,6 +711,36 @@
         }
       }
     },
+    "尚未提取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not extracted yet"
+          }
+        }
+      }
+    },
+    "尚未转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not transcribed yet"
+          }
+        }
+      }
+    },
+    "已内置 · claude / codex / gemini 等通用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bundled · works with claude / codex / gemini and more"
+          }
+        }
+      }
+    },
     "已复制，下载完成后回到这里": {
       "localizations": {
         "en": {
@@ -621,12 +751,42 @@
         }
       }
     },
+    "已完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete"
+          }
+        }
+      }
+    },
     "已完成 · %lld 个重点": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Complete · %lld key points"
+          }
+        }
+      }
+    },
+    "已检测 · 就绪": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detected · Ready"
+          }
+        }
+      }
+    },
+    "已生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generated"
           }
         }
       }
@@ -881,6 +1041,36 @@
         }
       }
     },
+    "未安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not installed"
+          }
+        }
+      }
+    },
+    "未检测到 CLI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No CLI detected"
+          }
+        }
+      }
+    },
+    "未生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not generated"
+          }
+        }
+      }
+    },
     "未知错误": {
       "localizations": {
         "en": {
@@ -907,6 +1097,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "On-device transcription complete"
+          }
+        }
+      }
+    },
+    "本次会话上下文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This session's context"
           }
         }
       }
@@ -967,6 +1167,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Core concepts"
+          }
+        }
+      }
+    },
+    "检测中…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detecting…"
+          }
+        }
+      }
+    },
+    "检测已安装的 CLI…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detecting installed CLIs…"
           }
         }
       }
@@ -1051,6 +1271,16 @@
         }
       }
     },
+    "没有找到可用的 CLI（claude / codex / gemini / grok / kimi）。安装并登录任意一个后重新打开。\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No usable CLI found (claude / codex / gemini / grok / kimi). Install and sign in to one, then reopen.\n"
+          }
+        }
+      }
+    },
     "波形来自课堂音频，色块表示老师原话所在区间。": {
       "localizations": {
         "en": {
@@ -1067,6 +1297,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add lecture"
+          }
+        }
+      }
+    },
+    "生成产物": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generated artifact"
           }
         }
       }
@@ -1137,16 +1377,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Generate with a CLI agent"
-          }
-        }
-      }
-    },
-    "用 CLI 生成讲义": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Generate lecture notes with a CLI"
           }
         }
       }
@@ -1311,6 +1541,16 @@
         }
       }
     },
+    "考试重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exam key points"
+          }
+        }
+      }
+    },
     "视频文件不在本机": {
       "localizations": {
         "en": {
@@ -1331,12 +1571,12 @@
         }
       }
     },
-    "讲义由 CLI agent 按课程目录内置的 skill 生成（LaTeX 排版编译为 PDF）。claude 命令已复制：\n\n%@\n\ncodex、grok、kimi、gemini 等同样可用（读取目录里的 AGENTS.md / GEMINI.md）：\n\n%@\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。": {
+    "讲义已生成": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lecture notes are produced by a CLI agent following the skill bundled in the course folder (LaTeX typeset into a PDF). The claude command was copied:\n\n%@\n\ncodex, grok, kimi, gemini and others work too (they read the folder's AGENTS.md / GEMINI.md):\n\n%@\n\nOpen a terminal in the course folder, paste and run it, then come back here."
+            "value": "Lecture notes generated"
           }
         }
       }
@@ -1411,6 +1651,16 @@
         }
       }
     },
+    "读取中…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading…"
+          }
+        }
+      }
+    },
     "课程": {
       "localizations": {
         "en": {
@@ -1437,6 +1687,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Course replays become transcripts on this device. Key points and lecture notes all start from the teacher's exact words. Transcription runs a whisper model, fully offline."
+          }
+        }
+      }
+    },
+    "课程文件夹 · …/%@…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course folder · …/%@…"
           }
         }
       }
@@ -1477,6 +1737,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transcription failed: %@"
+          }
+        }
+      }
+    },
+    "运行": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run"
+          }
+        }
+      }
+    },
+    "运行中…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running…"
+          }
+        }
+      }
+    },
+    "运行失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run failed"
           }
         }
       }

@@ -13,6 +13,7 @@
 		1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */; };
 		1ED21351811066B3286595E1 /* BatchAddLectureSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9825A3F595F774D5AF0C9A55 /* BatchAddLectureSheet.swift */; };
 		37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */; };
+		4D9E45E8EBBD3F548A85CF90 /* TerminalStudioViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EEEBC4A354CAB0789B0B48B /* TerminalStudioViewController.swift */; };
 		4DA6C44E3E4A5BE360117666 /* ShellRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83E85A621F54206094AFF288 /* ShellRunner.swift */; };
 		4E3B91489EB4E18760D2C223 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0BCD4FAA05DF20394776496E /* AppIcon.icon */; };
 		60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E37ED690FC7C2FF61570139 /* RecapTheme.swift */; };
@@ -63,6 +64,7 @@
 		616F809051DE4C0195CAA00B /* RecapKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecapKit; path = RecapKit; sourceTree = SOURCE_ROOT; };
 		676EC9FC010F8689B3A7E396 /* LectureQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureQueue.swift; sourceTree = "<group>"; };
 		6BC0E06F800CA245EDEAB6DC /* RecapShellPlugin.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecapShellPlugin.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		6EEEBC4A354CAB0789B0B48B /* TerminalStudioViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalStudioViewController.swift; sourceTree = "<group>"; };
 		70523AD92FCE6BB5D554F1B9 /* LectureListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureListViewController.swift; sourceTree = "<group>"; };
 		7EAA252231B59F41A4E68A2A /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
 		83E85A621F54206094AFF288 /* ShellRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellRunner.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				3822695569806EF08ECC2E35 /* PDFViewController.swift */,
 				5E37ED690FC7C2FF61570139 /* RecapTheme.swift */,
 				456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */,
+				6EEEBC4A354CAB0789B0B48B /* TerminalStudioViewController.swift */,
 				10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */,
 				B416F27ABE20FB0266E6C223 /* Transcript */,
 			);
@@ -318,6 +321,7 @@
 				D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */,
 				37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */,
 				BAF5469021701803372AF638 /* ShellBridge.swift in Sources */,
+				4D9E45E8EBBD3F548A85CF90 /* TerminalStudioViewController.swift in Sources */,
 				1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */,
 				AC5C00D0EE7A17E4F256C4D0 /* UpdateChecker.swift in Sources */,
 				6EFB38676CE7420CBA1BCDD7 /* WaveformGenerator.swift in Sources */,
