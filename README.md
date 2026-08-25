@@ -50,12 +50,16 @@ claude "为「第一周」生成讲义"
 3. 「设置」里配置任意 OpenAI-compatible 接口（OpenRouter、自建网关或本地 Ollama），用于提取重点
 4. 新建课程 → 添加讲次 → 转写完成后提取重点
 
-界面中英双语，跟随系统语言。
+**系统要求**：macOS 14 Sonoma 及以上，Apple silicon。界面中英双语，跟随系统语言。
 
 <p align="center">
-  <img src="docs/recap-app-icon-default.png" width="96" alt="Light icon">
-  &nbsp;&nbsp;
-  <img src="docs/recap-app-icon-dark.png" width="96" alt="Dark icon">
+  <img src="docs/icon-default.png" width="88" alt="Default icon">
+  &nbsp;
+  <img src="docs/icon-dark.png" width="88" alt="Dark icon">
+  &nbsp;
+  <img src="docs/icon-clear-light.png" width="88" alt="Clear light icon">
+  &nbsp;
+  <img src="docs/icon-clear-dark.png" width="88" alt="Clear dark icon">
 </p>
 
 ## Architecture
