@@ -1131,22 +1131,22 @@
         }
       }
     },
+    "用 CLI agent 生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate with a CLI agent"
+          }
+        }
+      }
+    },
     "用 CLI 生成讲义": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Generate lecture notes with a CLI"
-          }
-        }
-      }
-    },
-    "用 claude / codex 生成": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Generate with claude / codex"
           }
         }
       }
@@ -1331,12 +1331,12 @@
         }
       }
     },
-    "讲义由 CLI agent 按课程目录内置的 skill 生成（LaTeX 排版编译为 PDF）。claude 命令已复制：\n\n%@\n\n也支持 codex（读取同目录 AGENTS.md）：\n\n%@\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。": {
+    "讲义由 CLI agent 按课程目录内置的 skill 生成（LaTeX 排版编译为 PDF）。claude 命令已复制：\n\n%@\n\ncodex、grok、kimi、gemini 等同样可用（读取目录里的 AGENTS.md / GEMINI.md）：\n\n%@\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lecture notes are produced by a CLI agent following the skill bundled in the course folder (LaTeX typeset into a PDF). The claude command was copied:\n\n%@\n\ncodex works too (it reads the folder's AGENTS.md):\n\n%@\n\nOpen a terminal in the course folder, paste and run it, then come back here."
+            "value": "Lecture notes are produced by a CLI agent following the skill bundled in the course folder (LaTeX typeset into a PDF). The claude command was copied:\n\n%@\n\ncodex, grok, kimi, gemini and others work too (they read the folder's AGENTS.md / GEMINI.md):\n\n%@\n\nOpen a terminal in the course folder, paste and run it, then come back here."
           }
         }
       }

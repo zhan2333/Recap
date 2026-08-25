@@ -321,7 +321,7 @@ final class TranscriptViewController: UIViewController {
             message: String(localized: "两种方式产出同一份 PDF 讲义：claude 按内置 skill 生成，或用已配置的 API 接口按同一 skill 生成、在本机编译。"),
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: String(localized: "用 claude / codex 生成"), style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: String(localized: "用 CLI agent 生成"), style: .default) { [weak self] _ in
             self?.presentCLIHandoutGuide()
         })
         alert.addAction(UIAlertAction(title: String(localized: "用 API 生成"), style: .default) { [weak self] _ in
@@ -391,7 +391,7 @@ final class TranscriptViewController: UIViewController {
         UIPasteboard.general.string = claudeCommand
         let alert = UIAlertController(
             title: String(localized: "用 CLI 生成讲义"),
-            message: String(localized: "讲义由 CLI agent 按课程目录内置的 skill 生成（LaTeX 排版编译为 PDF）。claude 命令已复制：\n\n\(claudeCommand)\n\n也支持 codex（读取同目录 AGENTS.md）：\n\n\(codexCommand)\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。"),
+            message: String(localized: "讲义由 CLI agent 按课程目录内置的 skill 生成（LaTeX 排版编译为 PDF）。claude 命令已复制：\n\n\(claudeCommand)\n\ncodex、grok、kimi、gemini 等同样可用（读取目录里的 AGENTS.md / GEMINI.md）：\n\n\(codexCommand)\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。"),
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: String(localized: "好"), style: .cancel))

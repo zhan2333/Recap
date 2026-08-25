@@ -75,26 +75,29 @@ final class LibraryStore {
         return dir
     }
 
-    // Places the bundled skill where each CLI agent discovers it: .claude/skills for claude, AGENTS.md for codex
+    // One skill, every discovery convention: .claude/skills (claude, grok), .agents/skills (the neutral
+    // standard), AGENTS.md (codex, kimi, grok, deepseek), GEMINI.md (gemini, qwen)
     private func installSkillIfNeeded(in courseDir: URL) {
-        guard let source = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md") else { return }
+        guard let source = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md"),
+              let text = try? String(contentsOf: source, encoding: .utf8) else { return }
         func modified(_ url: URL) -> Date {
             (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
         }
         let sourceModified = modified(source)
 
-        let skillDir = courseDir.appendingPathComponent(".claude/skills/recap-review", isDirectory: true)
-        let skillTarget = skillDir.appendingPathComponent("SKILL.md")
-        if sourceModified > modified(skillTarget) {
-            try? FileManager.default.createDirectory(at: skillDir, withIntermediateDirectories: true)
-            try? FileManager.default.removeItem(at: skillTarget)
-            try? FileManager.default.copyItem(at: source, to: skillTarget)
-        }
-
-        let agentsTarget = courseDir.appendingPathComponent("AGENTS.md")
-        if sourceModified > modified(agentsTarget),
-           let text = try? String(contentsOf: source, encoding: .utf8) {
-            try? Self.strippingFrontmatter(text).write(to: agentsTarget, atomically: true, encoding: .utf8)
+        let targets: [(path: String, stripFrontmatter: Bool)] = [
+            (".claude/skills/recap-review/SKILL.md", false),
+            (".agents/skills/recap-review/SKILL.md", false),
+            ("AGENTS.md", true),
+            ("GEMINI.md", true),
+        ]
+        for entry in targets {
+            let target = courseDir.appendingPathComponent(entry.path)
+            guard sourceModified > modified(target) else { continue }
+            try? FileManager.default.createDirectory(
+                at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let content = entry.stripFrontmatter ? Self.strippingFrontmatter(text) : text
+            try? content.write(to: target, atomically: true, encoding: .utf8)
         }
     }
 
