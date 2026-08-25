@@ -43,6 +43,8 @@ final class DetailHeaderView: UIView {
         let titles = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
         titles.axis = .vertical
         titles.spacing = 1
+        // .fill would force both labels to one width — the short title's hugging then squeezes the subtitle
+        titles.alignment = .leading
 
         // "· 本地" state pill
         let dot = UIView()
