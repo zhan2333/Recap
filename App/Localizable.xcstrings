@@ -251,6 +251,16 @@
         }
       }
     },
+    "❯ 历史会话（只读） · %@\n\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "❯ Past session (read-only) · %@\n\n"
+          }
+        }
+      }
+    },
     "❯ 已附加课程上下文（skill · 文稿 · 重点）。输入任务并运行。\n": {
       "localizations": {
         "en": {
@@ -537,6 +547,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "3s before"
+          }
+        }
+      }
+    },
+    "历史会话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Past sessions"
+          }
+        }
+      }
+    },
+    "历史会话 · 失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Past session · Failed"
+          }
+        }
+      }
+    },
+    "历史会话 · 成功": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Past session · Succeeded"
           }
         }
       }
@@ -1157,6 +1197,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "On-device transcription complete"
+          }
+        }
+      }
+    },
+    "本次产物": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This run's artifacts"
           }
         }
       }

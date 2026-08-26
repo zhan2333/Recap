@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import QuickLook
 
 // Terminal Studio: the user's own CLI runs inside the course context, the artifact lands back in place
 final class TerminalStudioViewController: UIViewController {
@@ -14,12 +15,28 @@ final class TerminalStudioViewController: UIViewController {
     private let course: Course
     private let onShowHandout: () -> Void
 
+    struct SessionRecord {
+        let tool: String
+        let prompt: String
+        let log: String
+        let exitCode: Int32
+        let date: Date
+    }
+
+    // Survives sheet dismissal for the lifetime of the app
+    private static var sessionsByLecture: [UUID: [SessionRecord]] = [:]
+
     private var detectedTools: [String] = []
     private var toolVersions: [String: String] = [:]
     private var selectedTool: String?
     private var isRunning = false
     private var runningPID: Int32 = -1
     private var pdfModifiedBeforeRun = Date.distantPast
+    private var runStartDate = Date.distantPast
+    private var currentLog = ""
+    private var currentPrompt = ""
+    private var isViewingHistory = false
+    private var previewItem: URL?
 
     private let toolButton = UIButton(type: .system)
     private let statusDot = UIView()
@@ -30,6 +47,8 @@ final class TerminalStudioViewController: UIViewController {
     private let runButton = UIButton(type: .system)
     private let texRow = ArtifactRow()
     private let pdfRow = ArtifactRow()
+    private let artifactsStack = UIStackView()
+    private let historyStack = UIStackView()
     private let viewHandoutButton = UIButton(type: .system)
 
     private var courseDir: URL { LibraryStore.shared.courseDirectory(course) }
@@ -127,7 +146,9 @@ final class TerminalStudioViewController: UIViewController {
         readOnlyNote.font = RecapTheme.body(10.5)
         readOnlyNote.textColor = RecapTheme.quiet
         readOnlyNote.numberOfLines = 2
-        let leftColumn = UIStackView(arrangedSubviews: [contextTitle, contextStack, UIView(), readOnlyNote])
+        historyStack.axis = .vertical
+        historyStack.spacing = 5
+        let leftColumn = UIStackView(arrangedSubviews: [contextTitle, contextStack, historyStack, UIView(), readOnlyNote])
         leftColumn.axis = .vertical
         leftColumn.spacing = 10
         leftColumn.widthAnchor.constraint(equalToConstant: 232).isActive = true
@@ -210,8 +231,10 @@ final class TerminalStudioViewController: UIViewController {
             self.dismiss(animated: true) { self.onShowHandout() }
         }, for: .touchUpInside)
 
+        artifactsStack.axis = .vertical
+        artifactsStack.spacing = 5
         let rightColumn = UIStackView(arrangedSubviews: [
-            sectionLabel(String(localized: "生成产物")), texRow, pdfRow, UIView(), viewHandoutButton,
+            sectionLabel(String(localized: "生成产物")), texRow, pdfRow, artifactsStack, UIView(), viewHandoutButton,
         ])
         rightColumn.axis = .vertical
         rightColumn.spacing = 10
@@ -236,6 +259,7 @@ final class TerminalStudioViewController: UIViewController {
 
         buildContextCards()
         refreshArtifacts()
+        rebuildHistory()
         detectTools()
     }
 
@@ -360,15 +384,20 @@ final class TerminalStudioViewController: UIViewController {
         guard !isRunning, let tool = selectedTool,
               let prompt = promptField.text?.trimmingCharacters(in: .whitespaces), !prompt.isEmpty else { return }
         isRunning = true
+        isViewingHistory = false
         setRunButton(running: true)
         promptField.isEnabled = false
         pdfModifiedBeforeRun = modified(pdfURL)
+        runStartDate = Date()
+        currentLog = ""
+        currentPrompt = prompt
         setStatus(String(localized: "运行中…"), ready: true)
 
         let invocation = command(for: tool, prompt: prompt)
         terminal.append("\n❯ \(invocation)\n")
         runningPID = ShellBridge.run("cd '\(courseDir.path)' && \(invocation)") { [weak self] output in
             self?.terminal.append(output)
+            self?.currentLog += output
         } onExit: { [weak self] code in
             self?.finishRun(code: code)
         }
@@ -382,15 +411,103 @@ final class TerminalStudioViewController: UIViewController {
 
     private func startNewSession() {
         guard !isRunning else { return }
+        isViewingHistory = false
         terminal.clear()
         promptField.text = "为「\(lecture.name)」生成讲义"
         refreshArtifacts()
+        clearRunArtifacts()
         if detectedTools.isEmpty {
             detectTools()
         } else {
             setStatus(String(localized: "已检测 · 就绪"), ready: true)
             terminal.append(String(localized: "❯ 已附加课程上下文（skill · 文稿 · 重点）。输入任务并运行。\n"))
         }
+    }
+
+    // MARK: - Session history
+
+    private func rebuildHistory() {
+        historyStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let records = Self.sessionsByLecture[lecture.id] ?? []
+        guard !records.isEmpty else { return }
+        historyStack.addArrangedSubview(sectionLabel(String(localized: "历史会话")))
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        for (index, record) in records.enumerated().reversed().prefix(6) {
+            let button = UIButton(type: .system)
+            button.preferredBehavioralStyle = .pad
+            button.contentHorizontalAlignment = .leading
+            var config = UIButton.Configuration.plain()
+            let mark = record.exitCode == 0 ? "✓" : "✕"
+            config.attributedTitle = AttributedString(
+                "\(mark) \(formatter.string(from: record.date)) \(record.tool) · \(String(record.prompt.prefix(14)))",
+                attributes: AttributeContainer([
+                    .font: RecapTheme.mono(10.5, weight: .regular), .foregroundColor: RecapTheme.muted,
+                ]))
+            config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 2, bottom: 4, trailing: 2)
+            button.configuration = config
+            button.addAction(UIAction { [weak self] _ in self?.showHistory(at: index) }, for: .touchUpInside)
+            historyStack.addArrangedSubview(button)
+        }
+    }
+
+    private func showHistory(at index: Int) {
+        guard !isRunning, let record = Self.sessionsByLecture[lecture.id]?[safe: index] else { return }
+        isViewingHistory = true
+        terminal.clear()
+        terminal.append(String(localized: "❯ 历史会话（只读） · \(record.tool)\n\n"))
+        terminal.append(record.log)
+        setStatus(record.exitCode == 0 ? String(localized: "历史会话 · 成功") : String(localized: "历史会话 · 失败"), ready: record.exitCode == 0)
+    }
+
+    // MARK: - Run artifacts
+
+    private func clearRunArtifacts() {
+        artifactsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    }
+
+    // Everything the run touched in the course folder, handed back as openable rows
+    private func scanRunArtifacts() {
+        clearRunArtifacts()
+        let fm = FileManager.default
+        var found: [URL] = []
+        let dirs = [courseDir, courseDir.appendingPathComponent("教材分章", isDirectory: true)]
+        for dir in dirs {
+            let items = (try? fm.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: [.contentModificationDateKey, .isDirectoryKey],
+                options: [.skipsHiddenFiles])) ?? []
+            for url in items {
+                let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isDirectoryKey])
+                guard values?.isDirectory != true,
+                      (values?.contentModificationDate ?? .distantPast) > runStartDate else { continue }
+                found.append(url)
+            }
+        }
+        guard !found.isEmpty else { return }
+        artifactsStack.addArrangedSubview(sectionLabel(String(localized: "本次产物")))
+        for url in found.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }).prefix(8) {
+            let button = UIButton(type: .system)
+            button.preferredBehavioralStyle = .pad
+            button.contentHorizontalAlignment = .leading
+            var config = UIButton.Configuration.plain()
+            config.attributedTitle = AttributedString(url.lastPathComponent, attributes: AttributeContainer([
+                .font: RecapTheme.mono(10.5, weight: .regular), .foregroundColor: RecapTheme.ink,
+            ]))
+            config.image = UIImage(systemName: "doc", withConfiguration: UIImage.SymbolConfiguration(pointSize: 9))
+            config.imagePadding = 5
+            config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 2, bottom: 4, trailing: 2)
+            button.configuration = config
+            button.tintColor = RecapTheme.muted
+            button.addAction(UIAction { [weak self] _ in self?.preview(url) }, for: .touchUpInside)
+            artifactsStack.addArrangedSubview(button)
+        }
+    }
+
+    private func preview(_ url: URL) {
+        previewItem = url
+        let preview = QLPreviewController()
+        preview.dataSource = self
+        present(preview, animated: true)
     }
 
     private func setRunButton(running: Bool) {
@@ -409,6 +526,10 @@ final class TerminalStudioViewController: UIViewController {
         runButton.isEnabled = true
         promptField.isEnabled = true
         refreshArtifacts()
+        Self.sessionsByLecture[lecture.id, default: []].append(SessionRecord(
+            tool: selectedTool ?? "?", prompt: currentPrompt, log: currentLog, exitCode: code, date: Date()))
+        rebuildHistory()
+        scanRunArtifacts()
         let pdfUpdated = modified(pdfURL) > pdfModifiedBeforeRun
         if code == 0 && pdfUpdated {
             setStatus(String(localized: "讲义已生成"), ready: true)
@@ -529,5 +650,22 @@ private extension UITextField {
     func setLeftPadding(_ inset: CGFloat) {
         leftView = UIView(frame: CGRect(x: 0, y: 0, width: inset, height: 1))
         leftViewMode = .always
+    }
+}
+
+extension TerminalStudioViewController: QLPreviewControllerDataSource {
+
+    func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
+        previewItem == nil ? 0 : 1
+    }
+
+    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
+        (previewItem ?? URL(fileURLWithPath: "/dev/null")) as NSURL
+    }
+}
+
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
