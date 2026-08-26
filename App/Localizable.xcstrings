@@ -121,6 +121,16 @@
         }
       }
     },
+    "%lld 个": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
     "%lld 个讲次": {
       "localizations": {
         "en": {
@@ -521,6 +531,26 @@
         }
       }
     },
+    "前 3 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3s before"
+          }
+        }
+      }
+    },
+    "原话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The quote"
+          }
+        }
+      }
+    },
     "去设置": {
       "localizations": {
         "en": {
@@ -557,6 +587,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Merge into one lecture"
+          }
+        }
+      }
+    },
+    "后 14 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "14s after"
           }
         }
       }
@@ -1137,6 +1177,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Extracted from this lecture"
+          }
+        }
+      }
+    },
+    "本讲重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key points in this lecture"
           }
         }
       }

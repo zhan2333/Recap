@@ -52,10 +52,14 @@ final class PlayerPaneView: UIView {
     private let lensIndex = UILabel()
     private let lensTime = UILabel()
     private let lensQuote = UILabel()
+    private let frameStrip = FrameStripView()
+    private let inspector = KeyPointInspectorView()
     private let playLeadInButton = UIButton(type: .system)
+    private var frameGenerators: [AVAssetImageGenerator] = []
     private let emptyState = UIStackView()
 
     private var content: UIStackView!
+    private var columns: UIStackView!
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -122,9 +126,12 @@ final class PlayerPaneView: UIView {
         lensHead.axis = .horizontal
         lensHead.spacing = 10
 
-        let lens = vstack([lensHead, lensQuote, playLeadInButton], spacing: 9)
+        let lens = vstack([lensHead, lensQuote, frameStrip, playLeadInButton], spacing: 9)
         lens.setCustomSpacing(12, after: lensQuote)
+        lens.setCustomSpacing(12, after: frameStrip)
         lens.alignment = .leading
+        frameStrip.onSelectTime = { [weak self] time in self?.seekGlobal(time, thenPlay: false) }
+        inspector.onSelect = { [weak self] index in self?.select(index, seek: true, play: false) }
 
         partPicker.axis = .horizontal
         partPicker.spacing = 8
@@ -143,8 +150,14 @@ final class PlayerPaneView: UIView {
         content.setCustomSpacing(12, after: partPickerRow)
         content.isLayoutMarginsRelativeArrangement = true
         content.layoutMargins = UIEdgeInsets(top: 16, left: 24, bottom: 20, right: 24)
-        content.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(content)
+
+        let columns = UIStackView(arrangedSubviews: [content, inspector])
+        columns.axis = .horizontal
+        columns.alignment = .fill
+        inspector.widthAnchor.constraint(equalToConstant: 236).isActive = true
+        columns.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(columns)
+        self.columns = columns
 
         // Empty state: media missing → explain + re-download path.
         let emptyIcon = UIImageView(image: UIImage(systemName: "film.stack"))
@@ -186,10 +199,10 @@ final class PlayerPaneView: UIView {
         // 749: below every default CHCR so scarce height always squeezes the video first
         playerAspect.priority = UILayoutPriority(749)
         NSLayoutConstraint.activate([
-            content.topAnchor.constraint(equalTo: topAnchor),
-            content.leadingAnchor.constraint(equalTo: leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: trailingAnchor),
-            content.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
+            columns.topAnchor.constraint(equalTo: topAnchor),
+            columns.leadingAnchor.constraint(equalTo: leadingAnchor),
+            columns.trailingAnchor.constraint(equalTo: trailingAnchor),
+            columns.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
             playerAspect,
             playerViewController.view.heightAnchor.constraint(greaterThanOrEqualToConstant: 160),
             rail.heightAnchor.constraint(equalToConstant: 64),
@@ -202,6 +215,11 @@ final class PlayerPaneView: UIView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        inspector.isHidden = bounds.width < 1000
+    }
 
     deinit {
         if let observer = timeObserver { player?.removeTimeObserver(observer) }
@@ -225,12 +243,12 @@ final class PlayerPaneView: UIView {
 
         let existing = parts.filter { FileManager.default.fileExists(atPath: $0.url.path) }
         guard !existing.isEmpty else {
-            content.isHidden = true
+            columns.isHidden = true
             emptyState.isHidden = false
             teardownPlayer()
             return
         }
-        content.isHidden = false
+        columns.isHidden = false
         emptyState.isHidden = true
 
         // Build the global timeline; transcript end covers a missing tail duration.
@@ -268,9 +286,46 @@ final class PlayerPaneView: UIView {
             observePartEnd()
         }
 
+        frameGenerators = playableParts.map { part in
+            let generator = AVAssetImageGenerator(asset: AVURLAsset(url: part.url))
+            generator.appliesPreferredTrackTransform = true
+            generator.maximumSize = CGSize(width: 240, height: 136)
+            generator.requestedTimeToleranceBefore = CMTime(seconds: 0.5, preferredTimescale: 10)
+            generator.requestedTimeToleranceAfter = CMTime(seconds: 0.5, preferredTimescale: 10)
+            return generator
+        }
+        inspector.update(keyPoints: keyPoints)
         rebuildPartPicker()
         applyPart()
         select(keyPoints.isEmpty ? nil : 0, seek: false, play: false)
+    }
+
+    // Maps a global timeline instant onto its part and local offset
+    private func partAndLocalTime(for global: TimeInterval) -> (index: Int, local: TimeInterval)? {
+        guard !playableParts.isEmpty else { return nil }
+        let index = playableParts.lastIndex { global >= $0.globalStart } ?? 0
+        return (index, global - playableParts[index].globalStart)
+    }
+
+    private func updateFrameStrip(for point: KeyPoint?) {
+        frameGenerators.forEach { $0.cancelAllCGImageGeneration() }
+        guard let point else {
+            frameStrip.isHidden = true
+            return
+        }
+        frameStrip.isHidden = false
+        let times = [max(0, point.start - 3), point.start, min(max(point.start, duration - 1), point.start + 14)]
+        frameStrip.beginLoading(times: times)
+        for (slot, global) in times.enumerated() {
+            guard let target = partAndLocalTime(for: global),
+                  frameGenerators.indices.contains(target.index) else { continue }
+            let time = CMTime(seconds: target.local, preferredTimescale: 600)
+            frameGenerators[target.index].generateCGImagesAsynchronously(forTimes: [NSValue(time: time)]) { [weak self] _, image, _, _, _ in
+                guard let image else { return }
+                let frame = UIImage(cgImage: image)
+                DispatchQueue.main.async { self?.frameStrip.setImage(frame, at: slot) }
+            }
+        }
     }
 
     // MARK: - Part presentation
@@ -408,6 +463,8 @@ final class PlayerPaneView: UIView {
     private func select(_ index: Int?, seek: Bool, play: Bool) {
         selectedIndex = index
         rail.selectedIndex = index.flatMap { partKeyPointIndices.firstIndex(of: $0) }
+        inspector.select(index: index)
+        updateFrameStrip(for: index.flatMap { $0 < keyPoints.count ? keyPoints[$0] : nil })
         guard let index, index < keyPoints.count else {
             lensIndex.text = keyPoints.isEmpty ? "—" : nil
             lensTime.text = keyPoints.isEmpty ? String(localized: "提取重点后，重点区间会出现在轨道上") : nil
@@ -576,5 +633,200 @@ final class FocusRailView: UIView {
         let x = bounds.width * CGFloat(min(1, playheadTime / duration))
         playhead.frame = CGRect(x: x - 0.75, y: 0, width: 1.5, height: bounds.height)
         bringSubviewToFront(playhead)
+    }
+}
+
+// MARK: - Frame strip
+
+// Three thumbnails around the quote: 3s before, the quote itself, 14s after
+final class FrameStripView: UIView {
+
+    var onSelectTime: ((TimeInterval) -> Void)?
+
+    private var slots: [UIButton] = []
+    private var times: [TimeInterval] = []
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        let labels = [String(localized: "前 3 秒"), String(localized: "原话"), String(localized: "后 14 秒")]
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.spacing = 8
+        for (index, text) in labels.enumerated() {
+            let button = UIButton(type: .custom)
+            button.tag = index
+            button.backgroundColor = RecapTheme.surface
+            button.layer.cornerRadius = 6
+            button.layer.cornerCurve = .continuous
+            button.clipsToBounds = true
+            button.imageView?.contentMode = .scaleAspectFill
+            button.widthAnchor.constraint(equalToConstant: 96).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 54).isActive = true
+            if index == 1 {
+                button.layer.borderWidth = 2
+                button.layer.borderColor = RecapTheme.signal.cgColor
+            }
+            button.addAction(UIAction { [weak self] _ in
+                guard let self, self.times.indices.contains(index) else { return }
+                self.onSelectTime?(self.times[index])
+            }, for: .touchUpInside)
+
+            let caption = UILabel()
+            caption.text = text
+            caption.font = RecapTheme.body(9.5)
+            caption.textColor = RecapTheme.quiet
+            caption.textAlignment = .center
+
+            let cell = UIStackView(arrangedSubviews: [button, caption])
+            cell.axis = .vertical
+            cell.spacing = 3
+            cell.alignment = .center
+            slots.append(button)
+            stack.addArrangedSubview(cell)
+        }
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func beginLoading(times: [TimeInterval]) {
+        self.times = times
+        slots.forEach { $0.setImage(nil, for: .normal) }
+    }
+
+    func setImage(_ image: UIImage, at slot: Int) {
+        guard slots.indices.contains(slot) else { return }
+        slots[slot].setImage(image, for: .normal)
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        slots[1].layer.borderColor = RecapTheme.signal.cgColor
+    }
+}
+
+// MARK: - Key point inspector
+
+// Right column: every key point of the lecture, selection synced with the rail
+final class KeyPointInspectorView: UIView {
+
+    var onSelect: ((Int) -> Void)?
+
+    private let countLabel = UILabel()
+    private let stack = UIStackView()
+    private var rows: [InspectorRow] = []
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = RecapTheme.notesPane
+
+        let title = UILabel()
+        title.text = String(localized: "本讲重点")
+        title.font = RecapTheme.body(13, weight: .semibold)
+        title.textColor = RecapTheme.ink
+        countLabel.font = RecapTheme.body(11)
+        countLabel.textColor = RecapTheme.quiet
+        let header = UIStackView(arrangedSubviews: [title, UIView(), countLabel])
+        header.axis = .horizontal
+        header.alignment = .firstBaseline
+
+        stack.axis = .vertical
+        stack.spacing = 5
+
+        let scroll = UIScrollView()
+        let contentStack = UIStackView(arrangedSubviews: [header, stack])
+        contentStack.axis = .vertical
+        contentStack.spacing = 12
+        contentStack.isLayoutMarginsRelativeArrangement = true
+        contentStack.layoutMargins = UIEdgeInsets(top: 14, left: 13, bottom: 20, right: 13)
+        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(contentStack)
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(scroll)
+        NSLayoutConstraint.activate([
+            scroll.topAnchor.constraint(equalTo: topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: bottomAnchor),
+            scroll.leadingAnchor.constraint(equalTo: leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: trailingAnchor),
+            contentStack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            contentStack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            contentStack.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            contentStack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            contentStack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func update(keyPoints: [PlayerPaneView.KeyPoint]) {
+        rows.forEach { $0.removeFromSuperview() }
+        rows = keyPoints.enumerated().map { index, point in
+            let row = InspectorRow(number: index + 1, point: point)
+            row.addAction(UIAction { [weak self] _ in self?.onSelect?(index) }, for: .touchUpInside)
+            stack.addArrangedSubview(row)
+            return row
+        }
+        countLabel.text = String(localized: "\(keyPoints.count) 个")
+    }
+
+    func select(index: Int?) {
+        for (rowIndex, row) in rows.enumerated() {
+            row.isActive = rowIndex == index
+        }
+    }
+
+    private final class InspectorRow: UIControl {
+
+        var isActive = false {
+            didSet { backgroundColor = isActive ? RecapTheme.signalSoft : .clear }
+        }
+
+        init(number: Int, point: PlayerPaneView.KeyPoint) {
+            super.init(frame: .zero)
+            layer.cornerRadius = RecapTheme.radiusSM
+            layer.cornerCurve = .continuous
+
+            let numberLabel = UILabel()
+            numberLabel.text = String(format: "%02d", number)
+            numberLabel.font = RecapTheme.mono(10, weight: .semibold)
+            numberLabel.textColor = RecapTheme.signalText
+
+            let timeLabel = UILabel()
+            timeLabel.text = PlayerPaneView.timestamp(point.start)
+            timeLabel.font = RecapTheme.mono(10, weight: .regular)
+            timeLabel.textColor = RecapTheme.time
+
+            let head = UIStackView(arrangedSubviews: [numberLabel, timeLabel, UIView()])
+            head.axis = .horizontal
+            head.spacing = 7
+
+            let text = UILabel()
+            text.text = point.signal.topic ?? point.signal.quote
+            text.font = RecapTheme.body(11.5)
+            text.textColor = RecapTheme.ink
+            text.numberOfLines = 2
+
+            let column = UIStackView(arrangedSubviews: [head, text])
+            column.axis = .vertical
+            column.spacing = 4
+            column.isUserInteractionEnabled = false
+            column.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(column)
+            NSLayoutConstraint.activate([
+                column.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+                column.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8),
+                column.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 9),
+                column.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -9),
+            ])
+        }
+
+        required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     }
 }
