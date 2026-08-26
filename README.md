@@ -18,6 +18,7 @@
   <img src="https://img.shields.io/badge/macOS-14%2B-1B3A5C?logo=apple&logoColor=white" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Mac%20Catalyst-UIKit-1B3A5C?logo=swift&logoColor=white" alt="Mac Catalyst">
   <img src="https://img.shields.io/badge/whisper.cpp-on--device-C75B39" alt="whisper.cpp">
+  <img src="https://img.shields.io/badge/license-MIT-2F2D29" alt="License: MIT">
 </p>
 
 ![Recap](docs/hero-en.png)
