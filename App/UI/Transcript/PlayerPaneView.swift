@@ -387,6 +387,11 @@ final class PlayerPaneView: UIView {
         player?.pause()
     }
 
+    func togglePlayback() {
+        guard let player else { return }
+        player.rate == 0 ? player.play() : player.pause()
+    }
+
     // MARK: - Playback linkage
 
     private func tick(_ seconds: TimeInterval) {
@@ -422,7 +427,7 @@ final class PlayerPaneView: UIView {
         }
     }
 
-    private func step(_ delta: Int) {
+    func step(_ delta: Int) {
         guard !keyPoints.isEmpty else { return }
         let next = ((selectedIndex ?? -1) + delta + keyPoints.count) % keyPoints.count
         select(next, seek: true, play: false)

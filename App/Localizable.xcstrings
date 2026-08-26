@@ -1621,6 +1621,16 @@
         }
       }
     },
+    "讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture"
+          }
+        }
+      }
+    },
     "设置": {
       "localizations": {
         "en": {
@@ -1757,6 +1767,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transcription failed: %@"
+          }
+        }
+      }
+    },
+    "转写完成，可以提取重点了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcription complete — ready to extract key points"
           }
         }
       }

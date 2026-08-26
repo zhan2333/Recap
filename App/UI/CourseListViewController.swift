@@ -109,7 +109,7 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
         dataSource.apply(reconfigure, animatingDifferences: false)
     }
 
-    private func promptNewCourse() {
+    func promptNewCourse() {
         let alert = UIAlertController(title: String(localized: "新建课程"), message: nil, preferredStyle: .alert)
         alert.addTextField { $0.placeholder = String(localized: "课程名（如：习概）") }
         alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))

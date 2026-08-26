@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import UserNotifications
 #if targetEnvironment(macCatalyst)
 import AppKit
 #endif
@@ -34,6 +35,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         windowScene.titlebar?.titleVisibility = .visible
         windowScene.sizeRestrictions?.minimumSize = CGSize(width: 1180, height: 720)
         #endif
+
+        UNUserNotificationCenter.current().delegate = self
 
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = MainSplitViewController()
@@ -95,3 +98,20 @@ final class BrandToolbarDelegate: NSObject, NSToolbarDelegate {
     }
 }
 #endif
+
+extension SceneDelegate: UNUserNotificationCenterDelegate {
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        defer { completionHandler() }
+        guard let idString = response.notification.request.content.userInfo["lectureID"] as? String,
+              let id = UUID(uuidString: idString),
+              let found = LibraryStore.shared.locate(lectureID: id),
+              let split = window?.rootViewController as? MainSplitViewController else { return }
+        split.show(course: found.course)
+        split.show(lecture: found.lecture, in: found.course)
+    }
+}

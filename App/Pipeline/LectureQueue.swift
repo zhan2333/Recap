@@ -5,8 +5,9 @@
 //  Created by Rio on 2026/8/19.
 //
 
-import Foundation
+import UIKit
 import AVFoundation
+import UserNotifications
 import PipelineKit
 import TranscriptionKit
 import AnalysisKit
@@ -172,6 +173,7 @@ final class LectureQueue {
                 $0.errorMessage = nil
             }
             setActivity(nil, for: lecture.id)
+            notifyIfBackgrounded(lecture)
             // Auto-extract key points; fire-and-forget so the chain moves on immediately
             Task { await self.autoExtract(of: lecture, in: course) }
         } catch {
@@ -227,6 +229,20 @@ final class LectureQueue {
                     continuation.resume(throwing: error)
                 }
             }
+        }
+    }
+
+    // Banner only when the app is in the background — foreground users see the list update live
+    private func notifyIfBackgrounded(_ lecture: Lecture) {
+        guard UIApplication.shared.applicationState != .active else { return }
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            let content = UNMutableNotificationContent()
+            content.title = lecture.name
+            content.body = String(localized: "转写完成，可以提取重点了")
+            content.userInfo = ["lectureID": lecture.id.uuidString]
+            center.add(UNNotificationRequest(identifier: lecture.id.uuidString, content: content, trigger: nil))
         }
     }
 

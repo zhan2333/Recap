@@ -269,6 +269,27 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
+    // MARK: - Menu plumbing
+
+    func switchMode(_ index: Int) { header.modeTabs.select(index) }
+    func extractKeyPoints() { analyze() }
+    func startHandoutFlow() { generateHandout() }
+    func openTerminalStudio() { presentTerminalStudio() }
+    func stepKeyPoint(_ delta: Int) {
+        if header.modeTabs.selectedIndex != 2 { header.modeTabs.select(2) }
+        playerPane.step(delta)
+    }
+
+    override var keyCommands: [UIKeyCommand]? {
+        guard header.modeTabs.selectedIndex == 2 else { return nil }
+        let space = UIKeyCommand(input: " ", modifierFlags: [], action: #selector(togglePlayback))
+        // Let AVKit's own space handling lose to ours only on this pane
+        space.wantsPriorityOverSystemBehavior = true
+        return [space]
+    }
+
+    @objc private func togglePlayback() { playerPane.togglePlayback() }
+
     // MARK: - Actions
 
     private func primaryAction() {

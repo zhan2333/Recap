@@ -50,6 +50,49 @@ final class MainSplitViewController: UISplitViewController {
         let viewer = PDFViewController(fileURL: url, title: title)
         setViewController(UINavigationController(rootViewController: viewer), for: .secondary)
     }
+
+    // MARK: - Menu actions
+
+    private var lectureList: LectureListViewController? {
+        (viewController(for: .supplementary) as? UINavigationController)?
+            .viewControllers.first as? LectureListViewController
+    }
+
+    private var transcript: TranscriptViewController? {
+        (viewController(for: .secondary) as? UINavigationController)?
+            .viewControllers.first as? TranscriptViewController
+    }
+
+    @objc func menuNewCourse() { courseList.promptNewCourse() }
+    @objc func menuAddLecture() { lectureList?.promptNewLecture() }
+    @objc func menuImportFiles() { lectureList?.pickLocalFile() }
+    @objc func menuShowSettings() {
+        let host = presentedViewController ?? self
+        host.present(UINavigationController(rootViewController: SettingsViewController()), animated: true)
+    }
+    @objc func menuShowSegments() { transcript?.switchMode(0) }
+    @objc func menuShowFullText() { transcript?.switchMode(1) }
+    @objc func menuShowPlayer() { transcript?.switchMode(2) }
+    @objc func menuShowKeyPoints() { transcript?.switchMode(3) }
+    @objc func menuExtractKeyPoints() { transcript?.extractKeyPoints() }
+    @objc func menuGenerateHandout() { transcript?.startHandoutFlow() }
+    @objc func menuOpenTerminalStudio() { transcript?.openTerminalStudio() }
+    @objc func menuPreviousKeyPoint() { transcript?.stepKeyPoint(-1) }
+    @objc func menuNextKeyPoint() { transcript?.stepKeyPoint(1) }
+
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        switch action {
+        case #selector(menuAddLecture), #selector(menuImportFiles):
+            return lectureList != nil
+        case #selector(menuShowSegments), #selector(menuShowFullText),
+             #selector(menuShowPlayer), #selector(menuShowKeyPoints),
+             #selector(menuExtractKeyPoints), #selector(menuGenerateHandout),
+             #selector(menuOpenTerminalStudio), #selector(menuPreviousKeyPoint), #selector(menuNextKeyPoint):
+            return transcript != nil
+        default:
+            return super.canPerformAction(action, withSender: sender)
+        }
+    }
 }
 
 // Neutral empty-state column.

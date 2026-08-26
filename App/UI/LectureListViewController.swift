@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import UniformTypeIdentifiers
 import AnalysisKit
 
 // Middle column: lectures of one course, with live queue state.
@@ -112,6 +113,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         LectureQueue.shared.onActivity = { [weak self] lectureID in
             self?.reconfigure(lectureID)
         }
+        view.addInteraction(UIDropInteraction(delegate: self))
         refreshToolsMenu()
         reload()
     }
@@ -188,7 +190,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         return false
     }
 
-    private func promptNewLecture() {
+    func promptNewLecture() {
         guard ensureModelReady() else { return }
         let sheet = BatchAddLectureSheet()
         sheet.existingLectureCount = LibraryStore.shared.lectures(in: course).count
@@ -210,7 +212,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         present(nav, animated: true)
     }
 
-    private func pickLocalFile() {
+    func pickLocalFile() {
         guard ensureModelReady() else { return }
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .audio], asCopy: true)
         picker.allowsMultipleSelection = true
@@ -578,6 +580,11 @@ extension LectureListViewController: UIDocumentPickerDelegate {
             importTextbook(from: first)
             return
         }
+        handleIncomingFiles(urls)
+    }
+
+    func handleIncomingFiles(_ urls: [URL]) {
+        guard !urls.isEmpty else { return }
         guard urls.count > 1 else {
             urls.forEach { importAsSeparateLecture($0) }
             reload()
@@ -855,6 +862,39 @@ final class LectureCell: UICollectionViewCell {
         super.updateConfiguration(using: state)
         if state.isHighlighted && contentView.backgroundColor == .clear {
             contentView.backgroundColor = RecapTheme.hover
+        }
+    }
+}
+
+extension LectureListViewController: UIDropInteractionDelegate {
+
+    func dropInteraction(_ interaction: UIDropInteraction, canHandle session: UIDropSession) -> Bool {
+        session.hasItemsConforming(toTypeIdentifiers: [UTType.audiovisualContent.identifier])
+    }
+
+    func dropInteraction(_ interaction: UIDropInteraction, sessionDidUpdate session: UIDropSession) -> UIDropProposal {
+        UIDropProposal(operation: .copy)
+    }
+
+    func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
+        var urls: [URL] = []
+        let group = DispatchGroup()
+        for item in session.items {
+            group.enter()
+            item.itemProvider.loadFileRepresentation(forTypeIdentifier: UTType.audiovisualContent.identifier) { url, _ in
+                // The provider's URL dies with the callback — copy it out first
+                if let url {
+                    let dest = FileManager.default.temporaryDirectory
+                        .appendingPathComponent(UUID().uuidString + "-" + url.lastPathComponent)
+                    if (try? FileManager.default.copyItem(at: url, to: dest)) != nil {
+                        urls.append(dest)
+                    }
+                }
+                group.leave()
+            }
+        }
+        group.notify(queue: .main) { [weak self] in
+            self?.handleIncomingFiles(urls.sorted { $0.lastPathComponent < $1.lastPathComponent })
         }
     }
 }

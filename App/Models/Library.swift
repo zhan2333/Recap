@@ -109,6 +109,13 @@ final class LibraryStore {
             .trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
     }
 
+    func locate(lectureID: UUID) -> (course: Course, lecture: Lecture)? {
+        for course in courses {
+            if let lecture = lecture(id: lectureID, in: course) { return (course, lecture) }
+        }
+        return nil
+    }
+
     func mediaURL(_ lecture: Lecture, in course: Course) -> URL {
         courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).mp4")
     }
