@@ -20,7 +20,7 @@
   <img src="https://img.shields.io/badge/whisper.cpp-on--device-C75B39" alt="whisper.cpp">
 </p>
 
-![Recap](docs/hero.png)
+![Recap](docs/hero-en.png)
 
 Course replay → on-device transcript → exam key points → lecture-note PDF, all inside one native Mac app. Transcription runs a whisper model fully offline; only the optional analysis step talks to an LLM endpoint you configure yourself — no ffmpeg, no Python, no external binaries.
 
