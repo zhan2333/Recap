@@ -29,7 +29,10 @@
 
 ### 课堂工作台 · Evidence Thread
 
-![Course workspace](docs/workspace.png)
+<p align="center">
+  <img src="docs/workspace.png" width="49.5%" alt="课堂工作台 (light)">
+  <img src="docs/workspace-dark.png" width="49.5%" alt="课堂工作台 (dark)">
+</p>
 
 - 粘贴云课堂视频直链或导入本地音视频，whisper 在本机离线转写；批量粘贴多条直链一次入队，多段视频可合成一个讲次
 - **证据线索**：AI 提取的每条考试重点都连回老师原话所在的文稿位置——结论是阅读入口，不伪装成老师亲口说过的话
@@ -37,12 +40,20 @@
 
 ### 学习播放器 · Focus Rail
 
-![Learning player](docs/player.png)
+<p align="center">
+  <img src="docs/player.png" width="49.5%" alt="学习播放器 (light)">
+  <img src="docs/player-dark.png" width="49.5%" alt="学习播放器 (dark)">
+</p>
 
 - 播放器保持 AVKit 习惯，分段呈现多个视频；Focus Rail 波形轨道用**区间**标出老师原话所在位置
 - 点击重点跳到原话前 3 秒，保留老师铺垫；上一/下一重点跨段自动切换视频，段播完自动接续
 
 ### Terminal Studio
+
+<p align="center">
+  <img src="docs/studio.png" width="49.5%" alt="Terminal Studio (light)">
+  <img src="docs/studio-dark.png" width="49.5%" alt="Terminal Studio (dark)">
+</p>
 
 - 在课程上下文里直接运行你自己的 CLI：自动检测本机已装的工具（claude / codex / gemini / grok / kimi），skill、文稿和重点已自动就位
 - 实时查看终端输出、随时停止，产物区一键打开生成好的讲义 PDF——命令在这里，产物也回到这里

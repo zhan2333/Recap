@@ -29,7 +29,10 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 
 ### Course workspace · Evidence Thread
 
-![Course workspace](docs/workspace.png)
+<p align="center">
+  <img src="docs/workspace-en.png" width="49.5%" alt="Course workspace (light)">
+  <img src="docs/workspace-en-dark.png" width="49.5%" alt="Course workspace (dark)">
+</p>
 
 - Paste direct links to classroom replays or import local audio/video; whisper transcribes on this device. Batch-paste many links at once, and merge multi-part videos into a single lecture
 - **Evidence Thread**: every extracted key point links back to the teacher's exact words in the transcript — takeaways are reading entry points, never posing as something the teacher said
@@ -37,12 +40,20 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 
 ### Learning player · Focus Rail
 
-![Learning player](docs/player.png)
+<p align="center">
+  <img src="docs/player-en.png" width="49.5%" alt="Learning player (light)">
+  <img src="docs/player-en-dark.png" width="49.5%" alt="Learning player (dark)">
+</p>
 
 - Playback keeps AVKit semantics and presents multi-part lectures part by part; the Focus Rail waveform marks the teacher's exact words as **ranges**, not single points
 - Selecting a key point starts 3 seconds before the quote to preserve the lead-in; previous/next stepping crosses parts automatically, and parts auto-advance when one ends
 
 ### Terminal Studio
+
+<p align="center">
+  <img src="docs/studio-en.png" width="49.5%" alt="Terminal Studio (light)">
+  <img src="docs/studio-en-dark.png" width="49.5%" alt="Terminal Studio (dark)">
+</p>
 
 - Run your own CLI inside the course context: installed tools (claude / codex / gemini / grok / kimi) are detected automatically, with the bundled skill, transcript, and key points already attached
 - Watch the live terminal output, stop anytime, and open the finished PDF straight from the artifact pane — the command stays here, and so does its artifact
