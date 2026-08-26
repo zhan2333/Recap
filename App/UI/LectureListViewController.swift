@@ -143,6 +143,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         config.background.strokeWidth = 1
         config.background.cornerRadius = RecapTheme.radiusSM
         let button = UIButton(configuration: config)
+        button.preferredBehavioralStyle = .pad
         button.tintColor = RecapTheme.muted
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
         return button

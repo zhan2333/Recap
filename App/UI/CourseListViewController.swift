@@ -57,6 +57,13 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
             self?.present(UINavigationController(rootViewController: SettingsViewController()), animated: true)
         }, for: .touchUpInside)
 
+        let shortcutHint = UILabel()
+        shortcutHint.text = "⌘,"
+        shortcutHint.font = RecapTheme.mono(11, weight: .regular)
+        shortcutHint.textColor = RecapTheme.quiet
+        shortcutHint.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(shortcutHint)
+
         for subview in [paneBar, collectionView, settingsButton] as [UIView] {
             subview.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(subview)
@@ -72,6 +79,8 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
             settingsButton.topAnchor.constraint(equalTo: collectionView.bottomAnchor),
             settingsButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
             settingsButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
+            shortcutHint.centerYAnchor.constraint(equalTo: settingsButton.centerYAnchor),
+            shortcutHint.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
             settingsButton.heightAnchor.constraint(equalToConstant: 34),
             settingsButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8),
         ])

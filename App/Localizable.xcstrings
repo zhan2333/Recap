@@ -251,6 +251,16 @@
         }
       }
     },
+    "● 音频定位已匹配": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "● Audio match found"
+          }
+        }
+      }
+    },
     "❯ 历史会话（只读） · %@\n\n": {
       "localizations": {
         "en": {
@@ -357,6 +367,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Save"
+          }
+        }
+      }
+    },
+    "保留老师铺垫，不承诺逐帧对齐": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preserves the lead-in; not frame-exact"
           }
         }
       }
@@ -1101,6 +1121,16 @@
         }
       }
     },
+    "显示全部": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show all"
+          }
+        }
+      }
+    },
     "更新 Recap": {
       "localizations": {
         "en": {
@@ -1841,6 +1871,16 @@
         }
       }
     },
+    "跳到重点附近 · 建议提前 3 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jump near the key point · Start 3 seconds early"
+          }
+        }
+      }
+    },
     "转写": {
       "localizations": {
         "en": {
@@ -2027,6 +2067,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Select evidence"
+          }
+        }
+      }
+    },
+    "选择一条重点，播放器会跳到老师原话附近，并保留前后讲解。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a key point to jump near the teacher's exact words while keeping the surrounding explanation."
           }
         }
       }

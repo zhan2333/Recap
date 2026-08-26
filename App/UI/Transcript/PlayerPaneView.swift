@@ -41,6 +41,8 @@ final class PlayerPaneView: UIView {
     private var playableParts: [PlayablePart] = []
     private var currentPartIndex = 0
     private var partKeyPointIndices: [Int] = []
+    private var captionRows: [(start: TimeInterval, end: TimeInterval, text: String)] = []
+    private let captionLabel = PaddedCaptionLabel()
 
     private let rail = FocusRailView()
     private let partPicker = UIStackView()
@@ -49,9 +51,11 @@ final class PlayerPaneView: UIView {
     private let railDetail = UILabel()
     private let previousButton = UIButton(type: .system)
     private let nextButton = UIButton(type: .system)
+    private let showAllButton = UIButton(type: .system)
     private let lensIndex = UILabel()
     private let lensTime = UILabel()
     private let lensQuote = UILabel()
+    private let lensNote = UILabel()
     private let frameStrip = FrameStripView()
     private let inspector = KeyPointInspectorView()
     private let playLeadInButton = UIButton(type: .system)
@@ -68,6 +72,17 @@ final class PlayerPaneView: UIView {
         playerViewController.view.layer.cornerRadius = RecapTheme.radiusRow
         playerViewController.view.layer.cornerCurve = .continuous
         playerViewController.view.clipsToBounds = true
+        if let overlay = playerViewController.contentOverlayView {
+            captionLabel.translatesAutoresizingMaskIntoConstraints = false
+            captionLabel.isHidden = true
+            overlay.addSubview(captionLabel)
+            NSLayoutConstraint.activate([
+                captionLabel.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+                captionLabel.bottomAnchor.constraint(equalTo: overlay.bottomAnchor, constant: -56),
+                captionLabel.leadingAnchor.constraint(greaterThanOrEqualTo: overlay.leadingAnchor, constant: 48),
+                captionLabel.trailingAnchor.constraint(lessThanOrEqualTo: overlay.trailingAnchor, constant: -48),
+            ])
+        }
 
         railTitle.text = String(localized: "Focus Rail · 重点轨道")
         railTitle.font = RecapTheme.body(13, weight: .semibold)
@@ -76,10 +91,13 @@ final class PlayerPaneView: UIView {
         railDetail.font = RecapTheme.body(11)
         railDetail.textColor = RecapTheme.quiet
 
-        configureStep(previousButton, title: String(localized: "上一重点"), icon: "chevron.left", iconLeading: true) { [weak self] in
+        configureStep(previousButton, title: String(localized: "上一重点"), icon: "backward.end", iconLeading: true) { [weak self] in
             self?.step(-1)
         }
-        configureStep(nextButton, title: String(localized: "下一重点"), icon: "chevron.right", iconLeading: false) { [weak self] in
+        configureStep(showAllButton, title: String(localized: "显示全部"), icon: "rectangle.grid.1x2", iconLeading: true) { [weak self] in
+            self?.select(nil, seek: false, play: false)
+        }
+        configureStep(nextButton, title: String(localized: "下一重点"), icon: "forward.end", iconLeading: false) { [weak self] in
             self?.step(1)
         }
 
@@ -105,6 +123,11 @@ final class PlayerPaneView: UIView {
         playConfig.attributedTitle = AttributedString(String(localized: "从原话前 3 秒播放"), attributes: AttributeContainer([
             .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
         ]))
+        playConfig.attributedSubtitle = AttributedString(String(localized: "保留老师铺垫，不承诺逐帧对齐"), attributes: AttributeContainer([
+            .font: RecapTheme.body(9.5), .foregroundColor: RecapTheme.paper.withAlphaComponent(0.75),
+        ]))
+        playConfig.titleAlignment = .leading
+        playConfig.titlePadding = 2
         playConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
         playLeadInButton.configuration = playConfig
         playLeadInButton.tintColor = RecapTheme.paper
@@ -112,11 +135,12 @@ final class PlayerPaneView: UIView {
 
         previousButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         nextButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        showAllButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         railTitle.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         railDetail.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let railHeader = UIStackView(arrangedSubviews: [
-            vstack([railTitle, railDetail], spacing: 2), UIView(), previousButton, nextButton,
+            vstack([railTitle, railDetail], spacing: 2), UIView(), previousButton, showAllButton, nextButton,
         ])
         railHeader.axis = .horizontal
         railHeader.alignment = .center
@@ -126,10 +150,17 @@ final class PlayerPaneView: UIView {
         lensHead.axis = .horizontal
         lensHead.spacing = 10
 
-        let lens = vstack([lensHead, lensQuote, frameStrip, playLeadInButton], spacing: 9)
-        lens.setCustomSpacing(12, after: lensQuote)
-        lens.setCustomSpacing(12, after: frameStrip)
-        lens.alignment = .leading
+        lensNote.font = RecapTheme.body(11)
+        lensNote.textColor = RecapTheme.muted
+        lensNote.numberOfLines = 1
+        let lensLeft = vstack([lensHead, lensQuote, lensNote], spacing: 8)
+        lensLeft.alignment = .leading
+        let lensRight = vstack([frameStrip, playLeadInButton], spacing: 10)
+        lensRight.alignment = .leading
+        let lens = UIStackView(arrangedSubviews: [lensLeft, UIView(), lensRight])
+        lens.axis = .horizontal
+        lens.alignment = .top
+        lens.spacing = 18
         frameStrip.onSelectTime = { [weak self] time in self?.seekGlobal(time, thenPlay: false) }
         inspector.onSelect = { [weak self] index in self?.select(index, seek: true, play: false) }
 
@@ -140,8 +171,8 @@ final class PlayerPaneView: UIView {
 
         content = UIStackView(arrangedSubviews: [playerViewController.view, partPickerRow, railHeader, rail, lens])
         // CHCR must sit on leaf views — a UIStackView row has no intrinsic size to defend
-        for view in [railTitle, railDetail, previousButton, nextButton,
-                     lensIndex, lensTime, lensQuote, playLeadInButton] as [UIView] {
+        for view in [railTitle, railDetail, previousButton, nextButton, showAllButton,
+                     lensIndex, lensTime, lensQuote, lensNote, playLeadInButton] as [UIView] {
             view.setContentCompressionResistancePriority(.required, for: .vertical)
         }
         content.axis = .vertical
@@ -205,7 +236,7 @@ final class PlayerPaneView: UIView {
             columns.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
             playerAspect,
             playerViewController.view.heightAnchor.constraint(greaterThanOrEqualToConstant: 160),
-            rail.heightAnchor.constraint(equalToConstant: 64),
+            rail.heightAnchor.constraint(equalToConstant: 92),
             emptyIcon.heightAnchor.constraint(equalToConstant: 36),
             emptyState.centerXAnchor.constraint(equalTo: centerXAnchor),
             emptyState.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -233,6 +264,7 @@ final class PlayerPaneView: UIView {
         rows: [EvidenceReviewView.DisplayRow],
         evidences: [EvidenceReviewView.Evidence]
     ) {
+        captionRows = rows.map { ($0.start, $0.end, $0.text) }
         // LLM signal order is arbitrary — the rail must be chronological.
         keyPoints = evidences.enumerated().compactMap { index, evidence -> KeyPoint? in
             guard let rowIndex = evidence.rowIndex, rowIndex < rows.count else { return nil }
@@ -453,11 +485,19 @@ final class PlayerPaneView: UIView {
         let globalTime = (playableParts.indices.contains(currentPartIndex)
             ? playableParts[currentPartIndex].globalStart : 0) + seconds
         rail.playheadTime = seconds
+        updateCaption(at: globalTime)
         // Highlight the range the playhead is inside.
         if let inside = keyPoints.firstIndex(where: { globalTime >= $0.start && globalTime <= $0.end }),
            inside != selectedIndex {
             select(inside, seek: false, play: false)
         }
+    }
+
+    // The current transcript row rides the video as a caption
+    private func updateCaption(at globalTime: TimeInterval) {
+        let row = captionRows.last { $0.start <= globalTime && globalTime <= $0.end + 1.5 }
+        captionLabel.text = row?.text
+        captionLabel.isHidden = row == nil
     }
 
     private func select(_ index: Int?, seek: Bool, play: Bool) {
@@ -476,6 +516,10 @@ final class PlayerPaneView: UIView {
         lensIndex.text = String(format: "%02d", index + 1)
         lensTime.text = "\(Self.timestamp(point.start))—\(Self.timestamp(point.end))"
         lensQuote.text = "“\(point.signal.quote)”"
+        var noteParts = [point.signal.strength]
+        if let qtype = point.signal.qtype, !qtype.isEmpty { noteParts.append(qtype) }
+        if let topic = point.signal.topic, !topic.isEmpty { noteParts.append(topic) }
+        lensNote.text = noteParts.joined(separator: " · ")
         playLeadInButton.isHidden = false
         if seek {
             seekGlobal(max(0, point.start - 3), thenPlay: play)
@@ -529,8 +573,11 @@ final class PlayerPaneView: UIView {
     }
 }
 
-// Waveform + key-point ranges + playhead, all proportional to duration.
+// Dense waveform with numbered key-point tags, a playhead, and a time scale, per the M4 board
 final class FocusRailView: UIView {
+
+    private let badgeBand: CGFloat = 20
+    private let scaleBand: CGFloat = 16
 
     var waveform: [Float] = [] {
         didSet { setNeedsDisplay() }
@@ -543,7 +590,7 @@ final class FocusRailView: UIView {
         didSet { rebuildRangeButtons() }
     }
     var duration: TimeInterval = 0 {
-        didSet { setNeedsLayout(); setNeedsDisplay() }
+        didSet { setNeedsLayout(); setNeedsDisplay(); rebuildScale() }
     }
     var playheadTime: TimeInterval = 0 {
         didSet { setNeedsLayout() }
@@ -554,14 +601,13 @@ final class FocusRailView: UIView {
     var onSelectRange: ((Int) -> Void)?
 
     private var rangeButtons: [UIButton] = []
+    private var tagLines: [UIView] = []
+    private var scaleLabels: [UILabel] = []
     private let playhead = UIView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = RecapTheme.surface.withAlphaComponent(0.5)
-        layer.cornerRadius = RecapTheme.radiusMD
-        layer.cornerCurve = .continuous
-        clipsToBounds = true
+        backgroundColor = .clear
         contentMode = .redraw
         playhead.backgroundColor = RecapTheme.ink
         addSubview(playhead)
@@ -569,32 +615,40 @@ final class FocusRailView: UIView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    private var waveBand: CGRect {
+        CGRect(x: 0, y: badgeBand, width: bounds.width, height: bounds.height - badgeBand - scaleBand)
+    }
+
     override func draw(_ rect: CGRect) {
         guard !waveform.isEmpty else { return }
-        let color = RecapTheme.time.withAlphaComponent(0.35)
-        color.setFill()
-        let barWidth = bounds.width / CGFloat(waveform.count)
-        let midY = bounds.midY
+        RecapTheme.time.withAlphaComponent(0.4).setFill()
+        let band = waveBand
+        let barWidth = band.width / CGFloat(waveform.count)
         for (index, value) in waveform.enumerated() {
-            let height = max(1.5, CGFloat(value) * (bounds.height - 14))
-            let bar = CGRect(
+            let height = max(2, CGFloat(value) * (band.height - 4))
+            UIBezierPath(rect: CGRect(
                 x: CGFloat(index) * barWidth,
-                y: midY - height / 2,
-                width: max(0.8, barWidth * 0.6),
+                y: band.midY - height / 2,
+                width: max(0.7, barWidth * 0.5),
                 height: height
-            )
-            UIBezierPath(rect: bar).fill()
+            )).fill()
         }
     }
 
     private func rebuildRangeButtons() {
         rangeButtons.forEach { $0.removeFromSuperview() }
+        tagLines.forEach { $0.removeFromSuperview() }
+        tagLines = ranges.map { _ in
+            let line = UIView()
+            addSubview(line)
+            return line
+        }
         rangeButtons = ranges.enumerated().map { index, _ in
             let button = UIButton(type: .custom)
             button.tag = index
             button.setTitle(index < rangeTitles.count ? rangeTitles[index] : "\(index + 1)", for: .normal)
-            button.titleLabel?.font = RecapTheme.mono(10, weight: .semibold)
-            button.layer.cornerRadius = 4
+            button.titleLabel?.font = RecapTheme.mono(9, weight: .semibold)
+            button.layer.cornerRadius = 4.5
             button.layer.cornerCurve = .continuous
             button.addAction(UIAction { [weak self] action in
                 guard let btn = action.sender as? UIButton else { return }
@@ -610,11 +664,29 @@ final class FocusRailView: UIView {
     private func styleRangeButtons() {
         for (index, button) in rangeButtons.enumerated() {
             let selected = index == selectedIndex
-            button.backgroundColor = selected
-                ? RecapTheme.signal
-                : RecapTheme.signal.withAlphaComponent(0.35)
+            button.backgroundColor = selected ? RecapTheme.signal : RecapTheme.signal.withAlphaComponent(0.3)
             button.setTitleColor(selected ? RecapTheme.paper : RecapTheme.signalText, for: .normal)
+            if tagLines.indices.contains(index) {
+                tagLines[index].backgroundColor = selected
+                    ? RecapTheme.signal
+                    : RecapTheme.signal.withAlphaComponent(0.45)
+            }
         }
+    }
+
+    private func rebuildScale() {
+        scaleLabels.forEach { $0.removeFromSuperview() }
+        scaleLabels = []
+        guard duration > 0 else { return }
+        for step in 0...4 {
+            let label = UILabel()
+            label.text = PlayerPaneView.timestamp(duration * Double(step) / 4)
+            label.font = RecapTheme.mono(8.5, weight: .regular)
+            label.textColor = RecapTheme.quiet
+            addSubview(label)
+            scaleLabels.append(label)
+        }
+        setNeedsLayout()
     }
 
     override func layoutSubviews() {
@@ -622,16 +694,25 @@ final class FocusRailView: UIView {
         guard duration > 0 else {
             playhead.frame = .zero
             rangeButtons.forEach { $0.frame = .zero }
+            tagLines.forEach { $0.frame = .zero }
             return
         }
+        let band = waveBand
         for (index, button) in rangeButtons.enumerated() {
             let range = ranges[index]
-            let left = bounds.width * CGFloat(range.start / duration)
-            let width = max(18, bounds.width * CGFloat((range.end - range.start) / duration))
-            button.frame = CGRect(x: left, y: 6, width: width, height: bounds.height - 12)
+            let center = bounds.width * CGFloat(range.start / duration)
+            button.frame = CGRect(x: center - 9, y: 0, width: 18, height: 18)
+            let width = max(3, bounds.width * CGFloat((range.end - range.start) / duration))
+            tagLines[index].frame = CGRect(x: center - 1.5, y: badgeBand, width: min(width, 26), height: band.height)
+        }
+        for (step, label) in scaleLabels.enumerated() {
+            label.sizeToFit()
+            let x = bounds.width * CGFloat(step) / 4
+            let clamped = min(max(0, x - label.bounds.width / 2), bounds.width - label.bounds.width)
+            label.frame.origin = CGPoint(x: clamped, y: band.maxY + 3)
         }
         let x = bounds.width * CGFloat(min(1, playheadTime / duration))
-        playhead.frame = CGRect(x: x - 0.75, y: 0, width: 1.5, height: bounds.height)
+        playhead.frame = CGRect(x: x - 0.75, y: badgeBand - 3, width: 1.5, height: band.height + 6)
         bringSubviewToFront(playhead)
     }
 }
@@ -737,13 +818,33 @@ final class KeyPointInspectorView: UIView {
         header.axis = .horizontal
         header.alignment = .firstBaseline
 
+        let intro = UILabel()
+        intro.text = String(localized: "选择一条重点，播放器会跳到老师原话附近，并保留前后讲解。")
+        intro.font = RecapTheme.body(10.5)
+        intro.textColor = RecapTheme.muted
+        intro.numberOfLines = 0
+
         stack.axis = .vertical
         stack.spacing = 5
 
+        let footnoteTitle = UILabel()
+        footnoteTitle.text = String(localized: "● 音频定位已匹配")
+        footnoteTitle.font = RecapTheme.body(10.5, weight: .semibold)
+        footnoteTitle.textColor = RecapTheme.complete
+        let footnoteDetail = UILabel()
+        footnoteDetail.text = String(localized: "跳到重点附近 · 建议提前 3 秒")
+        footnoteDetail.font = RecapTheme.body(10)
+        footnoteDetail.textColor = RecapTheme.quiet
+        let footnote = UIStackView(arrangedSubviews: [footnoteTitle, footnoteDetail])
+        footnote.axis = .vertical
+        footnote.spacing = 2
+
         let scroll = UIScrollView()
-        let contentStack = UIStackView(arrangedSubviews: [header, stack])
+        let contentStack = UIStackView(arrangedSubviews: [header, intro, stack, footnote])
         contentStack.axis = .vertical
         contentStack.spacing = 12
+        contentStack.setCustomSpacing(8, after: header)
+        contentStack.setCustomSpacing(16, after: stack)
         contentStack.isLayoutMarginsRelativeArrangement = true
         contentStack.layoutMargins = UIEdgeInsets(top: 14, left: 13, bottom: 20, right: 13)
         contentStack.translatesAutoresizingMaskIntoConstraints = false
@@ -828,5 +929,35 @@ final class KeyPointInspectorView: UIView {
         }
 
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    }
+}
+
+// MARK: - Caption
+
+final class PaddedCaptionLabel: UILabel {
+
+    private let insets = UIEdgeInsets(top: 5, left: 10, bottom: 5, right: 10)
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        font = RecapTheme.body(12.5, weight: .medium)
+        textColor = .white
+        numberOfLines = 2
+        textAlignment = .center
+        backgroundColor = UIColor.black.withAlphaComponent(0.55)
+        layer.cornerRadius = 6
+        layer.cornerCurve = .continuous
+        clipsToBounds = true
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func drawText(in rect: CGRect) {
+        super.drawText(in: rect.inset(by: insets))
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let size = super.intrinsicContentSize
+        return CGSize(width: size.width + insets.left + insets.right, height: size.height + insets.top + insets.bottom)
     }
 }
