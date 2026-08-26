@@ -24,7 +24,9 @@
 
 Course replay → on-device transcript → exam key points → lecture-note PDF, all inside one native Mac app. Transcription runs a whisper model fully offline; only the optional analysis step talks to an LLM endpoint you configure yourself — no ffmpeg, no Python, no external binaries.
 
-## Course workspace · Evidence Thread
+## Features
+
+### Course workspace · Evidence Thread
 
 ![Course workspace](docs/workspace.png)
 
@@ -32,31 +34,43 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 - **Evidence Thread**: every extracted key point links back to the teacher's exact words in the transcript — takeaways are reading entry points, never posing as something the teacher said
 - The key-points page collects must-memorize items, core concepts, solution paths, common mix-ups, and assignments; a course-wide exam review is one click away
 
-## Learning player · Focus Rail
+### Learning player · Focus Rail
 
 ![Learning player](docs/player.png)
 
 - Playback keeps AVKit semantics and presents multi-part lectures part by part; the Focus Rail waveform marks the teacher's exact words as **ranges**, not single points
 - Selecting a key point starts 3 seconds before the quote to preserve the lead-in; previous/next stepping crosses parts automatically, and parts auto-advance when one ends
 
-## Lecture notes · claude skill
+### Terminal Studio
 
-Each course folder ships a bundled [claude](https://claude.com/claude-code) skill — one command produces LaTeX-typeset lecture notes as a PDF (with TikZ diagrams), rendered right inside the app with a night mode:
+- Run your own CLI inside the course context: installed tools (claude / codex / gemini / grok / kimi) are detected automatically, with the bundled skill, transcript, and key points already attached
+- Watch the live terminal output, stop anytime, and open the finished PDF straight from the artifact pane — the command stays here, and so does its artifact
 
-```sh
-claude "为「第一周」生成讲义"
-```
+### Lecture notes
 
-Or pick "Generate with API" in the app: your configured endpoint follows the same skill to write the LaTeX, compiled locally into the same PDF.
+- One command produces LaTeX-typeset lecture notes as a PDF (with TikZ diagrams), rendered inside the app with a night mode — `claude "为「第一周」生成讲义"`
+- Or pick "Generate with API": your configured endpoint follows the same bundled skill to write the LaTeX, compiled locally into the same PDF
 
-## Getting started
+## macOS Integration
 
-1. Download the dmg from [Releases](https://github.com/floonetio/Recap/releases) and drag it into Applications; on first launch, right-click → Open (or `xattr -d com.apple.quarantine /Applications/Recap.app`)
-2. The onboarding flow downloads a whisper model (about 1.5 GB) through its built-in terminal, or point it at your own ggml `.bin`
-3. In Settings, configure any OpenAI-compatible endpoint (OpenRouter, a private gateway, or local Ollama) for key-point extraction
-4. Create a course → add lectures → extract key points once transcription finishes
+- Native Mac Catalyst app built with UIKit — not a web wrapper
+- Notarized, Developer ID–signed dmg with a drag-to-install window
+- In-place updates: a persistent pill downloads the new release, installs it, and relaunches
+- The bundled skill installs under every CLI convention (`.claude/skills`, `.agents/skills`, `AGENTS.md`, `GEMINI.md`) — any agent that enters the course folder picks it up
+- Bilingual interface (English / Simplified Chinese) following the system language; reveal-in-Finder throughout
 
-The interface is bilingual (English / Simplified Chinese), following the system language.
+## Requirements
+
+- macOS 14 Sonoma or later, Apple silicon
+- A ggml whisper model (~1.5 GB, downloaded in onboarding — or bring your own `.bin`)
+- Optional: an OpenAI-compatible endpoint (OpenRouter, a private gateway, or local Ollama) for key-point extraction
+- Optional: BasicTeX (`xelatex`) for locally compiled lecture notes; a CLI agent for Terminal Studio
+
+## Installation
+
+1. Download the latest dmg from **[Releases](https://github.com/floonetio/Recap/releases)**
+2. Drag Recap into Applications — the dmg is notarized and opens right away
+3. Follow onboarding to fetch the whisper model, then create a course and add your first lecture
 
 <p align="center">
   <img src="docs/icon-default.png" width="88" alt="Default icon">

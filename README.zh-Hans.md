@@ -24,7 +24,9 @@
 
 课堂回放 → 本机转写 → 考试重点 → 讲义 PDF，全流程在一个原生 Mac app 里完成。转写全程离线跑 whisper 模型，只有可选的分析步骤走你自己配置的 LLM 接口——没有 ffmpeg，没有 Python，没有外部二进制。
 
-## 课堂工作台 · Evidence Thread
+## 功能
+
+### 课堂工作台 · Evidence Thread
 
 ![Course workspace](docs/workspace.png)
 
@@ -32,31 +34,43 @@
 - **证据线索**：AI 提取的每条考试重点都连回老师原话所在的文稿位置——结论是阅读入口，不伪装成老师亲口说过的话
 - 重点页汇总必背、核心概念、解题方法、易混易错与作业；课程级考试重点一键汇总
 
-## 学习播放器 · Focus Rail
+### 学习播放器 · Focus Rail
 
 ![Learning player](docs/player.png)
 
 - 播放器保持 AVKit 习惯，分段呈现多个视频；Focus Rail 波形轨道用**区间**标出老师原话所在位置
 - 点击重点跳到原话前 3 秒，保留老师铺垫；上一/下一重点跨段自动切换视频，段播完自动接续
 
-## 讲义 · claude skill
+### Terminal Studio
 
-讲次目录内置 [claude](https://claude.com/claude-code) skill——一条命令生成 LaTeX 排版的本讲讲义 PDF（含 TikZ 示意图），app 内直接阅读，支持夜间模式：
+- 在课程上下文里直接运行你自己的 CLI：自动检测本机已装的工具（claude / codex / gemini / grok / kimi），skill、文稿和重点已自动就位
+- 实时查看终端输出、随时停止，产物区一键打开生成好的讲义 PDF——命令在这里，产物也回到这里
 
-```sh
-claude "为「第一周」生成讲义"
-```
+### 讲义
 
-也可以在 app 内选择「用 API 生成」：已配置的接口按同一份 skill 生成 LaTeX，本机编译出同样的 PDF。
+- 一条命令生成 LaTeX 排版的本讲讲义 PDF（含 TikZ 示意图），app 内直接阅读，支持夜间模式——`claude "为「第一周」生成讲义"`
+- 也可以选择「用 API 生成」：已配置的接口按同一份内置 skill 生成 LaTeX，本机编译出同样的 PDF
 
-## 快速开始
+## macOS 集成
 
-1. 从 [Releases](https://github.com/floonetio/Recap/releases) 下载 dmg，拖入「应用程序」；首次打开右键选「打开」（或 `xattr -d com.apple.quarantine /Applications/Recap.app`）
-2. 引导页内置终端直接下载 whisper 模型（约 1.5 GB，走 HF 镜像），也可以选择自备的 ggml `.bin`
-3. 「设置」里配置任意 OpenAI-compatible 接口（OpenRouter、自建网关或本地 Ollama），用于提取重点
-4. 新建课程 → 添加讲次 → 转写完成后提取重点
+- UIKit 编写的原生 Mac Catalyst app，不是网页套壳
+- Developer ID 签名并经过公证的 dmg，打开即是拖拽安装界面
+- 就地更新：底部常驻 pill 一键下载新版本、安装并自动重启
+- 内置 skill 按各家 CLI 的约定同时落盘（`.claude/skills`、`.agents/skills`、`AGENTS.md`、`GEMINI.md`），任何 agent 进入课程目录即可使用
+- 界面中英双语，跟随系统语言；各处支持「在访达中显示」
 
-界面中英双语，跟随系统语言。
+## 系统要求
+
+- macOS 14 Sonoma 及以上，Apple silicon
+- 一个 ggml 格式的 whisper 模型（约 1.5 GB，引导页内下载，也可自备 `.bin`）
+- 可选：任意 OpenAI-compatible 接口（OpenRouter、自建网关或本地 Ollama），用于提取重点
+- 可选：BasicTeX（`xelatex`）用于本机编译讲义；一个 CLI agent 用于 Terminal Studio
+
+## 安装
+
+1. 从 **[Releases](https://github.com/floonetio/Recap/releases)** 下载最新 dmg
+2. 把 Recap 拖入「应用程序」——dmg 已公证，直接打开即可
+3. 跟随引导下载 whisper 模型，然后新建课程、添加第一个讲次
 
 <p align="center">
   <img src="docs/icon-default.png" width="88" alt="Default icon">
