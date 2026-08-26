@@ -521,16 +521,6 @@
         }
       }
     },
-    "前往下载": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Download"
-          }
-        }
-      }
-    },
     "去设置": {
       "localizations": {
         "en": {
@@ -841,16 +831,6 @@
         }
       }
     },
-    "当前版本 %@。前往 GitHub 下载最新的 dmg。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You have %@. Download the latest dmg from GitHub."
-          }
-        }
-      }
-    },
     "当前证据：": {
       "localizations": {
         "en": {
@@ -887,16 +867,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Or copy the command and run it in your own terminal:"
-          }
-        }
-      }
-    },
-    "打开课程目录": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open course folder"
           }
         }
       }
@@ -1031,16 +1001,6 @@
         }
       }
     },
-    "新版本 %@ 可用": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Version %@ is available"
-          }
-        }
-      }
-    },
     "新视频会接在本讲末尾，转写完成后文稿自动拼接。": {
       "localizations": {
         "en": {
@@ -1057,6 +1017,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Common mix-ups"
+          }
+        }
+      }
+    },
+    "更新 Recap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Recap"
+          }
+        }
+      }
+    },
+    "更新失败 · 打开下载页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update failed · Open download page"
           }
         }
       }
@@ -1271,6 +1251,26 @@
         }
       }
     },
+    "正在下载更新…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading update…"
+          }
+        }
+      }
+    },
+    "正在安装…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing…"
+          }
+        }
+      }
+    },
     "正在提取重点…": {
       "localizations": {
         "en": {
@@ -1431,16 +1431,6 @@
         }
       }
     },
-    "用 claude 生成讲义": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Generate lecture notes with claude"
-          }
-        }
-      }
-    },
     "用命令行下载（约 1.5GB，走 HF 镜像）：": {
       "localizations": {
         "en": {
@@ -1497,16 +1487,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
-          }
-        }
-      }
-    },
-    "稍后": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Later"
           }
         }
       }
@@ -1641,16 +1621,6 @@
         }
       }
     },
-    "讲义由 claude 按内置 skill 生成（LaTeX 排版编译为 PDF）。命令已复制：\n\n%@\n\n在课程目录打开终端粘贴运行，完成后回到这里查看。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lecture notes are produced by claude following the bundled skill (LaTeX typeset into a PDF). The command was copied:\n\n%@\n\nOpen a terminal in the course folder, paste and run it, then come back here."
-          }
-        }
-      }
-    },
     "设置": {
       "localizations": {
         "en": {
@@ -1757,16 +1727,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Course folder · …/%@…"
-          }
-        }
-      }
-    },
-    "跳过此版本": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip this version"
           }
         }
       }
