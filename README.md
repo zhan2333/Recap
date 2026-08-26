@@ -60,8 +60,8 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 
 ### Lecture notes
 
-- One command produces LaTeX-typeset lecture notes as a PDF (with TikZ diagrams), rendered inside the app with a night mode — `claude "为「第一周」生成讲义"`
-- Or pick "Generate with API": your configured endpoint follows the same bundled skill to write the LaTeX, compiled locally into the same PDF
+- Generated without leaving the app: run your CLI in Terminal Studio, or pick "Generate with API" — both follow the same bundled skill and end in a LaTeX-typeset PDF (TikZ diagrams included), rendered in place with a night mode
+- Notes follow the course language — English courses get English notes on an English LaTeX template, Chinese courses keep the ctex one; any CLI in the course folder works too (`claude "Generate lecture notes for Week 1"`)
 
 ## macOS Integration
 
