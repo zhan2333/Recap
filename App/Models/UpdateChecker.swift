@@ -10,7 +10,7 @@ import UIKit
 // Once-a-day check against the GitHub latest release; a persistent pill installs the update in place
 enum UpdateChecker {
 
-    private static let repo = "floonetio/Recap"
+    private static let repo = "zhan2333/Recap"
     private static let mountPoint = "/tmp/recap-update-mount"
 
     static func checkIfDue(presenting window: UIWindow?) {
