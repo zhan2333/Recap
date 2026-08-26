@@ -124,3 +124,7 @@ xcodegen generate
 open RecapApp.xcodeproj                # scheme: Recap (My Mac / Mac Catalyst)
 scripts/package-release.sh             # Release build → dist/Recap-<version>.dmg
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) — build setup, architecture notes, coding guidelines, and how AI-assisted contributions work here.

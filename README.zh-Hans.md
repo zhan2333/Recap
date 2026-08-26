@@ -124,3 +124,7 @@ xcodegen generate
 open RecapApp.xcodeproj                # scheme: Recap (My Mac / Mac Catalyst)
 scripts/package-release.sh             # Release build → dist/Recap-<version>.dmg
 ```
+
+## 参与贡献
+
+见 [CONTRIBUTING.md](CONTRIBUTING.md)——构建配置、架构要点、代码规范，以及 AI 协作贡献的方式。
