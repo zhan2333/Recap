@@ -241,12 +241,12 @@
         }
       }
     },
-    "ggml 格式的 whisper 模型文件路径。": {
+    "ggml 格式的 whisper 模型文件路径。转写语言选「自动」时按开头内容检测。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Path to a ggml-format whisper model file."
+            "value": "Path to a ggml-format whisper model file. With language set to Auto, the opening audio decides."
           }
         }
       }
@@ -327,6 +327,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Both channels produce the same PDF lecture notes: claude follows the bundled skill, or your configured API endpoint follows the same skill and the result compiles locally."
+          }
+        }
+      }
+    },
+    "中文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chinese"
+          }
+        }
+      }
+    },
+    "为「%@」生成讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate lecture notes for \"%@\""
+          }
+        }
+      }
+    },
+    "为「%@」的讲义补充更多 TikZ 示意图并重新编译 PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add more TikZ diagrams to \"%@\"'s lecture notes and recompile the PDF"
           }
         }
       }
@@ -1321,6 +1351,16 @@
         }
       }
     },
+    "检查「%@」转写稿中术语的识别错误，输出勘误清单": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check \"%@\"'s transcript for misrecognized terms and output a correction list"
+          }
+        }
+      }
+    },
     "检查术语": {
       "localizations": {
         "en": {
@@ -1711,6 +1751,26 @@
         }
       }
     },
+    "自动检测": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-detect"
+          }
+        }
+      }
+    },
+    "英文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        }
+      }
+    },
     "补示意图": {
       "localizations": {
         "en": {
@@ -1917,6 +1977,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transcription complete — ready to extract key points"
+          }
+        }
+      }
+    },
+    "转写语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcription language"
           }
         }
       }

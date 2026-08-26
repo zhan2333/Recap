@@ -221,7 +221,7 @@ final class LectureQueue {
         try await withCheckedThrowingContinuation { continuation in
             Thread.detachNewThread {
                 do {
-                    let transcript = try engine.transcribe(samples: samples, language: "zh") { event in
+                    let transcript = try engine.transcribe(samples: samples, language: Settings.transcriptionLanguage) { event in
                         if case .progress(let value) = event { onProgress(value) }
                     }
                     continuation.resume(returning: transcript)

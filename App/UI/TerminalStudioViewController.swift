@@ -160,7 +160,7 @@ final class TerminalStudioViewController: UIViewController {
         promptField.layer.cornerRadius = RecapTheme.radiusSM
         promptField.layer.cornerCurve = .continuous
         promptField.setLeftPadding(10)
-        promptField.text = "为「\(lecture.name)」生成讲义"
+        promptField.text = String(localized: "为「\(lecture.name)」生成讲义")
         promptField.autocorrectionType = .no
 
         runButton.preferredBehavioralStyle = .pad
@@ -186,9 +186,9 @@ final class TerminalStudioViewController: UIViewController {
 
         // Quick tasks fill the prompt; the CLI improvises within the bundled skill
         let chips: [(title: String, prompt: String)] = [
-            (String(localized: "生成讲义"), "为「\(lecture.name)」生成讲义"),
-            (String(localized: "检查术语"), "检查「\(lecture.name)」转写稿中专业术语的同音错字，输出勘误清单"),
-            (String(localized: "补示意图"), "为「\(lecture.name)」的讲义补充更多 TikZ 示意图并重新编译 PDF"),
+            (String(localized: "生成讲义"), String(localized: "为「\(lecture.name)」生成讲义")),
+            (String(localized: "检查术语"), String(localized: "检查「\(lecture.name)」转写稿中术语的识别错误，输出勘误清单")),
+            (String(localized: "补示意图"), String(localized: "为「\(lecture.name)」的讲义补充更多 TikZ 示意图并重新编译 PDF")),
         ]
         let chipsRow = UIStackView(arrangedSubviews: chips.map { chip in
             let button = UIButton(type: .system)

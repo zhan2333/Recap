@@ -28,7 +28,8 @@ public struct HandoutGenerator {
       ## 作业与思考题
     - 讲解内容必须基于转写稿实际讲过的东西，不要凭空扩充；
     - 转写稿来自语音识别，专业术语的同音错字请按上下文纠正后书写正确版本；
-    - 语言平实直接，不用比喻。
+    - 语言平实直接，不用比喻；
+    - 讲义语言跟随转写稿语言：英文课程写英文讲义（结构标题也用英文），中文课程写中文。
     """
 
     public func lectureHandout(
@@ -102,7 +103,8 @@ public struct HandoutGenerator {
       ## 各讲要点索引    （每讲一行：讲次名 — 一句话核心内容）
     - 跨讲重复提到的同一知识点要合并成一条，并标注「多次强调」；
     - 保留老师原话的关键表述；
-    - 语言平实直接。
+    - 语言平实直接；
+    - 总表语言跟随各讲内容语言：英文课程输出英文。
     """
 
     // Course digest as LaTeX, spec'd by the same bundled skill as the lecture handout

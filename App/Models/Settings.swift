@@ -25,6 +25,12 @@ enum Settings {
         set { UserDefaults.standard.set(newValue.path, forKey: "modelPath") }
     }
 
+    // whisper language: "auto" detects from the first segment; "zh"/"en" pin it
+    static var transcriptionLanguage: String {
+        get { UserDefaults.standard.string(forKey: "transcriptionLanguage") ?? "auto" }
+        set { UserDefaults.standard.set(newValue, forKey: "transcriptionLanguage") }
+    }
+
     static var llmBaseURL: String {
         get { UserDefaults.standard.string(forKey: "llmBaseURL") ?? "https://openrouter.ai/api/v1" }
         set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "llmBaseURL") }

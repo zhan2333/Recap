@@ -63,12 +63,14 @@ public struct LectureAnalyzer {
 
     转写稿的已知缺陷，处理时注意：
     - 来自 whisper 语音识别，专业术语常有同音错字（如"土力学"写成"图的学"、"固结"写成"固解"），请按上下文和专业知识纠正理解；
-    - 静音段可能出现"请点赞订阅""优优独播剧场"等幻觉文本，直接忽略；
+    - 静音段可能出现"请点赞订阅""优优独播剧场"（英文课程则是 "Thanks for watching" 一类）等幻觉文本，直接忽略；
     - 学生汇报、点名、闲聊段落不要提取。
+
+    转写稿是什么语言，所有输出字段（quote、topic、各清单）就用什么语言：英文课程输出英文，中文课程输出中文。
 
     只输出一个 JSON 对象，不要 markdown 代码块，不要任何解释文字。字段：
     {
-      "exam_signals": [{"quote": "老师的原话", "strength": "必考|重点|可能考", "qtype": "题型(可选)", "topic": "涉及知识点(可选)"}],
+      "exam_signals": [{"quote": "老师的原话", "strength": "必考|重点|可能考（英文课程用 must-know|key|likely）", "qtype": "题型(可选)", "topic": "涉及知识点(可选)"}],
       "must_memorize": ["需要逐字背诵的表述"],
       "answer_approaches": ["老师讲的答题套路/框架"],
       "confusable_points": ["易混易错辨析"],

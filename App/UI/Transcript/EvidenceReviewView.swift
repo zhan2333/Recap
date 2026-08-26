@@ -219,8 +219,12 @@ final class EvidenceReviewView: UIView, UITableViewDataSource, UITableViewDelega
             }
             buffer += text
             lastEnd = segment.end
-            let endsSentence = text.hasSuffix("。") || text.hasSuffix("？") || text.hasSuffix("！")
-            if buffer.count >= 64 || (endsSentence && buffer.count >= 24) {
+            let endsSentence = ["。", "？", "！", ".", "?", "!"].contains { text.hasSuffix($0) }
+            // English text runs ~3x the characters per idea; widen the row budget when ASCII dominates
+            let asciiDominant = buffer.utf8.count < buffer.count * 2
+            let capLimit = asciiDominant ? 180 : 64
+            let sentenceMin = asciiDominant ? 60 : 24
+            if buffer.count >= capLimit || (endsSentence && buffer.count >= sentenceMin) {
                 flush(upTo: index + 1)
             }
         }

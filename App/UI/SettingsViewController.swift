@@ -22,17 +22,19 @@ final class SettingsViewController: UITableViewController {
         let header: String
         let footer: String?
         let fields: [Field]
+        var showsLanguagePicker = false
     }
 
     private lazy var sections: [Section] = [
         Section(
             header: String(localized: "转写"),
-            footer: String(localized: "ggml 格式的 whisper 模型文件路径。"),
+            footer: String(localized: "ggml 格式的 whisper 模型文件路径。转写语言选「自动」时按开头内容检测。"),
             fields: [
                 Field(title: String(localized: "模型路径"), placeholder: "~/whisper-models/ggml-large-v3-turbo.bin", secure: false,
                       get: { Settings.modelPath.path },
                       set: { Settings.modelPath = URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }),
-            ]
+            ],
+            showsLanguagePicker: true
         ),
         Section(
             header: String(localized: "AI 分析"),
@@ -58,6 +60,7 @@ final class SettingsViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.register(TextFieldCell.self, forCellReuseIdentifier: TextFieldCell.reuseID)
+        tableView.register(LanguagePickerCell.self, forCellReuseIdentifier: LanguagePickerCell.reuseID)
         navigationItem.rightBarButtonItem = UIBarButtonItem(systemItem: .done, primaryAction: UIAction { [weak self] _ in
             self?.dismiss(animated: true)
         })
@@ -66,7 +69,7 @@ final class SettingsViewController: UITableViewController {
     override func numberOfSections(in tableView: UITableView) -> Int { sections.count }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        sections[section].fields.count
+        sections[section].fields.count + (sections[section].showsLanguagePicker ? 1 : 0)
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
@@ -78,11 +81,64 @@ final class SettingsViewController: UITableViewController {
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let section = sections[indexPath.section]
+        if section.showsLanguagePicker, indexPath.row == section.fields.count {
+            let cell = tableView.dequeueReusableCell(withIdentifier: LanguagePickerCell.reuseID, for: indexPath) as! LanguagePickerCell
+            cell.refresh()
+            return cell
+        }
         let cell = tableView.dequeueReusableCell(withIdentifier: TextFieldCell.reuseID, for: indexPath) as! TextFieldCell
-        let field = sections[indexPath.section].fields[indexPath.row]
+        let field = section.fields[indexPath.row]
         cell.configure(title: field.title, placeholder: field.placeholder, secure: field.secure,
                        value: field.get(), onChange: field.set)
         return cell
+    }
+}
+
+private final class LanguagePickerCell: UITableViewCell {
+
+    static let reuseID = "LanguagePickerCell"
+
+    private let picker = UIButton(type: .system)
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+
+        let titleLabel = UILabel()
+        titleLabel.text = String(localized: "转写语言")
+        titleLabel.font = .preferredFont(forTextStyle: .body)
+
+        picker.preferredBehavioralStyle = .pad
+        picker.showsMenuAsPrimaryAction = true
+        picker.changesSelectionAsPrimaryAction = true
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, UIView(), picker])
+        stack.axis = .horizontal
+        stack.spacing = 16
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func refresh() {
+        let options: [(code: String, title: String)] = [
+            ("auto", String(localized: "自动检测")),
+            ("zh", String(localized: "中文")),
+            ("en", String(localized: "英文")),
+        ]
+        picker.menu = UIMenu(children: options.map { option in
+            UIAction(title: option.title, state: Settings.transcriptionLanguage == option.code ? .on : .off) { _ in
+                Settings.transcriptionLanguage = option.code
+            }
+        })
     }
 }
 

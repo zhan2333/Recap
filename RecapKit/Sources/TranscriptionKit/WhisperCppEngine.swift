@@ -41,7 +41,7 @@ public final class WhisperCppEngine: TranscriptionEngine {
 
     public func transcribe(
         samples: [Float],
-        language: String = "zh",
+        language: String = "auto",
         onEvent: (@Sendable (TranscriptionEvent) -> Void)? = nil
     ) throws -> Transcript {
         var params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY)

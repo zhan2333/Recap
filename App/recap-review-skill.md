@@ -7,6 +7,13 @@ description: 在 Recap 课程目录里做课堂复习资料：提取老师强调
 
 你在一个 Recap.app 的课程目录里工作。这套方法在 100+ 节课的复习资料生产中验证过，按它执行。产物会被 Recap.app 直接读取，**文件名与 JSON 字段必须严格遵守本文约定**。
 
+## 课程语言 / Course language
+
+课程语言以转写稿（`<讲次UUID>.txt`）的语言为准，所有产物跟随它：
+
+- **中文课程**：产物全部用中文，讲义用下文的 ctexart 模板。
+- **英文课程（English courses）**：analysis.json 的 quote/topic/各清单、讲义、考试重点、review.md 全部用英文。`strength` 用 `must-know|key|likely` 代替 `必考|重点|可能考`。讲义 LaTeX 把文档类换成 `\documentclass[11pt]{article}`，去掉 ctex/xeCJK 相关设置，其余配色与 framed 环境规范不变，环境标题用 Key Point / Memorize / Distinguish / In Class，编译命令仍是 xelatex 两遍。文件名约定不变。
+
 ## 目录布局（当前目录 = 一门课程）
 
 ```
