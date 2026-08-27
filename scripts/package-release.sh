@@ -20,6 +20,16 @@ VERSION=$(plutil -extract CFBundleShortVersionString raw "$APP/Contents/Info.pli
 STAGE=$(mktemp -d)
 cp -R "$APP" "$STAGE/Recap.app"
 
+# Ship license texts and a source pointer inside the signed app bundle.
+LICENSES="$STAGE/Recap.app/Contents/Resources/Licenses"
+mkdir -p "$LICENSES"
+cp LICENSE "$LICENSES/Recap-GPL-3.0.txt"
+cp THIRD_PARTY_NOTICES.md "$LICENSES/THIRD_PARTY_NOTICES.md"
+printf '%s\n' \
+  "Corresponding source for Recap $VERSION:" \
+  "https://github.com/zhan2333/Recap/releases/tag/v$VERSION" \
+  > "$LICENSES/SOURCE.txt"
+
 # Developer ID + hardened runtime when the certificate exists; ad-hoc fallback otherwise
 IDENTITY=$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/{print $2; exit}')
 if [ -n "${IDENTITY:-}" ]; then

@@ -51,7 +51,7 @@ scripts/              fetch/build/package scripts
 - Comments: `//` only (never `///`), one line max, prefer `// MARK: -` for structure, and write them only to explain code — no progress notes or history.
 - Every new file starts with the standard `Created by` header.
 - Code, identifiers, and comments are English; user-facing strings are Chinese source (localized to English via the String Catalog).
-- No new third-party dependencies without prior discussion — the app currently ships with zero.
+- No new third-party dependencies without prior discussion. The app currently ships with whisper.cpp; keep its version provenance and notice in `THIRD_PARTY_NOTICES.md` current.
 - Verify with a Catalyst build before opening a PR.
 
 ## Pull Requests
@@ -67,6 +67,10 @@ Recap is itself built around agent workflows, and AI-assisted PRs are welcome:
 - Disclose the prompts or the agent setup you used in the PR description.
 - Point your agent at this file and `App/recap-review-skill.md` first — the skill doubles as the spec for every artifact the app reads.
 - Agents must not change the course-folder contract casually; contract changes need the app, the skill, and this document updated together.
+
+## Licensing Contributions
+
+Unless explicitly stated otherwise, contributions intentionally submitted for inclusion in Recap are licensed under GPL-3.0-only, the same terms as the project.
 
 ## Releases (maintainers)
 

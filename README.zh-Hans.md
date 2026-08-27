@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/macOS-14%2B-1B3A5C?logo=apple&logoColor=white" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Mac%20Catalyst-UIKit-1B3A5C?logo=swift&logoColor=white" alt="Mac Catalyst">
   <img src="https://img.shields.io/badge/whisper.cpp-on--device-C75B39" alt="whisper.cpp">
-  <img src="https://img.shields.io/badge/license-MIT-2F2D29" alt="License: MIT">
+  <img src="https://img.shields.io/badge/license-GPL--3.0--only-2F2D29" alt="License: GPL-3.0-only">
 </p>
 
 ![Recap](docs/hero.png)
@@ -97,3 +97,9 @@
 ## 参与贡献
 
 见 [CONTRIBUTING.md](CONTRIBUTING.md)——构建配置、架构要点、代码规范，以及 AI 协作贡献的方式。
+
+## 许可证
+
+Copyright © 2026 zhan2333。Recap 当前源码采用 [GNU General Public License v3.0 only](LICENSE) 许可。第三方组件保留各自的许可证，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+截至 v2.1.0（含）的发行版此前按 MIT License 发布，这些版本已经授予的 MIT 权利继续有效。
