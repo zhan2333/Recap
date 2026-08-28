@@ -95,15 +95,26 @@ public final class ShellRunner: NSObject, ShellRunning {
     // Closing the PTY master hangs up the session (like closing a terminal window); SIGTERM covers the rest
     @objc public static func terminate(_ pid: Int32) {
         DispatchQueue.main.async {
-            guard let session = sessions[pid] else { return }
-            sessions[pid] = nil
-            session.master.readabilityHandler = nil
-            try? session.master.close()
-            session.process.terminate()
+            if let session = sessions[pid] {
+                sessions[pid] = nil
+                session.master.readabilityHandler = nil
+                try? session.master.close()
+                session.process.terminate()
+                return
+            }
+            guard let shell = shells[pid] else { return }
+            shells[pid] = nil
+            shell.exitSource.cancel()
+            shell.master.readabilityHandler = nil
+            try? shell.master.close()
+            kill(pid, SIGHUP)
         }
     }
 
-    // Interactive login shell on a PTY: raw bytes both ways, resizable, lives until terminate
+    // Interactive login shells: forkpty makes the child a session leader owning the PTY,
+    // so SIGWINCH and Ctrl-C signals reach it the way a real terminal delivers them
+    private static var shells: [Int32: (master: FileHandle, exitSource: DispatchSourceProcess)] = [:]
+
     @discardableResult
     @objc public static func startShell(
         _ workingDirectory: String,
@@ -112,18 +123,6 @@ public final class ShellRunner: NSObject, ShellRunning {
         onData: @escaping (Data) -> Void,
         onExit: @escaping (Int32) -> Void
     ) -> Int32 {
-        var master: Int32 = 0
-        var slave: Int32 = 0
-        var size = winsize(ws_row: UInt16(rows), ws_col: UInt16(cols), ws_xpixel: 0, ws_ypixel: 0)
-        guard openpty(&master, &slave, nil, nil, &size) == 0 else {
-            onExit(-1)
-            return -1
-        }
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-il"]
-        process.currentDirectoryURL = URL(fileURLWithPath: workingDirectory)
         var environment = ProcessInfo.processInfo.environment
         environment["TERM"] = "xterm-256color"
         environment["COLORTERM"] = "truecolor"
@@ -134,11 +133,31 @@ public final class ShellRunner: NSObject, ShellRunning {
         for key in environment.keys where key == "CLAUDECODE" || key.hasPrefix("CLAUDE_CODE_") {
             environment.removeValue(forKey: key)
         }
-        process.environment = environment
-        let slaveHandle = FileHandle(fileDescriptor: slave, closeOnDealloc: true)
-        process.standardInput = slaveHandle
-        process.standardOutput = slaveHandle
-        process.standardError = slaveHandle
+
+        // Every allocation happens before the fork; the child only calls async-signal-safe functions
+        let executable = strdup("/bin/zsh")
+        let argv: [UnsafeMutablePointer<CChar>?] = [strdup("-zsh"), strdup("-il"), nil]
+        let envp: [UnsafeMutablePointer<CChar>?] = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
+        let directory = strdup(workingDirectory)
+        defer {
+            free(executable)
+            free(directory)
+            argv.forEach { free($0) }
+            envp.forEach { free($0) }
+        }
+
+        var master: Int32 = 0
+        var size = winsize(ws_row: UInt16(rows), ws_col: UInt16(cols), ws_xpixel: 0, ws_ypixel: 0)
+        let pid = forkpty(&master, nil, nil, &size)
+        if pid < 0 {
+            onExit(-1)
+            return -1
+        }
+        if pid == 0 {
+            _ = chdir(directory)
+            _ = execve(executable, argv, envp)
+            _exit(127)
+        }
 
         let masterHandle = FileHandle(fileDescriptor: master, closeOnDealloc: true)
         masterHandle.readabilityHandler = { handle in
@@ -150,38 +169,35 @@ public final class ShellRunner: NSObject, ShellRunning {
             DispatchQueue.main.async { onData(data) }
         }
 
-        process.terminationHandler = { finished in
+        let exitSource = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: .main)
+        exitSource.setEventHandler {
+            var status: Int32 = 0
+            waitpid(pid, &status, WNOHANG)
+            exitSource.cancel()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 masterHandle.readabilityHandler = nil
-                sessions[finished.processIdentifier] = nil
-                onExit(finished.terminationStatus)
+                shells[pid] = nil
+                let signalNumber = status & 0x7f
+                onExit(signalNumber != 0 ? 128 + signalNumber : (status >> 8) & 0xff)
             }
         }
-
-        do {
-            try process.run()
-        } catch {
-            masterHandle.readabilityHandler = nil
-            onExit(-1)
-            return -1
-        }
-        let pid = process.processIdentifier
-        DispatchQueue.main.async { sessions[pid] = (process, masterHandle) }
+        exitSource.resume()
+        DispatchQueue.main.async { shells[pid] = (masterHandle, exitSource) }
         return pid
     }
 
     @objc public static func write(_ pid: Int32, data: Data) {
         DispatchQueue.main.async {
-            guard let session = sessions[pid] else { return }
-            try? session.master.write(contentsOf: data)
+            guard let shell = shells[pid] else { return }
+            try? shell.master.write(contentsOf: data)
         }
     }
 
     @objc public static func resize(_ pid: Int32, cols: Int32, rows: Int32) {
         DispatchQueue.main.async {
-            guard let session = sessions[pid] else { return }
+            guard let shell = shells[pid] else { return }
             var size = winsize(ws_row: UInt16(rows), ws_col: UInt16(cols), ws_xpixel: 0, ws_ypixel: 0)
-            _ = ioctl(session.master.fileDescriptor, TIOCSWINSZ, &size)
+            _ = ioctl(shell.master.fileDescriptor, TIOCSWINSZ, &size)
         }
     }
 }
