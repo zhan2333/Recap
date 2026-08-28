@@ -153,6 +153,7 @@ final class TerminalStudioViewController: UIViewController {
         terminalView.nativeBackgroundColor = UIColor(red: 0.086, green: 0.098, blue: 0.125, alpha: 1)
         terminalView.nativeForegroundColor = UIColor(red: 0.90, green: 0.91, blue: 0.93, alpha: 1)
         terminalView.backgroundColor = terminalView.nativeBackgroundColor
+        terminalView.focusEffect = nil
         let terminalContainer = UIView()
         terminalContainer.backgroundColor = terminalView.nativeBackgroundColor
         terminalContainer.layer.cornerRadius = RecapTheme.radiusSM
