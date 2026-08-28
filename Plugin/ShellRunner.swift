@@ -133,6 +133,11 @@ public final class ShellRunner: NSObject, ShellRunning {
         for key in environment.keys where key == "CLAUDECODE" || key.hasPrefix("CLAUDE_CODE_") {
             environment.removeValue(forKey: key)
         }
+        // Claim our own terminal identity: an inherited Apple_Terminal mark makes zsh run
+        // Terminal.app's session save/restore hooks inside this window
+        environment["TERM_PROGRAM"] = "Recap"
+        environment.removeValue(forKey: "TERM_PROGRAM_VERSION")
+        environment.removeValue(forKey: "TERM_SESSION_ID")
 
         // Every allocation happens before the fork; the child only calls async-signal-safe functions
         let executable = strdup("/bin/zsh")

@@ -33,6 +33,8 @@ final class TerminalStudioViewController: UIViewController {
     private var lastAnalysisSeen = Date.distantPast
     private var lastPDFSeen = Date.distantPast
     private var artifactScanTimer: Timer?
+    private var resizeTimer: Timer?
+    private var pendingSize: (cols: Int32, rows: Int32)?
     private var previewItem: URL?
 
     private let terminalView = TerminalView()
@@ -64,6 +66,7 @@ final class TerminalStudioViewController: UIViewController {
 
     deinit {
         artifactScanTimer?.invalidate()
+        resizeTimer?.invalidate()
         if shellPID > 0 { ShellBridge.terminate(shellPID) }
     }
 
@@ -297,8 +300,11 @@ final class TerminalStudioViewController: UIViewController {
         detectTools()
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
+    // Starting after layout means the shell's first winsize is the real one, so no
+    // SIGWINCH lands in the middle of its startup output
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard shellPID <= 0, terminalView.bounds.width > 0 else { return }
         startShell()
         terminalView.becomeFirstResponder()
     }
@@ -571,9 +577,16 @@ extension TerminalStudioViewController: TerminalViewDelegate {
         ShellBridge.write(pid: shellPID, data: Data(data))
     }
 
+    // A live drag emits a size per layout pass; the shell redraws its prompt on every
+    // SIGWINCH, so coalesce into one resize once the window settles
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
         guard shellPID > 0 else { return }
-        ShellBridge.resize(pid: shellPID, cols: Int32(newCols), rows: Int32(newRows))
+        pendingSize = (Int32(newCols), Int32(newRows))
+        resizeTimer?.invalidate()
+        resizeTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self] _ in
+            guard let self, let size = self.pendingSize, self.shellPID > 0 else { return }
+            ShellBridge.resize(pid: self.shellPID, cols: size.cols, rows: size.rows)
+        }
     }
 
     func setTerminalTitle(source: TerminalView, title: String) {}
