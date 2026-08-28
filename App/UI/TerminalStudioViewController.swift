@@ -28,6 +28,7 @@ final class TerminalStudioViewController: UIViewController {
     private var previewItem: URL?
 
     private let terminalView = TerminalView()
+    private let terminalContainer = UIView()
     private let toolButton = UIButton(type: .system)
     private let statusDot = UIView()
     private let statusLabel = UILabel()
@@ -150,15 +151,12 @@ final class TerminalStudioViewController: UIViewController {
 
         // SwiftTerm draws glyphs edge-to-edge, so padding and corner clipping live on a container
         terminalView.terminalDelegate = self
-        terminalView.nativeBackgroundColor = UIColor(red: 0.086, green: 0.098, blue: 0.125, alpha: 1)
-        terminalView.nativeForegroundColor = UIColor(red: 0.90, green: 0.91, blue: 0.93, alpha: 1)
-        terminalView.backgroundColor = terminalView.nativeBackgroundColor
         terminalView.focusEffect = nil
-        let terminalContainer = UIView()
-        terminalContainer.backgroundColor = terminalView.nativeBackgroundColor
         terminalContainer.layer.cornerRadius = RecapTheme.radiusSM
         terminalContainer.layer.cornerCurve = .continuous
+        terminalContainer.layer.borderWidth = 1
         terminalContainer.clipsToBounds = true
+        applyTerminalTheme()
         terminalView.translatesAutoresizingMaskIntoConstraints = false
         terminalContainer.addSubview(terminalView)
         NSLayoutConstraint.activate([
@@ -304,6 +302,28 @@ final class TerminalStudioViewController: UIViewController {
         guard isBeingDismissed, shellPID > 0 else { return }
         ShellBridge.terminate(shellPID)
         shellPID = -1
+    }
+
+    // SwiftTerm resolves colors to static RGB, so the theme is re-applied on trait changes
+    private func applyTerminalTheme() {
+        let dark = traitCollection.userInterfaceStyle == .dark
+        let background = dark
+            ? UIColor(red: 0.086, green: 0.098, blue: 0.125, alpha: 1)
+            : UIColor(red: 1.00, green: 0.99, blue: 0.97, alpha: 1)
+        let foreground = dark
+            ? UIColor(red: 0.90, green: 0.91, blue: 0.93, alpha: 1)
+            : RecapTheme.ink.resolvedColor(with: traitCollection)
+        terminalView.nativeBackgroundColor = background
+        terminalView.nativeForegroundColor = foreground
+        terminalView.backgroundColor = background
+        terminalContainer.backgroundColor = background
+        terminalContainer.layer.borderColor = RecapTheme.line.resolvedColor(with: traitCollection).cgColor
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle else { return }
+        applyTerminalTheme()
     }
 
     private func sectionLabel(_ text: String) -> UILabel {
