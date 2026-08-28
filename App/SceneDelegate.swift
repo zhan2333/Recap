@@ -13,6 +13,9 @@ import AppKit
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
+    private static let studioSessionKey = "recapStudioLecture"
+    private static var mainSessionID: String?
+
     var window: UIWindow?
     #if targetEnvironment(macCatalyst)
     private let toolbarDelegate = BrandToolbarDelegate()
@@ -29,6 +32,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             connectStudioWindow(windowScene, activity: activity)
             return
         }
+        // A restored studio session comes back without its activity, and the app has no
+        // second main window: drop such sessions instead of opening another library
+        if session.userInfo?[Self.studioSessionKey] != nil || Self.mainSessionID != nil {
+            UIApplication.shared.requestSceneSessionDestruction(session, options: nil)
+            return
+        }
+        Self.mainSessionID = session.persistentIdentifier
 
         #if targetEnvironment(macCatalyst)
         let toolbar = NSToolbar(identifier: "main")
@@ -62,6 +72,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
     }
 
+    func sceneDidDisconnect(_ scene: UIScene) {
+        if Self.mainSessionID == scene.session.persistentIdentifier {
+            Self.mainSessionID = nil
+        }
+    }
+
     // MARK: - Terminal Studio window
 
     private func connectStudioWindow(_ windowScene: UIWindowScene, activity: NSUserActivity) {
@@ -69,6 +85,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
               let id = UUID(uuidString: idString),
               let found = LibraryStore.shared.locate(lectureID: id) else { return }
         let prompt = (activity.userInfo?["prompt"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        windowScene.session.userInfo = [Self.studioSessionKey: idString]
 
         #if targetEnvironment(macCatalyst)
         windowScene.title = "Terminal Studio · \(found.course.name)"
