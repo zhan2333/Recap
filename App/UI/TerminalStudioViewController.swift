@@ -33,8 +33,10 @@ final class TerminalStudioViewController: UIViewController {
     private var lastAnalysisSeen = Date.distantPast
     private var lastPDFSeen = Date.distantPast
     private var artifactScanTimer: Timer?
+    private static let resizeInterval: TimeInterval = 0.05
     private var resizeTimer: Timer?
     private var pendingSize: (cols: Int32, rows: Int32)?
+    private var lastResizeSent = Date.distantPast
     private var previewItem: URL?
 
     private let terminalView = TerminalView()
@@ -576,16 +578,28 @@ extension TerminalStudioViewController: TerminalViewDelegate {
         ShellBridge.write(pid: shellPID, data: Data(data))
     }
 
-    // A live drag emits a size per layout pass; the shell redraws its prompt on every
-    // SIGWINCH, so coalesce into one resize once the window settles
+    // A live drag emits a size per layout pass and the shell redraws on every SIGWINCH,
+    // so keep resizing during the drag but rate-limited, then settle on the final size
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
         guard shellPID > 0 else { return }
         pendingSize = (Int32(newCols), Int32(newRows))
         resizeTimer?.invalidate()
-        resizeTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: false) { [weak self] _ in
-            guard let self, let size = self.pendingSize, self.shellPID > 0 else { return }
-            ShellBridge.resize(pid: self.shellPID, cols: size.cols, rows: size.rows)
+        if Date().timeIntervalSince(lastResizeSent) >= Self.resizeInterval {
+            sendPendingSize()
+            return
         }
+        let timer = Timer(timeInterval: Self.resizeInterval, repeats: false) { [weak self] _ in
+            self?.sendPendingSize()
+        }
+        // Window drags run the loop in tracking mode, where default-mode timers never fire
+        RunLoop.main.add(timer, forMode: .common)
+        resizeTimer = timer
+    }
+
+    private func sendPendingSize() {
+        guard shellPID > 0, let size = pendingSize else { return }
+        lastResizeSent = Date()
+        ShellBridge.resize(pid: shellPID, cols: size.cols, rows: size.rows)
     }
 
     func setTerminalTitle(source: TerminalView, title: String) {}
