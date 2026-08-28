@@ -58,7 +58,7 @@ final class TranscriptViewController: UIViewController {
         emptyLabel.textAlignment = .center
         emptyLabel.numberOfLines = 0
 
-        signalsView.onReExtract = { [weak self] in self?.analyze() }
+        signalsView.onReExtract = { [weak self] in self?.extractKeyPoints() }
 
         for subview in [header, metaBar, reviewView, readingView, playerPane, signalsView, emptyLabel] as [UIView] {
             subview.translatesAutoresizingMaskIntoConstraints = false
@@ -217,7 +217,7 @@ final class TranscriptViewController: UIViewController {
         var actions: [UIAction] = []
         if analysis != nil {
             actions.append(UIAction(title: String(localized: "重新提取重点"), image: UIImage(systemName: "text.magnifyingglass")) { [weak self] _ in
-                self?.analyze()
+                self?.extractKeyPoints()
             })
             actions.append(UIAction(title: String(localized: "生成本讲讲义"), image: UIImage(systemName: "doc.text")) { [weak self] _ in
                 self?.generateHandout()
@@ -272,7 +272,7 @@ final class TranscriptViewController: UIViewController {
     // MARK: - Menu plumbing
 
     func switchMode(_ index: Int) { header.modeTabs.select(index) }
-    func extractKeyPoints() { analyze() }
+    func extractKeyPoints() { promptExtractChannel() }
     func startHandoutFlow() { generateHandout() }
     func openTerminalStudio() { presentTerminalStudio() }
     func stepKeyPoint(_ delta: Int) {
@@ -294,7 +294,7 @@ final class TranscriptViewController: UIViewController {
 
     private func primaryAction() {
         if analysis == nil {
-            analyze()
+            extractKeyPoints()
         } else if hasHandout {
             showHandout()
         } else {
@@ -333,6 +333,25 @@ final class TranscriptViewController: UIViewController {
             refreshChrome()
             applyMode()
         }
+    }
+
+    // Same two channels as handout generation: CLI agent per the bundled skill, or the configured API
+    private func promptExtractChannel() {
+        guard !plainText.isEmpty, !isAnalyzing else { return }
+        let alert = UIAlertController(
+            title: String(localized: "提取本讲重点"),
+            message: String(localized: "两种方式产出同一份考试重点：claude 按内置 skill 在课程目录里提取，或用已配置的 API 接口提取。"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: String(localized: "用 CLI agent 提取"), style: .default) { [weak self] _ in
+            guard let self else { return }
+            self.presentTerminalStudio(prompt: String(localized: "提取「\(self.lecture.name)」的考试重点"))
+        })
+        alert.addAction(UIAlertAction(title: String(localized: "用 API 提取"), style: .default) { [weak self] _ in
+            self?.analyze()
+        })
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        present(alert, animated: true)
     }
 
     // Two channels: claude CLI (LaTeX → PDF, per the bundled skill) or the configured API (Markdown)
@@ -390,10 +409,12 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
-    private func presentTerminalStudio() {
-        let studio = TerminalStudioViewController(lecture: lecture, course: course) { [weak self] in
+    private func presentTerminalStudio(prompt: String? = nil) {
+        let studio = TerminalStudioViewController(lecture: lecture, course: course, initialPrompt: prompt, onShowHandout: { [weak self] in
             self?.showHandout()
-        }
+        }, onArtifactsChanged: { [weak self] in
+            self?.loadContent()
+        })
         present(studio, animated: true)
     }
 

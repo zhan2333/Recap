@@ -14,6 +14,8 @@ final class TerminalStudioViewController: UIViewController {
     private let lecture: Lecture
     private let course: Course
     private let onShowHandout: () -> Void
+    private let initialPrompt: String?
+    private let onArtifactsChanged: (() -> Void)?
 
     struct SessionRecord {
         let tool: String
@@ -54,11 +56,15 @@ final class TerminalStudioViewController: UIViewController {
     private var courseDir: URL { LibraryStore.shared.courseDirectory(course) }
     private var pdfURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "handout.pdf") }
     private var texURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "handout.tex") }
+    private var analysisURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json") }
 
-    init(lecture: Lecture, course: Course, onShowHandout: @escaping () -> Void) {
+    init(lecture: Lecture, course: Course, initialPrompt: String? = nil,
+         onShowHandout: @escaping () -> Void, onArtifactsChanged: (() -> Void)? = nil) {
         self.lecture = lecture
         self.course = course
+        self.initialPrompt = initialPrompt
         self.onShowHandout = onShowHandout
+        self.onArtifactsChanged = onArtifactsChanged
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .pageSheet
         preferredContentSize = CGSize(width: 1080, height: 680)
@@ -160,7 +166,7 @@ final class TerminalStudioViewController: UIViewController {
         promptField.layer.cornerRadius = RecapTheme.radiusSM
         promptField.layer.cornerCurve = .continuous
         promptField.setLeftPadding(10)
-        promptField.text = String(localized: "为「\(lecture.name)」生成讲义")
+        promptField.text = initialPrompt ?? String(localized: "为「\(lecture.name)」生成讲义")
         promptField.autocorrectionType = .no
 
         runButton.preferredBehavioralStyle = .pad
@@ -187,6 +193,7 @@ final class TerminalStudioViewController: UIViewController {
         // Quick tasks fill the prompt; the CLI improvises within the bundled skill
         let chips: [(title: String, prompt: String)] = [
             (String(localized: "生成讲义"), String(localized: "为「\(lecture.name)」生成讲义")),
+            (String(localized: "提取重点"), String(localized: "提取「\(lecture.name)」的考试重点")),
             (String(localized: "检查术语"), String(localized: "检查「\(lecture.name)」转写稿中术语的识别错误，输出勘误清单")),
             (String(localized: "补示意图"), String(localized: "为「\(lecture.name)」的讲义补充更多 TikZ 示意图并重新编译 PDF")),
         ]
@@ -413,7 +420,7 @@ final class TerminalStudioViewController: UIViewController {
         guard !isRunning else { return }
         isViewingHistory = false
         terminal.clear()
-        promptField.text = "为「\(lecture.name)」生成讲义"
+        promptField.text = initialPrompt ?? String(localized: "为「\(lecture.name)」生成讲义")
         refreshArtifacts()
         clearRunArtifacts()
         if detectedTools.isEmpty {
@@ -530,10 +537,15 @@ final class TerminalStudioViewController: UIViewController {
             tool: selectedTool ?? "?", prompt: currentPrompt, log: currentLog, exitCode: code, date: Date()))
         rebuildHistory()
         scanRunArtifacts()
+        let analysisUpdated = modified(analysisURL) > runStartDate
+        if analysisUpdated { onArtifactsChanged?() }
         let pdfUpdated = modified(pdfURL) > pdfModifiedBeforeRun
         if code == 0 && pdfUpdated {
             setStatus(String(localized: "讲义已生成"), ready: true)
             terminal.append(String(localized: "\n✔ 讲义 PDF 已就绪\n"))
+        } else if code == 0 && analysisUpdated {
+            setStatus(String(localized: "重点已提取"), ready: true)
+            terminal.append(String(localized: "\n✔ 考试重点已更新\n"))
         } else if code == 0 {
             setStatus(String(localized: "已完成"), ready: true)
             terminal.append(String(localized: "\n✔ 完成（本次运行没有更新讲义 PDF）\n"))

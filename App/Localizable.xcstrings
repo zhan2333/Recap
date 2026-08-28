@@ -31,6 +31,16 @@
         }
       }
     },
+    "\n✔ 考试重点已更新\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\n✔ Exam key points updated\n"
+          }
+        }
+      }
+    },
     "\n✔ 讲义 PDF 已就绪\n": {
       "localizations": {
         "en": {
@@ -327,6 +337,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Both channels produce the same PDF lecture notes: claude follows the bundled skill, or your configured API endpoint follows the same skill and the result compiles locally."
+          }
+        }
+      }
+    },
+    "两种方式产出同一份考试重点：claude 按内置 skill 在课程目录里提取，或用已配置的 API 接口提取。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Two ways to the same exam key points: claude extracts them in the course folder per the bundled skill, or the configured API endpoint extracts them."
           }
         }
       }
@@ -1011,12 +1031,32 @@
         }
       }
     },
+    "提取「%@」的考试重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract exam key points for “%@”"
+          }
+        }
+      }
+    },
     "提取失败": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Extraction failed"
+          }
+        }
+      }
+    },
+    "提取本讲重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract key points"
           }
         }
       }
@@ -1581,12 +1621,32 @@
         }
       }
     },
+    "用 API 提取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract with API"
+          }
+        }
+      }
+    },
     "用 API 生成": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Generate with API"
+          }
+        }
+      }
+    },
+    "用 CLI agent 提取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract with CLI agent"
           }
         }
       }
@@ -2237,6 +2297,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Key points"
+          }
+        }
+      }
+    },
+    "重点已提取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key points extracted"
           }
         }
       }
