@@ -66,8 +66,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 window.rootViewController?.present(onboarding, animated: true)
             }
         } else {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-                UpdateChecker.checkIfDue(presenting: self?.window)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                UpdateChecker.start()
             }
         }
     }

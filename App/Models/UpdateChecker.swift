@@ -7,23 +7,47 @@
 
 import UIKit
 
-// Once-a-day check against the GitHub latest release; a persistent pill installs the update in place
+// Watches the GitHub latest release; a persistent pill installs the update in place
 enum UpdateChecker {
 
     private static let repo = "zhan2333/Recap"
     private static let mountPoint = "/tmp/recap-update-mount"
+    // Events can fire in bursts, so checks are throttled; the timer covers a window left open for days
+    private static let minimumInterval: TimeInterval = 600
+    private static let pollInterval: TimeInterval = 1_800
+    private static var pollTimer: Timer?
+    private static var isChecking = false
 
-    static func checkIfDue(presenting window: UIWindow?) {
-        showPillFromCache(in: window)
+    // Checks on launch, whenever the app comes forward, and on a timer while it stays open
+    static func start() {
+        refreshPill()
+        check()
+        guard pollTimer == nil else { return }
+        let timer = Timer(timeInterval: pollInterval, repeats: true) { _ in check() }
+        RunLoop.main.add(timer, forMode: .common)
+        pollTimer = timer
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { _ in check() }
+    }
 
+    static func check(force: Bool = false) {
         let lastCheck = UserDefaults.standard.double(forKey: "lastUpdateCheck")
-        guard Date().timeIntervalSince1970 - lastCheck > 86_400 else { return }
-        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastUpdateCheck")
+        guard !isChecking, force || Date().timeIntervalSince1970 - lastCheck > minimumInterval else { return }
+        isChecking = true
 
         Task {
-            guard let url = URL(string: "https://api.github.com/repos/\(repo)/releases/latest"),
-                  let (data, response) = try? await URLSession.shared.data(from: url),
-                  (response as? HTTPURLResponse)?.statusCode == 200,
+            defer { isChecking = false }
+            guard let url = URL(string: "https://api.github.com/repos/\(repo)/releases/latest") else { return }
+            var request = URLRequest(url: url)
+            // A 304 still counts against the 60/hour anonymous limit, but skips the payload
+            if let etag = UserDefaults.standard.string(forKey: "latestReleaseETag") {
+                request.setValue(etag, forHTTPHeaderField: "If-None-Match")
+            }
+            guard let (data, response) = try? await URLSession.shared.data(for: request),
+                  let http = response as? HTTPURLResponse else { return }
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "lastUpdateCheck")
+            guard http.statusCode == 200,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let tag = json["tag_name"] as? String,
                   let htmlURL = json["html_url"] as? String
@@ -38,13 +62,22 @@ enum UpdateChecker {
             UserDefaults.standard.set(latest, forKey: "latestKnownVersion")
             UserDefaults.standard.set(htmlURL, forKey: "latestKnownURL")
             UserDefaults.standard.set(dmgURL, forKey: "latestKnownDMG")
-            await MainActor.run { showPillFromCache(in: window) }
+            UserDefaults.standard.set(http.value(forHTTPHeaderField: "ETag"), forKey: "latestReleaseETag")
+            await MainActor.run { refreshPill() }
         }
     }
 
-    // The pill persists every launch until the user updates — no dismiss, no skip
-    private static func showPillFromCache(in window: UIWindow?) {
-        guard let window,
+    // The library window owns the pill; studio windows are working surfaces
+    private static var libraryWindow: UIWindow? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.rootViewController is MainSplitViewController }
+    }
+
+    // The pill persists until the user updates — no dismiss, no skip
+    private static func refreshPill() {
+        guard let window = libraryWindow,
               let latest = UserDefaults.standard.string(forKey: "latestKnownVersion"),
               let urlString = UserDefaults.standard.string(forKey: "latestKnownURL"),
               let pageURL = URL(string: urlString) else { return }
@@ -53,10 +86,15 @@ enum UpdateChecker {
             window.viewWithTag(UpdatePillView.viewTag)?.removeFromSuperview()
             return
         }
-        guard window.viewWithTag(UpdatePillView.viewTag) == nil else { return }
+        if let shown = window.viewWithTag(UpdatePillView.viewTag) as? UpdatePillView {
+            // Rebuild only when a newer release landed while the pill was already up
+            guard shown.version != latest, shown.phase == .idle else { return }
+            shown.removeFromSuperview()
+        }
 
         let dmgURL = UserDefaults.standard.string(forKey: "latestKnownDMG").flatMap(URL.init(string:))
         let pill = UpdatePillView()
+        pill.version = latest
         pill.onTap = { [weak pill] in
             guard let pill else { return }
             switch pill.phase {
@@ -129,6 +167,7 @@ final class UpdatePillView: UIButton {
     }
 
     var onTap: (() -> Void)?
+    var version: String?
     var phase: Phase = .idle {
         didSet { applyPhase() }
     }
