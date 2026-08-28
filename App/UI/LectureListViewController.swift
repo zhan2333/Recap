@@ -549,6 +549,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             var updated = lecture
             updated.sourceURL = url
             LibraryStore.shared.updateLecture(updated, in: self.course)
+            self.reload()
         })
         present(alert, animated: true)
     }
@@ -564,6 +565,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             var renamed = lecture
             renamed.name = name
             LibraryStore.shared.updateLecture(renamed, in: self.course)
+            self.reload()
         })
         present(alert, animated: true)
     }
