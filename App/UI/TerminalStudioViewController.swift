@@ -9,8 +9,7 @@ import UIKit
 import QuickLook
 import SwiftTerm
 
-// Terminal Studio: a real terminal living in the course folder — the user drives
-// their own CLI (claude, codex, …); artifacts land back in the course context
+// Terminal Studio: a real terminal in the course folder; artifacts land back in the course context
 final class TerminalStudioViewController: UIViewController {
 
     private let lecture: Lecture
@@ -149,8 +148,7 @@ final class TerminalStudioViewController: UIViewController {
         leftColumn.spacing = 10
         leftColumn.widthAnchor.constraint(equalToConstant: 232).isActive = true
 
-        // Center: the terminal itself, quick prompts, and the prompt composer.
-        // SwiftTerm draws glyphs edge-to-edge, so padding and corner clipping live on a container.
+        // SwiftTerm draws glyphs edge-to-edge, so padding and corner clipping live on a container
         terminalView.terminalDelegate = self
         terminalView.nativeBackgroundColor = UIColor(red: 0.086, green: 0.098, blue: 0.125, alpha: 1)
         terminalView.nativeForegroundColor = UIColor(red: 0.90, green: 0.91, blue: 0.93, alpha: 1)
