@@ -9,14 +9,22 @@ import UIKit
 import QuickLook
 import SwiftTerm
 
-// Terminal Studio: a real terminal in the course folder; artifacts land back in the course context
+// Terminal Studio: a real terminal in the course folder, living in its own resizable window
 final class TerminalStudioViewController: UIViewController {
+
+    static let activityType = "com.rio.recap.terminal-studio"
+    static let artifactsDidChange = Notification.Name("RecapStudioArtifactsDidChange")
+    static let showHandoutRequested = Notification.Name("RecapStudioShowHandoutRequested")
+
+    static func sceneActivity(lecture: Lecture, prompt: String?) -> NSUserActivity {
+        let activity = NSUserActivity(activityType: activityType)
+        activity.userInfo = ["lectureID": lecture.id.uuidString, "prompt": prompt ?? ""]
+        return activity
+    }
 
     private let lecture: Lecture
     private let course: Course
-    private let onShowHandout: () -> Void
     private let initialPrompt: String?
-    private let onArtifactsChanged: (() -> Void)?
 
     private var detectedTools: [String] = []
     private var toolVersions: [String: String] = [:]
@@ -45,16 +53,11 @@ final class TerminalStudioViewController: UIViewController {
     private var texURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "handout.tex") }
     private var analysisURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json") }
 
-    init(lecture: Lecture, course: Course, initialPrompt: String? = nil,
-         onShowHandout: @escaping () -> Void, onArtifactsChanged: (() -> Void)? = nil) {
+    init(lecture: Lecture, course: Course, initialPrompt: String? = nil) {
         self.lecture = lecture
         self.course = course
         self.initialPrompt = initialPrompt
-        self.onShowHandout = onShowHandout
-        self.onArtifactsChanged = onArtifactsChanged
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = .pageSheet
-        preferredContentSize = CGSize(width: 1080, height: 680)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -126,7 +129,7 @@ final class TerminalStudioViewController: UIViewController {
             .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.ink,
         ]))
         doneButton.configuration = doneConfig
-        doneButton.addAction(UIAction { [weak self] _ in self?.dismiss(animated: true) }, for: .touchUpInside)
+        doneButton.addAction(UIAction { [weak self] _ in self?.closeWindow() }, for: .touchUpInside)
 
         let header = UIStackView(arrangedSubviews: [titles, UIView(), statusDot, statusLabel, toolButton, newSessionButton, doneButton])
         header.axis = .horizontal
@@ -257,7 +260,10 @@ final class TerminalStudioViewController: UIViewController {
         viewHandoutButton.configuration = viewConfig
         viewHandoutButton.addAction(UIAction { [weak self] _ in
             guard let self else { return }
-            self.dismiss(animated: true) { self.onShowHandout() }
+            NotificationCenter.default.post(
+                name: Self.showHandoutRequested, object: nil,
+                userInfo: ["lectureID": self.lecture.id])
+            self.closeWindow()
         }, for: .touchUpInside)
 
         artifactsStack.axis = .vertical
@@ -297,11 +303,9 @@ final class TerminalStudioViewController: UIViewController {
         terminalView.becomeFirstResponder()
     }
 
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        guard isBeingDismissed, shellPID > 0 else { return }
-        ShellBridge.terminate(shellPID)
-        shellPID = -1
+    private func closeWindow() {
+        guard let session = view.window?.windowScene?.session else { return }
+        UIApplication.shared.requestSceneSessionDestruction(session, options: nil)
     }
 
     // SwiftTerm resolves colors to static RGB, so the theme is re-applied on trait changes
@@ -493,7 +497,9 @@ final class TerminalStudioViewController: UIViewController {
         if analysisModified > lastAnalysisSeen {
             lastAnalysisSeen = analysisModified
             setStatus(String(localized: "重点已提取"), ready: true)
-            onArtifactsChanged?()
+            NotificationCenter.default.post(
+                name: Self.artifactsDidChange, object: nil,
+                userInfo: ["lectureID": lecture.id])
         }
         let pdfModified = modified(pdfURL)
         if pdfModified > lastPDFSeen {

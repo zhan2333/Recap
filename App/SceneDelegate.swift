@@ -25,6 +25,11 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
+        if let activity = connectionOptions.userActivities.first(where: { $0.activityType == TerminalStudioViewController.activityType }) {
+            connectStudioWindow(windowScene, activity: activity)
+            return
+        }
+
         #if targetEnvironment(macCatalyst)
         let toolbar = NSToolbar(identifier: "main")
         toolbar.delegate = toolbarDelegate
@@ -55,6 +60,27 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 UpdateChecker.checkIfDue(presenting: self?.window)
             }
         }
+    }
+
+    // MARK: - Terminal Studio window
+
+    private func connectStudioWindow(_ windowScene: UIWindowScene, activity: NSUserActivity) {
+        guard let idString = activity.userInfo?["lectureID"] as? String,
+              let id = UUID(uuidString: idString),
+              let found = LibraryStore.shared.locate(lectureID: id) else { return }
+        let prompt = (activity.userInfo?["prompt"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+
+        #if targetEnvironment(macCatalyst)
+        windowScene.title = "Terminal Studio · \(found.course.name)"
+        windowScene.titlebar?.titleVisibility = .visible
+        windowScene.sizeRestrictions?.minimumSize = CGSize(width: 880, height: 540)
+        #endif
+
+        let window = UIWindow(windowScene: windowScene)
+        window.rootViewController = TerminalStudioViewController(
+            lecture: found.lecture, course: found.course, initialPrompt: prompt)
+        window.makeKeyAndVisible()
+        self.window = window
     }
 }
 

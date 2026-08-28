@@ -99,6 +99,14 @@ final class TranscriptViewController: UIViewController {
             self, selector: #selector(queueActivityChanged(_:)),
             name: LectureQueue.activityDidChange, object: nil
         )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(studioArtifactsChanged(_:)),
+            name: TerminalStudioViewController.artifactsDidChange, object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(studioShowHandoutRequested(_:)),
+            name: TerminalStudioViewController.showHandoutRequested, object: nil
+        )
 
         loadContent()
         refreshChrome()
@@ -409,13 +417,23 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
+    // Terminal Studio opens as its own window; results come back via notifications
     private func presentTerminalStudio(prompt: String? = nil) {
-        let studio = TerminalStudioViewController(lecture: lecture, course: course, initialPrompt: prompt, onShowHandout: { [weak self] in
-            self?.showHandout()
-        }, onArtifactsChanged: { [weak self] in
-            self?.loadContent()
-        })
-        present(studio, animated: true)
+        let activity = TerminalStudioViewController.sceneActivity(lecture: lecture, prompt: prompt)
+        let request = UISceneSessionActivationRequest(userActivity: activity)
+        UIApplication.shared.activateSceneSession(for: request) { error in
+            NSLog("Terminal Studio window failed: %@", error.localizedDescription)
+        }
+    }
+
+    @objc private func studioArtifactsChanged(_ note: Notification) {
+        guard note.userInfo?["lectureID"] as? UUID == lecture.id else { return }
+        loadContent()
+    }
+
+    @objc private func studioShowHandoutRequested(_ note: Notification) {
+        guard note.userInfo?["lectureID"] as? UUID == lecture.id else { return }
+        showHandout()
     }
 
     private func showHandout() {
