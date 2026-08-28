@@ -300,11 +300,10 @@ final class TerminalStudioViewController: UIViewController {
         detectTools()
     }
 
-    // Starting after layout means the shell's first winsize is the real one, so no
-    // SIGWINCH lands in the middle of its startup output
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        guard shellPID <= 0, terminalView.bounds.width > 0 else { return }
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Lay the subtree out first so the shell's initial winsize is the real one
+        view.layoutIfNeeded()
         startShell()
         terminalView.becomeFirstResponder()
     }
