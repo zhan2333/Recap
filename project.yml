@@ -9,6 +9,9 @@ options:
 packages:
   RecapKit:
     path: RecapKit
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm
+    from: 1.2.0
 targets:
   RecapShellPlugin:
     type: bundle
@@ -37,6 +40,7 @@ targets:
         product: PipelineKit
       - package: RecapKit
         product: AnalysisKit
+      - package: SwiftTerm
       - target: RecapShellPlugin
         embed: true
         codeSign: true

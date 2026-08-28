@@ -10,6 +10,14 @@ Recap includes third-party software that remains subject to its own license.
 
 Recap downloads the official v1.9.2 XCFramework and uses `scripts/build-whisper-macabi.sh` to add an arm64 Mac Catalyst slice built from the same tagged source. The following notice applies to whisper.cpp, not to Recap's original GPL-licensed code.
 
+## SwiftTerm
+
+- Project: [migueldeicaza/SwiftTerm](https://github.com/migueldeicaza/SwiftTerm)
+- Version: 1.20.0 (Swift Package Manager)
+- License: MIT
+
+SwiftTerm provides the VT100/xterm terminal emulation behind Terminal Studio. The MIT notice below applies to SwiftTerm as well (Copyright (c) Miguel de Icaza and SwiftTerm contributors).
+
 ```text
 MIT License
 

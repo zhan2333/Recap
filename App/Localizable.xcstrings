@@ -81,6 +81,16 @@
         }
       }
     },
+    "\r\n[会话已结束，退出码 %d。点「新会话」重新开始]\r\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "\r\n[Session ended with exit code %d. Click New Session to start over]\r\n"
+          }
+        }
+      }
+    },
     "%@ · %lld 字": {
       "localizations": {
         "en": {
@@ -401,6 +411,16 @@
         }
       }
     },
+    "会话已结束": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session ended"
+          }
+        }
+      }
+    },
     "作业 / 思考题": {
       "localizations": {
         "en": {
@@ -541,6 +561,16 @@
         }
       }
     },
+    "内置终端组件加载失败。可在课程目录自行运行 CLI。\r\n": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The built-in terminal component failed to load. You can run your CLI in the course folder yourself.\r\n"
+          }
+        }
+      }
+    },
     "内置终端组件加载失败。可在课程目录自行运行 CLI：\n  claude \"为「%@」生成讲义\"\n": {
       "localizations": {
         "en": {
@@ -671,6 +701,16 @@
         }
       }
     },
+    "发送": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send"
+          }
+        }
+      }
+    },
     "取消": {
       "localizations": {
         "en": {
@@ -707,6 +747,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "14s after"
+          }
+        }
+      }
+    },
+    "启动 CLI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launch CLI"
           }
         }
       }
@@ -1251,6 +1301,16 @@
         }
       }
     },
+    "未安装 CLI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No CLI installed"
+          }
+        }
+      }
+    },
     "未检测到 CLI": {
       "localizations": {
         "en": {
@@ -1791,6 +1851,16 @@
         }
       }
     },
+    "终端就绪 · zsh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminal ready · zsh"
+          }
+        }
+      }
+    },
     "老师原话已保留": {
       "localizations": {
         "en": {
@@ -1817,6 +1887,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Auto-detect"
+          }
+        }
+      }
+    },
+    "自由终端 · 起点在课程目录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A real terminal, starting in the course folder"
           }
         }
       }
@@ -2047,6 +2127,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transcription language"
+          }
+        }
+      }
+    },
+    "输入提示词，发送到终端里的 CLI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type a prompt and send it to the CLI in the terminal"
           }
         }
       }

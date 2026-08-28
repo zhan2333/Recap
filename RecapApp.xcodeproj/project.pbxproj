@@ -17,6 +17,7 @@
 		4DA6C44E3E4A5BE360117666 /* ShellRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83E85A621F54206094AFF288 /* ShellRunner.swift */; };
 		4E3B91489EB4E18760D2C223 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 0BCD4FAA05DF20394776496E /* AppIcon.icon */; };
 		60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E37ED690FC7C2FF61570139 /* RecapTheme.swift */; };
+		62EFF148C73C22B3747EB404 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 2E5525D2B6855D1F7E67AF97 /* SwiftTerm */; };
 		67BA261954B3EAA1F4221CB9 /* LaTeXCompiler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA68D9332A939536EEE3D92 /* LaTeXCompiler.swift */; };
 		69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006620A5F96466763716A77A /* CourseListViewController.swift */; };
 		6EFB38676CE7420CBA1BCDD7 /* WaveformGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42A50B7D1BB20A2E73F430D2 /* WaveformGenerator.swift */; };
@@ -94,6 +95,7 @@
 				B6E3C895C9A6F38996546DD6 /* TranscriptionKit in Frameworks */,
 				D21128496414482812B7924E /* PipelineKit in Frameworks */,
 				BAD8944340A9CCBFECBDF1DF /* AnalysisKit in Frameworks */,
+				62EFF148C73C22B3747EB404 /* SwiftTerm in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,6 +242,7 @@
 				AAF9B2049FBC7E10384E8785 /* TranscriptionKit */,
 				A274F8399FA5EDA4B3CE84DD /* PipelineKit */,
 				E453285FB6C6C290772DBA8B /* AnalysisKit */,
+				2E5525D2B6855D1F7E67AF97 /* SwiftTerm */,
 			);
 			productName = Recap;
 			productReference = D349115A5C23C711AB33AF33 /* Recap.app */;
@@ -273,6 +276,7 @@
 			mainGroup = E5119D41221C0B0B3DF26297;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				CA9668EBC968865E249D9270 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				12FBB1A508009CBD4616E22D /* XCLocalSwiftPackageReference "RecapKit" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -587,7 +591,23 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		CA9668EBC968865E249D9270 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		2E5525D2B6855D1F7E67AF97 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CA9668EBC968865E249D9270 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
+		};
 		A274F8399FA5EDA4B3CE84DD /* PipelineKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PipelineKit;

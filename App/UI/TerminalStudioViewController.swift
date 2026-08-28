@@ -7,8 +7,10 @@
 
 import UIKit
 import QuickLook
+import SwiftTerm
 
-// Terminal Studio: the user's own CLI runs inside the course context, the artifact lands back in place
+// Terminal Studio: a real terminal living in the course folder — the user drives
+// their own CLI (claude, codex, …); artifacts land back in the course context
 final class TerminalStudioViewController: UIViewController {
 
     private let lecture: Lecture
@@ -17,40 +19,25 @@ final class TerminalStudioViewController: UIViewController {
     private let initialPrompt: String?
     private let onArtifactsChanged: (() -> Void)?
 
-    struct SessionRecord {
-        let tool: String
-        let prompt: String
-        let log: String
-        let exitCode: Int32
-        let date: Date
-    }
-
-    // Survives sheet dismissal for the lifetime of the app
-    private static var sessionsByLecture: [UUID: [SessionRecord]] = [:]
-
     private var detectedTools: [String] = []
     private var toolVersions: [String: String] = [:]
-    private var selectedTool: String?
-    private var isRunning = false
-    private var runningPID: Int32 = -1
-    private var pdfModifiedBeforeRun = Date.distantPast
-    private var runStartDate = Date.distantPast
-    private var currentLog = ""
-    private var currentPrompt = ""
-    private var isViewingHistory = false
+    private var shellPID: Int32 = -1
+    private var sessionStart = Date()
+    private var lastAnalysisSeen = Date.distantPast
+    private var lastPDFSeen = Date.distantPast
+    private var artifactScanTimer: Timer?
     private var previewItem: URL?
 
+    private let terminalView = TerminalView()
     private let toolButton = UIButton(type: .system)
     private let statusDot = UIView()
     private let statusLabel = UILabel()
     private let contextStack = UIStackView()
-    private let terminal = TerminalOutputView()
     private let promptField = UITextField()
-    private let runButton = UIButton(type: .system)
+    private let sendButton = UIButton(type: .system)
     private let texRow = ArtifactRow()
     private let pdfRow = ArtifactRow()
     private let artifactsStack = UIStackView()
-    private let historyStack = UIStackView()
     private let viewHandoutButton = UIButton(type: .system)
 
     private var courseDir: URL { LibraryStore.shared.courseDirectory(course) }
@@ -71,6 +58,11 @@ final class TerminalStudioViewController: UIViewController {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    deinit {
+        artifactScanTimer?.invalidate()
+        if shellPID > 0 { ShellBridge.terminate(shellPID) }
+    }
 
     // MARK: - Layout
 
@@ -125,7 +117,7 @@ final class TerminalStudioViewController: UIViewController {
         newSessionConfig.background.cornerRadius = RecapTheme.radiusSM
         newSessionConfig.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 11, bottom: 6, trailing: 11)
         newSessionButton.configuration = newSessionConfig
-        newSessionButton.addAction(UIAction { [weak self] _ in self?.startNewSession() }, for: .touchUpInside)
+        newSessionButton.addAction(UIAction { [weak self] _ in self?.restartShell() }, for: .touchUpInside)
 
         let doneButton = UIButton(type: .system)
         doneButton.preferredBehavioralStyle = .pad
@@ -147,50 +139,72 @@ final class TerminalStudioViewController: UIViewController {
         contextStack.axis = .vertical
         contextStack.spacing = 8
         let contextTitle = sectionLabel(String(localized: "本次会话上下文"))
-        let readOnlyNote = UILabel()
-        readOnlyNote.text = String(localized: "只读上下文 · 产物写入课程目录")
-        readOnlyNote.font = RecapTheme.body(10.5)
-        readOnlyNote.textColor = RecapTheme.quiet
-        readOnlyNote.numberOfLines = 2
-        historyStack.axis = .vertical
-        historyStack.spacing = 5
-        let leftColumn = UIStackView(arrangedSubviews: [contextTitle, contextStack, historyStack, UIView(), readOnlyNote])
+        let shellNote = UILabel()
+        shellNote.text = String(localized: "自由终端 · 起点在课程目录")
+        shellNote.font = RecapTheme.body(10.5)
+        shellNote.textColor = RecapTheme.quiet
+        shellNote.numberOfLines = 2
+        let leftColumn = UIStackView(arrangedSubviews: [contextTitle, contextStack, UIView(), shellNote])
         leftColumn.axis = .vertical
         leftColumn.spacing = 10
         leftColumn.widthAnchor.constraint(equalToConstant: 232).isActive = true
 
-        // Center: terminal and prompt
+        // Center: the terminal itself, quick prompts, and the prompt composer
+        terminalView.terminalDelegate = self
+        terminalView.nativeBackgroundColor = UIColor(red: 0.086, green: 0.098, blue: 0.125, alpha: 1)
+        terminalView.nativeForegroundColor = UIColor(red: 0.90, green: 0.91, blue: 0.93, alpha: 1)
+        terminalView.backgroundColor = terminalView.nativeBackgroundColor
+        terminalView.layer.cornerRadius = RecapTheme.radiusSM
+        terminalView.layer.cornerCurve = .continuous
+        terminalView.clipsToBounds = true
+
         promptField.font = RecapTheme.mono(12, weight: .regular)
         promptField.textColor = RecapTheme.ink
         promptField.backgroundColor = RecapTheme.surface.withAlphaComponent(0.6)
         promptField.layer.cornerRadius = RecapTheme.radiusSM
         promptField.layer.cornerCurve = .continuous
         promptField.setLeftPadding(10)
-        promptField.text = initialPrompt ?? String(localized: "为「\(lecture.name)」生成讲义")
+        promptField.attributedPlaceholder = NSAttributedString(
+            string: String(localized: "输入提示词，发送到终端里的 CLI"),
+            attributes: [.font: RecapTheme.mono(12, weight: .regular), .foregroundColor: RecapTheme.quiet])
+        promptField.text = initialPrompt
         promptField.autocorrectionType = .no
+        promptField.addAction(UIAction { [weak self] _ in self?.sendPrompt() }, for: .editingDidEndOnExit)
 
-        runButton.preferredBehavioralStyle = .pad
-        var runConfig = UIButton.Configuration.filled()
-        runConfig.baseBackgroundColor = RecapTheme.ink
-        runConfig.baseForegroundColor = RecapTheme.paper
-        runConfig.background.cornerRadius = RecapTheme.radiusSM
-        runConfig.attributedTitle = AttributedString(String(localized: "运行"), attributes: AttributeContainer([
+        let interruptButton = UIButton(type: .system)
+        interruptButton.preferredBehavioralStyle = .pad
+        var interruptConfig = UIButton.Configuration.plain()
+        interruptConfig.attributedTitle = AttributedString("⌃C", attributes: AttributeContainer([
+            .font: RecapTheme.mono(12, weight: .semibold), .foregroundColor: RecapTheme.muted,
+        ]))
+        interruptConfig.background.strokeColor = RecapTheme.line
+        interruptConfig.background.strokeWidth = 1
+        interruptConfig.background.cornerRadius = RecapTheme.radiusSM
+        interruptConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+        interruptButton.configuration = interruptConfig
+        interruptButton.addAction(UIAction { [weak self] _ in
+            guard let self, self.shellPID > 0 else { return }
+            ShellBridge.write(pid: self.shellPID, data: Data([0x03]))
+        }, for: .touchUpInside)
+
+        sendButton.preferredBehavioralStyle = .pad
+        var sendConfig = UIButton.Configuration.filled()
+        sendConfig.baseBackgroundColor = RecapTheme.ink
+        sendConfig.baseForegroundColor = RecapTheme.paper
+        sendConfig.background.cornerRadius = RecapTheme.radiusSM
+        sendConfig.attributedTitle = AttributedString(String(localized: "发送"), attributes: AttributeContainer([
             .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
         ]))
-        runConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
-        runButton.configuration = runConfig
-        runButton.addAction(UIAction { [weak self] _ in
-            guard let self else { return }
-            self.isRunning ? self.stop() : self.run()
-        }, for: .touchUpInside)
-        runButton.isEnabled = false
+        sendConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16)
+        sendButton.configuration = sendConfig
+        sendButton.addAction(UIAction { [weak self] _ in self?.sendPrompt() }, for: .touchUpInside)
 
-        let promptRow = UIStackView(arrangedSubviews: [promptField, runButton])
+        let promptRow = UIStackView(arrangedSubviews: [promptField, interruptButton, sendButton])
         promptRow.axis = .horizontal
         promptRow.spacing = 8
         promptField.heightAnchor.constraint(equalToConstant: 34).isActive = true
 
-        // Quick tasks fill the prompt; the CLI improvises within the bundled skill
+        // Quick prompts only fill the composer; the user decides when to send
         let chips: [(title: String, prompt: String)] = [
             (String(localized: "生成讲义"), String(localized: "为「\(lecture.name)」生成讲义")),
             (String(localized: "提取重点"), String(localized: "提取「\(lecture.name)」的考试重点")),
@@ -215,7 +229,7 @@ final class TerminalStudioViewController: UIViewController {
         chipsRow.axis = .horizontal
         chipsRow.spacing = 6
 
-        let centerColumn = UIStackView(arrangedSubviews: [terminal, chipsRow, promptRow])
+        let centerColumn = UIStackView(arrangedSubviews: [terminalView, chipsRow, promptRow])
         centerColumn.axis = .vertical
         centerColumn.spacing = 10
         centerColumn.setCustomSpacing(8, after: chipsRow)
@@ -266,8 +280,20 @@ final class TerminalStudioViewController: UIViewController {
 
         buildContextCards()
         refreshArtifacts()
-        rebuildHistory()
         detectTools()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        startShell()
+        terminalView.becomeFirstResponder()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        guard isBeingDismissed, shellPID > 0 else { return }
+        ShellBridge.terminate(shellPID)
+        shellPID = -1
     }
 
     private func sectionLabel(_ text: String) -> UILabel {
@@ -276,6 +302,63 @@ final class TerminalStudioViewController: UIViewController {
         label.font = RecapTheme.body(12, weight: .semibold)
         label.textColor = RecapTheme.ink
         return label
+    }
+
+    // MARK: - Shell session
+
+    private func startShell() {
+        guard shellPID <= 0 else { return }
+        guard ShellBridge.isAvailable else {
+            setStatus(String(localized: "内置终端不可用"), ready: false)
+            terminalView.feed(text: String(localized: "内置终端组件加载失败。可在课程目录自行运行 CLI。\r\n"))
+            return
+        }
+        sessionStart = Date()
+        lastAnalysisSeen = modified(analysisURL)
+        lastPDFSeen = modified(pdfURL)
+        let terminal = terminalView.getTerminal()
+        shellPID = ShellBridge.startShell(
+            workingDirectory: courseDir.path,
+            cols: Int32(terminal.cols),
+            rows: Int32(terminal.rows),
+            onData: { [weak self] data in
+                self?.terminalView.feed(byteArray: [UInt8](data)[...])
+                self?.scheduleArtifactScan()
+            },
+            onExit: { [weak self] code in
+                guard let self else { return }
+                self.shellPID = -1
+                self.setStatus(String(localized: "会话已结束"), ready: false)
+                self.terminalView.feed(text: String(localized: "\r\n[会话已结束，退出码 \(code)。点「新会话」重新开始]\r\n"))
+            }
+        )
+        if shellPID > 0 {
+            setStatus(String(localized: "终端就绪 · zsh"), ready: true)
+        }
+    }
+
+    private func restartShell() {
+        if shellPID > 0 {
+            ShellBridge.terminate(shellPID)
+            shellPID = -1
+        }
+        // RIS: full reset wipes the old session's screen and scrollback
+        terminalView.feed(text: "\u{1b}c")
+        promptField.text = initialPrompt
+        clearSessionArtifacts()
+        refreshArtifacts()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.startShell()
+        }
+    }
+
+    private func sendPrompt() {
+        guard shellPID > 0,
+              let text = promptField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty else { return }
+        ShellBridge.write(pid: shellPID, data: Data((text + "\n").utf8))
+        promptField.text = ""
+        terminalView.becomeFirstResponder()
     }
 
     // MARK: - Context cards
@@ -316,11 +399,7 @@ final class TerminalStudioViewController: UIViewController {
     // MARK: - CLI detection
 
     private func detectTools() {
-        guard ShellBridge.isAvailable else {
-            setStatus(String(localized: "内置终端不可用"), ready: false)
-            terminal.append(String(localized: "内置终端组件加载失败。可在课程目录自行运行 CLI：\n  claude \"为「\(lecture.name)」生成讲义\"\n"))
-            return
-        }
+        guard ShellBridge.isAvailable else { return }
         var found = ""
         ShellBridge.run("for t in claude codex gemini grok kimi; do command -v $t >/dev/null 2>&1 && echo \"$t|$($t --version 2>/dev/null | head -1)\"; done") { output in
             found += output
@@ -336,30 +415,18 @@ final class TerminalStudioViewController: UIViewController {
         }
     }
 
+    // The tool menu types the chosen CLI into the shell — the user takes it from there
     private func applyDetection() {
         guard !detectedTools.isEmpty else {
-            setStatus(String(localized: "未检测到 CLI"), ready: false)
-            setToolTitle(String(localized: "未安装"))
-            terminal.append(String(localized: "没有找到可用的 CLI（claude / codex / gemini / grok / kimi）。安装并登录任意一个后重新打开。\n"))
+            setToolTitle(String(localized: "未安装 CLI"))
             return
         }
-        selectedTool = detectedTools.first
-        rebuildToolMenu()
-        setStatus(String(localized: "已检测 · 就绪"), ready: true)
-        runButton.isEnabled = true
-        terminal.append(String(localized: "❯ 已附加课程上下文（skill · 文稿 · 重点）。输入任务并运行。\n"))
-    }
-
-    private func rebuildToolMenu() {
-        setToolTitle(selectedTool ?? "")
+        setToolTitle(String(localized: "启动 CLI"))
         toolButton.menu = UIMenu(children: detectedTools.map { tool in
-            UIAction(
-                title: tool,
-                subtitle: toolVersions[tool],
-                state: tool == selectedTool ? .on : .off
-            ) { [weak self] _ in
-                self?.selectedTool = tool
-                self?.rebuildToolMenu()
+            UIAction(title: tool, subtitle: toolVersions[tool]) { [weak self] _ in
+                guard let self, self.shellPID > 0 else { return }
+                ShellBridge.write(pid: self.shellPID, data: Data((tool + "\n").utf8))
+                self.terminalView.becomeFirstResponder()
             }
         })
     }
@@ -375,107 +442,36 @@ final class TerminalStudioViewController: UIViewController {
         statusDot.backgroundColor = ready ? RecapTheme.complete : RecapTheme.quiet
     }
 
-    // MARK: - Run
+    // MARK: - Artifacts
 
-    // Non-interactive invocations per tool; unknown tools fall back to a bare prompt argument
-    private func command(for tool: String, prompt: String) -> String {
-        let escaped = prompt.replacingOccurrences(of: "'", with: "'\\''")
-        switch tool {
-        case "claude": return "claude -p '\(escaped)' --permission-mode acceptEdits"
-        case "codex": return "codex exec '\(escaped)'"
-        default: return "\(tool) '\(escaped)'"
+    // Output-driven debounce: after the shell goes quiet, look at what changed on disk
+    private func scheduleArtifactScan() {
+        artifactScanTimer?.invalidate()
+        artifactScanTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { [weak self] _ in
+            self?.scanSessionArtifacts()
         }
     }
 
-    private func run() {
-        guard !isRunning, let tool = selectedTool,
-              let prompt = promptField.text?.trimmingCharacters(in: .whitespaces), !prompt.isEmpty else { return }
-        isRunning = true
-        isViewingHistory = false
-        setRunButton(running: true)
-        promptField.isEnabled = false
-        pdfModifiedBeforeRun = modified(pdfURL)
-        runStartDate = Date()
-        currentLog = ""
-        currentPrompt = prompt
-        setStatus(String(localized: "运行中…"), ready: true)
-
-        let invocation = command(for: tool, prompt: prompt)
-        terminal.append("\n❯ \(invocation)\n")
-        runningPID = ShellBridge.run("cd '\(courseDir.path)' && \(invocation)") { [weak self] output in
-            self?.terminal.append(output)
-            self?.currentLog += output
-        } onExit: { [weak self] code in
-            self?.finishRun(code: code)
-        }
-    }
-
-    private func stop() {
-        guard isRunning, runningPID > 0 else { return }
-        terminal.append(String(localized: "\n⏹ 已请求停止…\n"))
-        ShellBridge.terminate(runningPID)
-    }
-
-    private func startNewSession() {
-        guard !isRunning else { return }
-        isViewingHistory = false
-        terminal.clear()
-        promptField.text = initialPrompt ?? String(localized: "为「\(lecture.name)」生成讲义")
-        refreshArtifacts()
-        clearRunArtifacts()
-        if detectedTools.isEmpty {
-            detectTools()
-        } else {
-            setStatus(String(localized: "已检测 · 就绪"), ready: true)
-            terminal.append(String(localized: "❯ 已附加课程上下文（skill · 文稿 · 重点）。输入任务并运行。\n"))
-        }
-    }
-
-    // MARK: - Session history
-
-    private func rebuildHistory() {
-        historyStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        let records = Self.sessionsByLecture[lecture.id] ?? []
-        guard !records.isEmpty else { return }
-        historyStack.addArrangedSubview(sectionLabel(String(localized: "历史会话")))
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        for (index, record) in records.enumerated().reversed().prefix(6) {
-            let button = UIButton(type: .system)
-            button.preferredBehavioralStyle = .pad
-            button.contentHorizontalAlignment = .leading
-            var config = UIButton.Configuration.plain()
-            let mark = record.exitCode == 0 ? "✓" : "✕"
-            config.attributedTitle = AttributedString(
-                "\(mark) \(formatter.string(from: record.date)) \(record.tool) · \(String(record.prompt.prefix(14)))",
-                attributes: AttributeContainer([
-                    .font: RecapTheme.mono(10.5, weight: .regular), .foregroundColor: RecapTheme.muted,
-                ]))
-            config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 2, bottom: 4, trailing: 2)
-            button.configuration = config
-            button.addAction(UIAction { [weak self] _ in self?.showHistory(at: index) }, for: .touchUpInside)
-            historyStack.addArrangedSubview(button)
-        }
-    }
-
-    private func showHistory(at index: Int) {
-        guard !isRunning, let record = Self.sessionsByLecture[lecture.id]?[safe: index] else { return }
-        isViewingHistory = true
-        terminal.clear()
-        terminal.append(String(localized: "❯ 历史会话（只读） · \(record.tool)\n\n"))
-        terminal.append(record.log)
-        setStatus(record.exitCode == 0 ? String(localized: "历史会话 · 成功") : String(localized: "历史会话 · 失败"), ready: record.exitCode == 0)
-    }
-
-    // MARK: - Run artifacts
-
-    private func clearRunArtifacts() {
+    private func clearSessionArtifacts() {
         artifactsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
     }
 
-    // Everything the run touched in the course folder, handed back as openable rows
-    private func scanRunArtifacts() {
-        clearRunArtifacts()
+    // Everything this session touched in the course folder, handed back as openable rows
+    private func scanSessionArtifacts() {
+        refreshArtifacts()
+        let analysisModified = modified(analysisURL)
+        if analysisModified > lastAnalysisSeen {
+            lastAnalysisSeen = analysisModified
+            setStatus(String(localized: "重点已提取"), ready: true)
+            onArtifactsChanged?()
+        }
+        let pdfModified = modified(pdfURL)
+        if pdfModified > lastPDFSeen {
+            lastPDFSeen = pdfModified
+            setStatus(String(localized: "讲义已生成"), ready: true)
+        }
+
+        clearSessionArtifacts()
         let fm = FileManager.default
         var found: [URL] = []
         let dirs = [courseDir, courseDir.appendingPathComponent("教材分章", isDirectory: true)]
@@ -486,7 +482,7 @@ final class TerminalStudioViewController: UIViewController {
             for url in items {
                 let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isDirectoryKey])
                 guard values?.isDirectory != true,
-                      (values?.contentModificationDate ?? .distantPast) > runStartDate else { continue }
+                      (values?.contentModificationDate ?? .distantPast) > sessionStart else { continue }
                 found.append(url)
             }
         }
@@ -517,46 +513,6 @@ final class TerminalStudioViewController: UIViewController {
         present(preview, animated: true)
     }
 
-    private func setRunButton(running: Bool) {
-        runButton.configuration?.baseBackgroundColor = running ? RecapTheme.signal : RecapTheme.ink
-        runButton.configuration?.attributedTitle = AttributedString(
-            running ? String(localized: "停止") : String(localized: "运行"),
-            attributes: AttributeContainer([
-                .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
-            ]))
-    }
-
-    private func finishRun(code: Int32) {
-        isRunning = false
-        runningPID = -1
-        setRunButton(running: false)
-        runButton.isEnabled = true
-        promptField.isEnabled = true
-        refreshArtifacts()
-        Self.sessionsByLecture[lecture.id, default: []].append(SessionRecord(
-            tool: selectedTool ?? "?", prompt: currentPrompt, log: currentLog, exitCode: code, date: Date()))
-        rebuildHistory()
-        scanRunArtifacts()
-        let analysisUpdated = modified(analysisURL) > runStartDate
-        if analysisUpdated { onArtifactsChanged?() }
-        let pdfUpdated = modified(pdfURL) > pdfModifiedBeforeRun
-        if code == 0 && pdfUpdated {
-            setStatus(String(localized: "讲义已生成"), ready: true)
-            terminal.append(String(localized: "\n✔ 讲义 PDF 已就绪\n"))
-        } else if code == 0 && analysisUpdated {
-            setStatus(String(localized: "重点已提取"), ready: true)
-            terminal.append(String(localized: "\n✔ 考试重点已更新\n"))
-        } else if code == 0 {
-            setStatus(String(localized: "已完成"), ready: true)
-            terminal.append(String(localized: "\n✔ 完成（本次运行没有更新讲义 PDF）\n"))
-        } else {
-            setStatus(String(localized: "运行失败"), ready: false)
-            terminal.append(String(localized: "\n✘ 退出码 \(code)\n"))
-        }
-    }
-
-    // MARK: - Artifacts
-
     private func modified(_ url: URL) -> Date {
         (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
     }
@@ -568,6 +524,39 @@ final class TerminalStudioViewController: UIViewController {
         pdfRow.update(state: pdfExists ? String(localized: "已生成") : String(localized: "未生成"), done: pdfExists)
         viewHandoutButton.isEnabled = pdfExists
     }
+}
+
+// MARK: - TerminalViewDelegate
+
+extension TerminalStudioViewController: TerminalViewDelegate {
+
+    func send(source: TerminalView, data: ArraySlice<UInt8>) {
+        guard shellPID > 0 else { return }
+        ShellBridge.write(pid: shellPID, data: Data(data))
+    }
+
+    func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
+        guard shellPID > 0 else { return }
+        ShellBridge.resize(pid: shellPID, cols: Int32(newCols), rows: Int32(newRows))
+    }
+
+    func setTerminalTitle(source: TerminalView, title: String) {}
+
+    func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+
+    func scrolled(source: TerminalView, position: Double) {}
+
+    func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
+        guard let url = URL(string: link) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    func clipboardCopy(source: TerminalView, content: Data) {
+        guard let text = String(data: content, encoding: .utf8) else { return }
+        UIPasteboard.general.string = text
+    }
+
+    func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
 }
 
 // MARK: - Small views
@@ -673,11 +662,5 @@ extension TerminalStudioViewController: QLPreviewControllerDataSource {
 
     func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
         (previewItem ?? URL(fileURLWithPath: "/dev/null")) as NSURL
-    }
-}
-
-extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
     }
 }

@@ -9,7 +9,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 xcodebuild -project RecapApp.xcodeproj -scheme Recap -configuration Release \
-  -destination 'platform=macOS,variant=Mac Catalyst,arch=arm64' build | grep -E "error:|BUILD" || true
+  -destination 'platform=macOS,variant=Mac Catalyst,arch=arm64' \
+  -skipPackagePluginValidation build | grep -E "error:|BUILD" || true
 
 DERIVED=$(xcodebuild -project RecapApp.xcodeproj -scheme Recap -configuration Release \
   -destination 'platform=macOS,variant=Mac Catalyst,arch=arm64' -showBuildSettings 2>/dev/null \

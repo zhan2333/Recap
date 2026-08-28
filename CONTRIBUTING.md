@@ -17,9 +17,12 @@ Command-line build and the pipeline self-check:
 
 ```sh
 xcodebuild -project RecapApp.xcodeproj -scheme Recap \
-  -destination 'platform=macOS,variant=Mac Catalyst,arch=arm64' build
+  -destination 'platform=macOS,variant=Mac Catalyst,arch=arm64' \
+  -skipPackagePluginValidation build
 cd RecapKit && swift run recap sample   # end-to-end smoke test with a synthesized clip
 ```
+
+`-skipPackagePluginValidation` is needed on the command line because SwiftTerm ships a build plugin; in the Xcode GUI, trust the plugin once when prompted instead.
 
 ## Project Structure
 
@@ -51,7 +54,7 @@ scripts/              fetch/build/package scripts
 - Comments: `//` only (never `///`), one line max, prefer `// MARK: -` for structure, and write them only to explain code — no progress notes or history.
 - Every new file starts with the standard `Created by` header.
 - Code, identifiers, and comments are English; user-facing strings are Chinese source (localized to English via the String Catalog).
-- No new third-party dependencies without prior discussion. The app currently ships with whisper.cpp; keep its version provenance and notice in `THIRD_PARTY_NOTICES.md` current.
+- No new third-party dependencies without prior discussion. The app currently ships with whisper.cpp and SwiftTerm; keep version provenance and notices in `THIRD_PARTY_NOTICES.md` current.
 - Verify with a Catalyst build before opening a PR.
 
 ## Pull Requests
