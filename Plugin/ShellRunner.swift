@@ -130,6 +130,10 @@ public final class ShellRunner: NSObject, ShellRunning {
         if environment["LANG"]?.uppercased().contains("UTF-8") != true {
             environment["LANG"] = "en_US.UTF-8"
         }
+        // Strip inherited Claude Code session marks so a CLI in here is a clean top-level session
+        for key in environment.keys where key == "CLAUDECODE" || key.hasPrefix("CLAUDE_CODE_") {
+            environment.removeValue(forKey: key)
+        }
         process.environment = environment
         let slaveHandle = FileHandle(fileDescriptor: slave, closeOnDealloc: true)
         process.standardInput = slaveHandle

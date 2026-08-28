@@ -149,14 +149,25 @@ final class TerminalStudioViewController: UIViewController {
         leftColumn.spacing = 10
         leftColumn.widthAnchor.constraint(equalToConstant: 232).isActive = true
 
-        // Center: the terminal itself, quick prompts, and the prompt composer
+        // Center: the terminal itself, quick prompts, and the prompt composer.
+        // SwiftTerm draws glyphs edge-to-edge, so padding and corner clipping live on a container.
         terminalView.terminalDelegate = self
         terminalView.nativeBackgroundColor = UIColor(red: 0.086, green: 0.098, blue: 0.125, alpha: 1)
         terminalView.nativeForegroundColor = UIColor(red: 0.90, green: 0.91, blue: 0.93, alpha: 1)
         terminalView.backgroundColor = terminalView.nativeBackgroundColor
-        terminalView.layer.cornerRadius = RecapTheme.radiusSM
-        terminalView.layer.cornerCurve = .continuous
-        terminalView.clipsToBounds = true
+        let terminalContainer = UIView()
+        terminalContainer.backgroundColor = terminalView.nativeBackgroundColor
+        terminalContainer.layer.cornerRadius = RecapTheme.radiusSM
+        terminalContainer.layer.cornerCurve = .continuous
+        terminalContainer.clipsToBounds = true
+        terminalView.translatesAutoresizingMaskIntoConstraints = false
+        terminalContainer.addSubview(terminalView)
+        NSLayoutConstraint.activate([
+            terminalView.topAnchor.constraint(equalTo: terminalContainer.topAnchor, constant: 8),
+            terminalView.bottomAnchor.constraint(equalTo: terminalContainer.bottomAnchor, constant: -8),
+            terminalView.leadingAnchor.constraint(equalTo: terminalContainer.leadingAnchor, constant: 8),
+            terminalView.trailingAnchor.constraint(equalTo: terminalContainer.trailingAnchor, constant: -8),
+        ])
 
         promptField.font = RecapTheme.mono(12, weight: .regular)
         promptField.textColor = RecapTheme.ink
@@ -229,7 +240,7 @@ final class TerminalStudioViewController: UIViewController {
         chipsRow.axis = .horizontal
         chipsRow.spacing = 6
 
-        let centerColumn = UIStackView(arrangedSubviews: [terminalView, chipsRow, promptRow])
+        let centerColumn = UIStackView(arrangedSubviews: [terminalContainer, chipsRow, promptRow])
         centerColumn.axis = .vertical
         centerColumn.spacing = 10
         centerColumn.setCustomSpacing(8, after: chipsRow)
