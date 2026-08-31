@@ -173,15 +173,19 @@ class OnboardingStepView: UIView {
         return button
     }
 
+    // A quiet underlined action, the design's text-action
     func textAction(_ title: String, action: @escaping () -> Void) -> UIButton {
         let button = UIButton(type: .system)
         button.preferredBehavioralStyle = .pad
         button.contentHorizontalAlignment = .leading
         var config = UIButton.Configuration.plain()
         config.attributedTitle = AttributedString(title, attributes: AttributeContainer([
-            .font: RecapTheme.body(11.5), .foregroundColor: RecapTheme.signalText,
+            .font: RecapTheme.body(10.5),
+            .foregroundColor: RecapTheme.muted,
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+            .underlineColor: RecapTheme.line,
         ]))
-        config.contentInsets = NSDirectionalEdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0)
+        config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8)
         button.configuration = config
         button.addAction(UIAction { _ in action() }, for: .touchUpInside)
         return button
@@ -331,5 +335,30 @@ extension UIView {
     convenience init(width: CGFloat) {
         self.init(frame: .zero)
         widthAnchor.constraint(equalToConstant: width).isActive = true
+    }
+}
+
+
+// A label with padding, for bordered note blocks
+final class PaddedLabel: UILabel {
+
+    var textInsets = UIEdgeInsets.zero {
+        didSet { invalidateIntrinsicContentSize() }
+    }
+
+    override func drawText(in rect: CGRect) {
+        super.drawText(in: rect.inset(by: textInsets))
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let size = super.intrinsicContentSize
+        return CGSize(width: size.width + textInsets.left + textInsets.right,
+                      height: size.height + textInsets.top + textInsets.bottom)
+    }
+
+    override func textRect(forBounds bounds: CGRect, limitedToNumberOfLines numberOfLines: Int) -> CGRect {
+        let rect = super.textRect(forBounds: bounds.inset(by: textInsets), limitedToNumberOfLines: numberOfLines)
+        return rect.inset(by: UIEdgeInsets(top: -textInsets.top, left: -textInsets.left,
+                                           bottom: -textInsets.bottom, right: -textInsets.right))
     }
 }

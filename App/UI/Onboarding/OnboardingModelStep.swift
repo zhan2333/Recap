@@ -30,7 +30,7 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
     private let cardSymbol = UILabel()
     private let cardMark = UILabel()
     private let advancedToggle = UIButton(type: .system)
-    private let advancedBody = UILabel()
+    private let advancedBody = PaddedLabel()
     private let optionMeta = UILabel()
 
     override var primaryTitle: String {
@@ -109,10 +109,16 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
         setToggleTitle()
 
         advancedBody.text = String(localized: "默认位置：~/whisper-models/ggml-large-v3-turbo.bin。只有手动管理模型时才需要查看这个路径。")
-        advancedBody.font = RecapTheme.body(10.5)
-        advancedBody.textColor = RecapTheme.quiet
+        advancedBody.font = RecapTheme.body(10)
+        advancedBody.textColor = RecapTheme.muted
         advancedBody.numberOfLines = 0
         advancedBody.isHidden = true
+        advancedBody.backgroundColor = RecapTheme.surface.withAlphaComponent(0.5)
+        advancedBody.layer.cornerRadius = 15
+        advancedBody.layer.cornerCurve = .continuous
+        advancedBody.layer.borderWidth = 1
+        advancedBody.layer.borderColor = RecapTheme.line.cgColor
+        advancedBody.textInsets = UIEdgeInsets(top: 11, left: 13, bottom: 11, right: 13)
         advancedToggle.preferredBehavioralStyle = .pad
         advancedToggle.contentHorizontalAlignment = .leading
         var advancedConfig = UIButton.Configuration.plain()
