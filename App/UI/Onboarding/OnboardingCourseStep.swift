@@ -35,10 +35,12 @@ final class OnboardingCourseStep: OnboardingStepView {
             self?.requestAdvance?()
         }
 
-        let scene = OnboardingScene(
-            leading: OnboardingScene.chip(String(localized: "散落的讲次")),
-            trailing: OnboardingScene.chip(String(localized: "一个课程"), detail: String(localized: "本机保存"), tinted: true)
-        )
+        let scene = OnboardingScene(pieces: [
+            OnboardingPaperStack(),
+            OnboardingFolder(
+                title: name.isEmpty ? String(localized: "深度学习基础") : name,
+                detail: String(localized: "本机保存")),
+        ], spacing: 28, minHeight: 176)
         fill(with: stack([
             scene,
             input,

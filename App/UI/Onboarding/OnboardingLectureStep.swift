@@ -36,12 +36,13 @@ final class OnboardingLectureStep: OnboardingStepView, UIDocumentPickerDelegate 
         error.isHidden = true
         container.axis = .vertical
         container.spacing = 10
-        let scene = OnboardingScene(
-            leading: OnboardingScene.chip("MP4"),
-            trailing: OnboardingScene.chip(
-                host?.recordedCourse?.name ?? String(localized: "课程"),
-                detail: String(localized: "第一讲"), tinted: true)
-        )
+        let scene = OnboardingScene(pieces: [
+            OnboardingMediaChip(label: "MP4"),
+            OnboardingThread(distance: 64),
+            OnboardingFolder(
+                title: host?.recordedCourse?.name ?? String(localized: "课程"),
+                detail: String(localized: "第一讲")),
+        ])
         let wrapper = UIStackView(arrangedSubviews: [scene, container])
         wrapper.axis = .vertical
         wrapper.spacing = 14

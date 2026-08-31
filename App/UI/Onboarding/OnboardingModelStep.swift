@@ -78,7 +78,7 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
         let textStack = UIStackView(arrangedSubviews: [cardTitle, cardDetail, progressTrack])
         textStack.axis = .vertical
         textStack.spacing = 7
-        let cardStack = UIStackView(arrangedSubviews: [cardSymbol, textStack, cardMark])
+        let cardStack = UIStackView(arrangedSubviews: [cardSymbol, textStack, UIView(), cardMark])
         cardStack.axis = .horizontal
         cardStack.alignment = .center
         cardStack.spacing = 11
@@ -122,10 +122,11 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
         }, for: .touchUpInside)
         setAdvancedTitle()
 
-        let scene = OnboardingScene(
-            leading: OnboardingScene.chip("Aa", detail: "1.5 GB"),
-            trailing: OnboardingScene.macFrame(badge: String(localized: "✓ 本机完成"))
-        )
+        let scene = OnboardingScene(pieces: [
+            OnboardingFileCard(glyph: "Aa", size: "1.5 GB"),
+            OnboardingThread(distance: 70),
+            OnboardingMacFrame(badge: String(localized: "✓ 本机完成")),
+        ])
         fill(with: stack([scene, card, pick, terminalToggle, terminal, advancedToggle, advancedBody], spacing: 10))
         refresh()
     }

@@ -36,6 +36,7 @@ final class OnboardingViewController: UIViewController {
     private let stageTitle = UILabel()
     private let stageDescription = UILabel()
     private let stageContent = UIView()
+    private var stageCopy = UIStackView()
     private let guideIndex = UILabel()
     private let guideTitle = UILabel()
     private let guideDetail = UILabel()
@@ -165,7 +166,7 @@ final class OnboardingViewController: UIViewController {
         stageDescription.font = RecapTheme.body(13)
         stageDescription.textColor = RecapTheme.muted
         stageDescription.numberOfLines = 0
-        let stageCopy = UIStackView(arrangedSubviews: [stageEyebrow, stageTitle, stageDescription])
+        stageCopy = UIStackView(arrangedSubviews: [stageEyebrow, stageTitle, stageDescription])
         stageCopy.axis = .vertical
         stageCopy.spacing = 10
         stageCopy.setCustomSpacing(14, after: stageEyebrow)
@@ -425,11 +426,14 @@ final class OnboardingViewController: UIViewController {
         refreshPrimary()
 
         if animated {
-            stepView.alpha = 0
-            stepView.transform = CGAffineTransform(translationX: 0, y: 8)
-            UIView.animate(withDuration: 0.3) {
-                stepView.alpha = 1
-                stepView.transform = .identity
+            // stage-enter: the design lifts each step in from 14px below
+            for piece in [stageCopy, stepView] as [UIView] {
+                piece.alpha = 0
+                piece.transform = CGAffineTransform(translationX: 0, y: 14)
+                UIView.animate(withDuration: 0.32, delay: 0, options: [.curveEaseOut]) {
+                    piece.alpha = 1
+                    piece.transform = .identity
+                }
             }
         }
     }

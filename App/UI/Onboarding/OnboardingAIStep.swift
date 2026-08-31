@@ -34,16 +34,13 @@ final class OnboardingAIStep: OnboardingStepView {
     override func build() {
         container.axis = .vertical
         container.spacing = 10
-        let outcomes = UIStackView(arrangedSubviews: [
-            OnboardingScene.chip(String(localized: "只要文稿")),
-            OnboardingScene.chip(String(localized: "文稿 + 重点"), tinted: true),
+        let scene = OnboardingScene(pieces: [
+            OnboardingDocumentCard(),
+            OnboardingBranchThread(),
+            OnboardingBranchResults(
+                first: String(localized: "只要文稿"),
+                second: String(localized: "文稿 + 重点")),
         ])
-        outcomes.axis = .vertical
-        outcomes.spacing = 6
-        let scene = OnboardingScene(
-            leading: OnboardingScene.chip(String(localized: "文稿")),
-            trailing: outcomes
-        )
         let wrapper = UIStackView(arrangedSubviews: [scene, container])
         wrapper.axis = .vertical
         wrapper.spacing = 14

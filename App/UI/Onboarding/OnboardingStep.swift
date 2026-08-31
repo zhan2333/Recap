@@ -137,29 +137,67 @@ class OnboardingStepView: UIView {
         ])
     }
 
+    // The design's choice card: a 20pt indicator, title and detail, optional meta on the right
     func optionCard(title: String, detail: String, meta: String? = nil, selected: Bool,
-                    action: @escaping () -> Void) -> UIButton {
-        let button = UIButton(type: .system)
-        button.preferredBehavioralStyle = .pad
-        button.contentHorizontalAlignment = .leading
-        var config = UIButton.Configuration.plain()
-        var attributed = AttributedString((selected ? "✓  " : "○  ") + title)
-        attributed.font = RecapTheme.body(12.5, weight: .semibold)
-        attributed.foregroundColor = RecapTheme.ink
-        config.attributedTitle = attributed
-        var subtitle = AttributedString(meta.map { "\(detail) · \($0)" } ?? detail)
-        subtitle.font = RecapTheme.body(11)
-        subtitle.foregroundColor = RecapTheme.muted
-        config.attributedSubtitle = subtitle
-        config.titleAlignment = .leading
-        config.contentInsets = NSDirectionalEdgeInsets(top: 11, leading: 13, bottom: 11, trailing: 13)
-        config.background.cornerRadius = RecapTheme.radiusMD
-        config.background.strokeColor = selected ? RecapTheme.ink.withAlphaComponent(0.35) : RecapTheme.line
-        config.background.strokeWidth = 1
-        config.background.backgroundColor = selected ? RecapTheme.selection : .clear
-        button.configuration = config
-        button.addAction(UIAction { _ in action() }, for: .touchUpInside)
-        return button
+                    action: @escaping () -> Void) -> UIView {
+        let card = UIControl()
+        card.backgroundColor = selected ? RecapTheme.signalSoft : RecapTheme.paper
+        card.layer.cornerRadius = 18
+        card.layer.cornerCurve = .continuous
+        card.layer.borderWidth = 1
+        card.layer.borderColor = (selected ? RecapTheme.signal.withAlphaComponent(0.32) : RecapTheme.line).cgColor
+
+        let indicator = UILabel()
+        indicator.text = selected ? "✓" : ""
+        indicator.font = RecapTheme.body(10, weight: .bold)
+        indicator.textColor = RecapTheme.paper
+        indicator.textAlignment = .center
+        indicator.backgroundColor = selected ? RecapTheme.ink : .clear
+        indicator.layer.cornerRadius = 10
+        indicator.layer.masksToBounds = true
+        indicator.layer.borderWidth = 1
+        indicator.layer.borderColor = (selected ? RecapTheme.ink : RecapTheme.line).cgColor
+
+        let name = UILabel()
+        name.text = title
+        name.font = RecapTheme.body(12, weight: .semibold)
+        name.textColor = RecapTheme.ink
+        let caption = UILabel()
+        caption.text = detail
+        caption.font = RecapTheme.body(10)
+        caption.textColor = RecapTheme.muted
+        caption.numberOfLines = 2
+        let text = UIStackView(arrangedSubviews: [name, caption])
+        text.axis = .vertical
+        text.spacing = 3
+
+        var pieces: [UIView] = [indicator, text]
+        if let meta {
+            let metaLabel = UILabel()
+            metaLabel.text = meta
+            metaLabel.font = RecapTheme.body(9, weight: .semibold)
+            metaLabel.textColor = RecapTheme.signalText
+            pieces.append(UIView())
+            pieces.append(metaLabel)
+        }
+        let row = UIStackView(arrangedSubviews: pieces)
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 11
+        row.isUserInteractionEnabled = false
+        row.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(row)
+        NSLayoutConstraint.activate([
+            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 64),
+            indicator.widthAnchor.constraint(equalToConstant: 20),
+            indicator.heightAnchor.constraint(equalToConstant: 20),
+            row.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
+            row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12),
+            row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
+            row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
+        ])
+        card.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        return card
     }
 
     func textAction(_ title: String, action: @escaping () -> Void) -> UIButton {
