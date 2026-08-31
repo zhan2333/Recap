@@ -94,6 +94,22 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
   <img src="docs/icon-clear-dark.png" width="88" alt="Clear dark icon">
 </p>
 
+## How it works
+
+Recap is a native Mac Catalyst app written in UIKit. Everything below runs on the machine in front of you, except the one step you configure yourself.
+
+**The pipeline.** A lecture enters as a local file or a direct replay link. `PipelineKit` downloads it, then `AudioExtractor` decodes the media with `AVAssetReader` and resamples to 16 kHz mono through a streaming `AVAudioConverter` — the resampling is a separate pass, because asking the reader to do it in one step yields the right frame count with wrong audio. `TranscriptionKit` feeds those samples to whisper.cpp and returns timestamped segments. `LectureQueue` sequences the stages, survives quitting, and merges the parts of a multi-part lecture into one timeline.
+
+**Transcription is local.** whisper.cpp ships as the official XCFramework plus an arm64 Mac Catalyst slice built from the same tag (`scripts/fetch-whisper.sh`, `scripts/build-whisper-macabi.sh`). The model is a ggml `large-v3-turbo` file the app fetches once; the transcription language can follow the audio or be pinned to Chinese or English.
+
+**Analysis is optional and yours.** `AnalysisKit` talks to any OpenAI-compatible endpoint you configure. `LectureAnalyzer` extracts exam signals; `EvidenceMatcher` links each quote back to the transcript by taking the better of a longest-common-substring and a bigram-overlap score, accepting matches above 0.55, and caching results with an algorithm version so the cache invalidates itself when the matcher changes. `HandoutGenerator` writes LaTeX that `LaTeXCompiler` builds with two `xelatex` passes.
+
+**The course folder is the contract.** Each course is a directory under Application Support holding the media, `segments.json`, `analysis.json`, the LaTeX source and the PDF. The bundled skill (`App/recap-review-skill.md`) documents those same file names and shapes, and installs itself under four CLI conventions, so any agent that enters the folder produces artifacts the app already knows how to read.
+
+**Subprocesses under Catalyst.** Catalyst cannot spawn processes, so `Plugin/ShellRunner.swift` is a plain macOS bundle loaded at runtime, mirrored by `App/Models/ShellBridge.swift`. Terminal Studio starts its shell through `forkpty`, which makes the child a session leader owning the terminal — that is what lets SIGWINCH and Ctrl-C behave the way they do in a real terminal — and renders it with SwiftTerm in its own window scene.
+
+**Shipping.** `scripts/package-release.sh` builds Release, signs with Developer ID and the hardened runtime, lays out the installer dmg, notarizes and staples it. Inside the app, a persistent pill downloads a new release, replaces the bundle in place and relaunches.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) — build setup, architecture notes, coding guidelines, and how AI-assisted contributions work here.

@@ -94,6 +94,22 @@
   <img src="docs/icon-clear-dark.png" width="88" alt="Clear dark icon">
 </p>
 
+## 技术实现
+
+Recap 是用 UIKit 写的原生 Mac Catalyst app。除了你自己配置的那一步，下面的流程全部在本机完成。
+
+**流水线**：讲次以本地文件或回放直链进入，`PipelineKit` 负责下载，`AudioExtractor` 用 `AVAssetReader` 解码后，再经流式 `AVAudioConverter` 重采样到 16 kHz 单声道——重采样必须单独一遍，交给 reader 一步完成会得到帧数正确但内容损坏的音频。`TranscriptionKit` 把样本喂给 whisper.cpp，拿回带时间戳的分段。`LectureQueue` 负责阶段编排、退出后续跑，并把多段视频合并成一条时间线。
+
+**转写在本机**：whisper.cpp 用官方 XCFramework，外加从同一 tag 编出的 arm64 Mac Catalyst 切片（`scripts/fetch-whisper.sh`、`scripts/build-whisper-macabi.sh`）。模型是一次性下载的 ggml `large-v3-turbo`；转写语言可以跟随音频，也可以钉死中文或英文。
+
+**分析是可选的，而且用你自己的接口**：`AnalysisKit` 对接任意 OpenAI-compatible 服务。`LectureAnalyzer` 提取考试重点；`EvidenceMatcher` 把每条重点连回文稿——取「最长公共子串」和「二元组重合度」中较高的一个，阈值 0.55，结果按算法版本号缓存，匹配算法一变缓存自动失效。`HandoutGenerator` 产出 LaTeX，`LaTeXCompiler` 用两遍 `xelatex` 编译。
+
+**课程目录就是契约**：每门课是 Application Support 下的一个目录，装着媒体、`segments.json`、`analysis.json`、LaTeX 源码和 PDF。内置 skill（`App/recap-review-skill.md`）写的是同一套文件名和数据形状，并按四种 CLI 约定自动安装——任何 agent 进入这个目录，产出的东西 app 都认得。
+
+**Catalyst 下的子进程**：Catalyst 自身不能起进程，所以 `Plugin/ShellRunner.swift` 是一个运行时加载的纯 macOS bundle，协议在 `App/Models/ShellBridge.swift` 里逐字镜像。Terminal Studio 用 `forkpty` 启动 shell，让子进程成为拥有该终端的会话领导者——这正是 SIGWINCH 和 Ctrl+C 能像真实终端一样工作的前提——再由 SwiftTerm 在独立窗口里渲染。
+
+**发布**：`scripts/package-release.sh` 完成 Release 构建、Developer ID + 强化运行时签名、安装 dmg 排版、公证与 staple。app 内则由常驻 pill 下载新版本、就地替换并自动重启。
+
 ## 参与贡献
 
 见 [CONTRIBUTING.md](CONTRIBUTING.md)——构建配置、架构要点、代码规范，以及 AI 协作贡献的方式。
