@@ -31,19 +31,28 @@ final class OnboardingScene: UIView {
         travelling.frame = CGRect(x: 0, y: 0, width: 5, height: 5)
         threadHost.layer.addSublayer(travelling)
 
+        // The design frames every diagram in a rounded panel
+        layer.cornerRadius = 26
+        layer.cornerCurve = .continuous
+        layer.borderWidth = 1
+        layer.borderColor = RecapTheme.line.cgColor
+        backgroundColor = RecapTheme.surface.withAlphaComponent(0.4)
+        clipsToBounds = true
+
         let row = UIStackView(arrangedSubviews: [leading, threadHost, trailing])
         row.axis = .horizontal
         row.alignment = .center
         row.spacing = 0
-        threadHost.widthAnchor.constraint(equalToConstant: 46).isActive = true
+        threadHost.widthAnchor.constraint(equalToConstant: 64).isActive = true
         threadHost.heightAnchor.constraint(equalToConstant: 24).isActive = true
         row.translatesAutoresizingMaskIntoConstraints = false
         addSubview(row)
         NSLayoutConstraint.activate([
-            row.topAnchor.constraint(equalTo: topAnchor),
-            row.bottomAnchor.constraint(equalTo: bottomAnchor),
-            row.leadingAnchor.constraint(equalTo: leadingAnchor),
-            row.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+            heightAnchor.constraint(greaterThanOrEqualToConstant: 150),
+            row.centerXAnchor.constraint(equalTo: centerXAnchor),
+            row.centerYAnchor.constraint(equalTo: centerYAnchor),
+            row.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 22),
+            row.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 22),
         ])
     }
 

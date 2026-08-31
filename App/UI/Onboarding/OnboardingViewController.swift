@@ -51,6 +51,7 @@ final class OnboardingViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = RecapTheme.paper
+        preferredContentSize = CGSize(width: 1000, height: 752)
         buildChrome()
         step = Step(rawValue: min(Settings.onboardingStep, Step.setupSteps.count - 1)) ?? .welcome
         maxReachable = step.rawValue
@@ -101,7 +102,7 @@ final class OnboardingViewController: UIViewController {
         progressLabel.textColor = RecapTheme.quiet
         progressCount.font = RecapTheme.mono(10, weight: .semibold)
         progressCount.textColor = RecapTheme.muted
-        let labelRow = UIStackView(arrangedSubviews: [UIView(), progressLabel, progressCount])
+        let labelRow = UIStackView(arrangedSubviews: [progressLabel, progressCount])
         labelRow.axis = .horizontal
         labelRow.spacing = 6
 
@@ -146,12 +147,13 @@ final class OnboardingViewController: UIViewController {
         let progress = UIStackView(arrangedSubviews: [labelRow, dots])
         progress.axis = .vertical
         progress.spacing = 4
-        progress.alignment = .center
+        progress.alignment = .trailing
 
         let header = UIStackView(arrangedSubviews: [brand, progress, actions])
         header.axis = .horizontal
         header.alignment = .center
         header.spacing = 20
+        header.heightAnchor.constraint(equalToConstant: 66).isActive = true
         brand.widthAnchor.constraint(equalTo: actions.widthAnchor).isActive = true
 
         // Stage: copy on the left, the step's own content on the right
@@ -163,11 +165,20 @@ final class OnboardingViewController: UIViewController {
         stageDescription.font = RecapTheme.body(13)
         stageDescription.textColor = RecapTheme.muted
         stageDescription.numberOfLines = 0
-        let stageCopy = UIStackView(arrangedSubviews: [stageEyebrow, stageTitle, stageDescription, UIView()])
+        let stageCopy = UIStackView(arrangedSubviews: [stageEyebrow, stageTitle, stageDescription])
         stageCopy.axis = .vertical
         stageCopy.spacing = 10
         stageCopy.setCustomSpacing(14, after: stageEyebrow)
-        stageCopy.widthAnchor.constraint(equalToConstant: 300).isActive = true
+        let copyColumn = UIView()
+        stageCopy.translatesAutoresizingMaskIntoConstraints = false
+        copyColumn.addSubview(stageCopy)
+        NSLayoutConstraint.activate([
+            copyColumn.widthAnchor.constraint(equalToConstant: 320),
+            stageCopy.leadingAnchor.constraint(equalTo: copyColumn.leadingAnchor),
+            stageCopy.trailingAnchor.constraint(equalTo: copyColumn.trailingAnchor),
+            stageCopy.centerYAnchor.constraint(equalTo: copyColumn.centerYAnchor),
+            stageCopy.topAnchor.constraint(greaterThanOrEqualTo: copyColumn.topAnchor),
+        ])
 
         guideIndex.font = RecapTheme.mono(10, weight: .semibold)
         guideIndex.textColor = RecapTheme.signalText
@@ -201,14 +212,39 @@ final class OnboardingViewController: UIViewController {
         let guideRow = UIStackView(arrangedSubviews: [UIView(), guideBackground])
         guideRow.axis = .horizontal
 
+        guideBackground.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
+        guideBackground.setContentCompressionResistancePriority(.required, for: .vertical)
+
         let contentColumn = UIStackView(arrangedSubviews: [stageContent, guideRow])
         contentColumn.axis = .vertical
-        contentColumn.spacing = 24
+        contentColumn.spacing = 18
 
-        let stage = UIStackView(arrangedSubviews: [stageCopy, contentColumn])
+        // Steps with forms can outgrow the stage, especially in English; let them scroll
+        let scroller = UIScrollView()
+        scroller.showsVerticalScrollIndicator = false
+        let centeringHost = UIView()
+        centeringHost.translatesAutoresizingMaskIntoConstraints = false
+        contentColumn.translatesAutoresizingMaskIntoConstraints = false
+        centeringHost.addSubview(contentColumn)
+        scroller.addSubview(centeringHost)
+        NSLayoutConstraint.activate([
+            centeringHost.topAnchor.constraint(equalTo: scroller.contentLayoutGuide.topAnchor),
+            centeringHost.bottomAnchor.constraint(equalTo: scroller.contentLayoutGuide.bottomAnchor),
+            centeringHost.leadingAnchor.constraint(equalTo: scroller.contentLayoutGuide.leadingAnchor),
+            centeringHost.trailingAnchor.constraint(equalTo: scroller.contentLayoutGuide.trailingAnchor),
+            centeringHost.widthAnchor.constraint(equalTo: scroller.frameLayoutGuide.widthAnchor),
+            // Short steps sit centred like the design; tall ones grow and scroll
+            centeringHost.heightAnchor.constraint(greaterThanOrEqualTo: scroller.frameLayoutGuide.heightAnchor),
+            contentColumn.leadingAnchor.constraint(equalTo: centeringHost.leadingAnchor),
+            contentColumn.trailingAnchor.constraint(equalTo: centeringHost.trailingAnchor),
+            contentColumn.centerYAnchor.constraint(equalTo: centeringHost.centerYAnchor),
+            contentColumn.topAnchor.constraint(greaterThanOrEqualTo: centeringHost.topAnchor),
+        ])
+
+        let stage = UIStackView(arrangedSubviews: [copyColumn, scroller])
         stage.axis = .horizontal
-        stage.spacing = 46
-        stage.alignment = .center
+        stage.spacing = 52
+        stage.alignment = .fill
 
         // Footer: status left, actions right
         footerStatus.font = RecapTheme.body(10, weight: .semibold)
@@ -216,10 +252,7 @@ final class OnboardingViewController: UIViewController {
         savedNote.text = String(localized: "✓ 进度保存在这台 Mac")
         savedNote.font = RecapTheme.body(10)
         savedNote.textColor = RecapTheme.quiet
-        let statusColumn = UIStackView(arrangedSubviews: [footerStatus, savedNote])
-        statusColumn.axis = .vertical
-        statusColumn.spacing = 2
-        statusColumn.alignment = .leading
+        savedNote.textAlignment = .center
 
         backButton.preferredBehavioralStyle = .pad
         var backConfig = UIButton.Configuration.plain()
@@ -242,10 +275,19 @@ final class OnboardingViewController: UIViewController {
         primaryButton.configuration = primaryConfig
         primaryButton.addAction(UIAction { [weak self] _ in self?.advance() }, for: .touchUpInside)
 
-        let footer = UIStackView(arrangedSubviews: [statusColumn, UIView(), backButton, primaryButton])
+        let statusSide = UIStackView(arrangedSubviews: [footerStatus, UIView()])
+        statusSide.axis = .horizontal
+        let actionSide = UIStackView(arrangedSubviews: [UIView(), backButton, primaryButton])
+        actionSide.axis = .horizontal
+        actionSide.spacing = 10
+        actionSide.alignment = .center
+
+        let footer = UIStackView(arrangedSubviews: [statusSide, savedNote, actionSide])
         footer.axis = .horizontal
         footer.alignment = .center
-        footer.spacing = 10
+        footer.spacing = 16
+        footer.heightAnchor.constraint(equalToConstant: 62).isActive = true
+        statusSide.widthAnchor.constraint(equalTo: actionSide.widthAnchor).isActive = true
 
         let topRule = UIView()
         topRule.backgroundColor = RecapTheme.line

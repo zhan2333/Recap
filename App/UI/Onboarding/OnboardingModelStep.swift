@@ -26,6 +26,11 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
     private var progressWidth: NSLayoutConstraint?
     private var isDownloading = false
     private var pickButton: UIButton?
+    private let cardSymbol = UILabel()
+    private let cardMark = UILabel()
+    private let advancedToggle = UIButton(type: .system)
+    private let advancedBody = UILabel()
+    private let optionMeta = UILabel()
 
     override var primaryTitle: String {
         Settings.modelExists ? String(localized: "继续") : String(localized: "下载转写文件")
@@ -63,9 +68,20 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
             width,
         ])
 
-        let cardStack = UIStackView(arrangedSubviews: [cardTitle, cardDetail, progressTrack])
-        cardStack.axis = .vertical
-        cardStack.spacing = 7
+        cardSymbol.font = RecapTheme.mono(12, weight: .semibold)
+        cardSymbol.textColor = RecapTheme.muted
+        cardSymbol.textAlignment = .center
+        cardSymbol.widthAnchor.constraint(equalToConstant: 22).isActive = true
+        cardMark.font = RecapTheme.body(12, weight: .semibold)
+        cardMark.textColor = RecapTheme.complete
+
+        let textStack = UIStackView(arrangedSubviews: [cardTitle, cardDetail, progressTrack])
+        textStack.axis = .vertical
+        textStack.spacing = 7
+        let cardStack = UIStackView(arrangedSubviews: [cardSymbol, textStack, cardMark])
+        cardStack.axis = .horizontal
+        cardStack.alignment = .center
+        cardStack.spacing = 11
         cardStack.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(cardStack)
         NSLayoutConstraint.activate([
@@ -89,29 +105,62 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
         terminalToggle.addAction(UIAction { [weak self] _ in self?.toggleTerminal() }, for: .touchUpInside)
         setToggleTitle()
 
-        let advanced = note(String(localized: "默认位置：~/whisper-models/ggml-large-v3-turbo.bin。只有手动管理模型时才需要查看这个路径。"))
+        advancedBody.text = String(localized: "默认位置：~/whisper-models/ggml-large-v3-turbo.bin。只有手动管理模型时才需要查看这个路径。")
+        advancedBody.font = RecapTheme.body(10.5)
+        advancedBody.textColor = RecapTheme.quiet
+        advancedBody.numberOfLines = 0
+        advancedBody.isHidden = true
+        advancedToggle.preferredBehavioralStyle = .pad
+        advancedToggle.contentHorizontalAlignment = .leading
+        var advancedConfig = UIButton.Configuration.plain()
+        advancedConfig.contentInsets = NSDirectionalEdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0)
+        advancedToggle.configuration = advancedConfig
+        advancedToggle.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            self.advancedBody.isHidden.toggle()
+            self.setAdvancedTitle()
+        }, for: .touchUpInside)
+        setAdvancedTitle()
 
         let scene = OnboardingScene(
             leading: OnboardingScene.chip("Aa", detail: "1.5 GB"),
             trailing: OnboardingScene.macFrame(badge: String(localized: "✓ 本机完成"))
         )
-        fill(with: stack([scene, card, pick, terminalToggle, terminal, advanced], spacing: 10))
+        fill(with: stack([scene, card, pick, terminalToggle, terminal, advancedToggle, advancedBody], spacing: 10))
         refresh()
     }
 
     private func refresh() {
         if Settings.modelExists {
+            cardSymbol.text = "Aa"
             cardTitle.text = String(localized: "离线转写已准备好")
             cardDetail.text = String(localized: "推荐文件已放在这台 Mac 上，可以继续。")
+            cardMark.text = "✓"
+            card.layer.borderColor = RecapTheme.complete.withAlphaComponent(0.4).cgColor
             pickButton?.isHidden = true
         } else {
+            cardSymbol.text = isDownloading ? "↓" : "✓"
+            cardSymbol.textColor = isDownloading ? RecapTheme.signalText : RecapTheme.ink
             cardTitle.text = String(localized: "高质量离线转写文件")
             cardDetail.text = isDownloading
                 ? String(localized: "正在下载 · 中断后可以从断点继续")
-                : String(localized: "约 1.5 GB · 中文与英文课程 · 只下载一次")
+                : String(localized: "约 1.5 GB · 中文与英文课程")
+            cardMark.text = isDownloading ? "" : String(localized: "只下载一次")
+            cardMark.textColor = RecapTheme.quiet
+            card.layer.borderColor = RecapTheme.ink.withAlphaComponent(0.35).cgColor
+            card.backgroundColor = RecapTheme.selection
             pickButton?.isHidden = isDownloading
         }
         onStateChange?()
+    }
+
+    private func setAdvancedTitle() {
+        let marker = advancedBody.isHidden ? "▸" : "▾"
+        advancedToggle.configuration?.attributedTitle = AttributedString(
+            "\(marker)  " + String(localized: "高级选项"),
+            attributes: AttributeContainer([
+                .font: RecapTheme.body(11, weight: .semibold), .foregroundColor: RecapTheme.muted,
+            ]))
     }
 
     private func setToggleTitle() {
