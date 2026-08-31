@@ -307,3 +307,11 @@ final class OnboardingChoiceCard: UIControl {
         }
     }
 }
+
+
+extension UIView {
+    convenience init(width: CGFloat) {
+        self.init(frame: .zero)
+        widthAnchor.constraint(equalToConstant: width).isActive = true
+    }
+}

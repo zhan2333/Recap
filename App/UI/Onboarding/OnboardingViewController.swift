@@ -223,29 +223,14 @@ final class OnboardingViewController: UIViewController {
             guide.leadingAnchor.constraint(equalTo: guideBackground.leadingAnchor),
             guide.trailingAnchor.constraint(equalTo: guideBackground.trailingAnchor),
         ])
-        guideArrow.translatesAutoresizingMaskIntoConstraints = false
-        let guideColumn = UIView()
-        guideBackground.translatesAutoresizingMaskIntoConstraints = false
-        guideColumn.addSubview(guideBackground)
-        guideColumn.addSubview(guideArrow)
-        NSLayoutConstraint.activate([
-            guideBackground.topAnchor.constraint(equalTo: guideColumn.topAnchor),
-            guideBackground.leadingAnchor.constraint(equalTo: guideColumn.leadingAnchor),
-            guideBackground.trailingAnchor.constraint(equalTo: guideColumn.trailingAnchor),
-            guideArrow.topAnchor.constraint(equalTo: guideBackground.bottomAnchor, constant: 6),
-            guideArrow.widthAnchor.constraint(equalToConstant: 10),
-            guideArrow.heightAnchor.constraint(equalToConstant: 22),
-            guideArrow.bottomAnchor.constraint(equalTo: guideColumn.bottomAnchor),
-        ])
-        let guideRow = UIStackView(arrangedSubviews: [UIView(), guideColumn])
+        let guideRow = UIStackView(arrangedSubviews: [UIView(), guideBackground])
         guideRow.axis = .horizontal
 
         guideBackground.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
         guideBackground.setContentCompressionResistancePriority(.required, for: .vertical)
 
-        let contentColumn = UIStackView(arrangedSubviews: [stageContent, guideRow])
+        let contentColumn = UIStackView(arrangedSubviews: [stageContent])
         contentColumn.axis = .vertical
-        contentColumn.spacing = 16
 
         // Steps with forms can outgrow the stage, especially in English; let them scroll
         let scroller = UIScrollView()
@@ -269,12 +254,20 @@ final class OnboardingViewController: UIViewController {
             contentColumn.topAnchor.constraint(greaterThanOrEqualTo: centeringHost.topAnchor),
         ])
 
-        let stage = UIStackView(arrangedSubviews: [copyColumn, scroller])
+        let columns = UIStackView(arrangedSubviews: [copyColumn, scroller])
         // Step content always draws above the copy column
-        stage.bringSubviewToFront(scroller)
-        stage.axis = .horizontal
-        stage.spacing = 32
-        stage.alignment = .fill
+        columns.bringSubviewToFront(scroller)
+        columns.axis = .horizontal
+        columns.spacing = 32
+        columns.alignment = .fill
+
+        // The guide is the stage's bottom row, sitting just above the action it points at
+        let guideBottom = UIStackView(arrangedSubviews: [UIView(width: 320 + 32), guideRow])
+        guideBottom.axis = .horizontal
+
+        let stage = UIStackView(arrangedSubviews: [columns, guideBottom])
+        stage.axis = .vertical
+        stage.spacing = 10
 
         // Footer: status left, actions right
         footerStatus.font = RecapTheme.body(10, weight: .semibold)
@@ -354,8 +347,16 @@ final class OnboardingViewController: UIViewController {
             root.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
             root.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
             root.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -14),
-            // Aimed at the action it is pointing to, now that both share an ancestor
+        ])
+
+        // The arrow spans the gap, from the guide down onto the primary action
+        guideArrow.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(guideArrow)
+        NSLayoutConstraint.activate([
             guideArrow.centerXAnchor.constraint(equalTo: primaryButton.centerXAnchor),
+            guideArrow.widthAnchor.constraint(equalToConstant: 10),
+            guideArrow.topAnchor.constraint(equalTo: guideBackground.bottomAnchor, constant: 7),
+            guideArrow.bottomAnchor.constraint(equalTo: primaryButton.topAnchor, constant: -7),
         ])
     }
 
@@ -590,7 +591,8 @@ final class OnboardingViewController: UIViewController {
         Settings.onboardingCompleted = true
         Settings.onboardingStep = 0
         let result = outcome
-        dismiss(animated: true) { [weak self] in self?.onFinish?(result) }
+        let handOff = onFinish
+        dismiss(animated: true) { handOff?(result) }
     }
 
     // MARK: - Dialogs

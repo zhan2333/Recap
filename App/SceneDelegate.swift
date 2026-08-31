@@ -71,9 +71,10 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             onboarding.modalPresentationStyle = .pageSheet
             onboarding.isModalInPresentation = true
             onboarding.onFinish = { outcome in
-                guard let split = window.rootViewController as? MainSplitViewController,
-                      let course = outcome.course else { return }
-                split.show(course: course)
+                guard let split = window.rootViewController as? MainSplitViewController else { return }
+                UpdateChecker.start()
+                guard let course = outcome.course else { return }
+                split.select(course: course)
                 if let lecture = outcome.lecture {
                     split.show(lecture: lecture, in: course)
                 }

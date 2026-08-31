@@ -141,6 +141,10 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
         return UISwipeActionsConfiguration(actions: [delete])
     }
 
+    func selectFromOutside(_ course: Course) {
+        select(course)
+    }
+
     private func select(_ course: Course) {
         selectedCourseID = course.id
         reload()

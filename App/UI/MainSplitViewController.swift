@@ -30,6 +30,14 @@ final class MainSplitViewController: UISplitViewController {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    // Opening a course from setup also lands the sidebar on it
+    func select(course: Course) {
+        (viewController(for: .primary) as? UINavigationController)?
+            .viewControllers.compactMap { $0 as? CourseListViewController }
+            .first?.selectFromOutside(course)
+        show(course: course)
+    }
+
     func show(course: Course) {
         let lectures = LectureListViewController(course: course)
         setViewController(UINavigationController(rootViewController: lectures), for: .supplementary)
