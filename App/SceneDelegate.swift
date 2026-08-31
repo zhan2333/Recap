@@ -58,10 +58,26 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
         self.window = window
 
-        if !Settings.modelExists {
+        // One-shot: installs that predate first-run setup skip it, later resets still show it
+        if !UserDefaults.standard.bool(forKey: "onboardingMigrated") {
+            UserDefaults.standard.set(true, forKey: "onboardingMigrated")
+            if Settings.modelExists || !LibraryStore.shared.courses.isEmpty {
+                Settings.onboardingCompleted = true
+            }
+        }
+
+        if !Settings.onboardingCompleted {
             let onboarding = OnboardingViewController()
             onboarding.modalPresentationStyle = .pageSheet
             onboarding.isModalInPresentation = true
+            onboarding.onFinish = { outcome in
+                guard let split = window.rootViewController as? MainSplitViewController,
+                      let course = outcome.course else { return }
+                split.show(course: course)
+                if let lecture = outcome.lecture {
+                    split.show(lecture: lecture, in: course)
+                }
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 window.rootViewController?.present(onboarding, animated: true)
             }

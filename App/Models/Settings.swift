@@ -47,6 +47,22 @@ enum Settings {
         set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "llmAPIKey") }
     }
 
+    // First-run setup remembers where it stopped, so exiting mid-flow resumes here
+    static var onboardingCompleted: Bool {
+        get { UserDefaults.standard.bool(forKey: "onboardingCompleted") }
+        set { UserDefaults.standard.set(newValue, forKey: "onboardingCompleted") }
+    }
+
+    static var onboardingStep: Int {
+        get { UserDefaults.standard.integer(forKey: "onboardingStep") }
+        set { UserDefaults.standard.set(newValue, forKey: "onboardingStep") }
+    }
+
+    static var onboardingCourseName: String {
+        get { UserDefaults.standard.string(forKey: "onboardingCourseName") ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "onboardingCourseName") }
+    }
+
     // nil until base URL + key are configured
     static var chatConfig: ChatClient.Config? {
         let base = llmBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)

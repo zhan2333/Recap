@@ -64,6 +64,28 @@ public struct ChatClient {
         return base.appendingPathComponent("chat/completions")
     }
 
+    // Cheapest possible round trip, so first-run setup can tell a bad URL from a bad key
+    public func checkConnection() async throws {
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(config.apiKey)", forHTTPHeaderField: "Authorization")
+        var body: [String: Any] = [
+            "messages": [["role": "user", "content": "hi"]],
+            "max_tokens": 1,
+        ]
+        if !config.model.isEmpty {
+            body["model"] = config.model
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClientError.emptyResponse }
+        if (200..<300).contains(http.statusCode) { return }
+        throw ClientError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+    }
+
     // One request, one answer
     public func complete(system: String? = nil, user: String, temperature: Double = 0.2) async throws -> String {
         var messages: [[String: String]] = []

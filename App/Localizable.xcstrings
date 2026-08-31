@@ -231,6 +231,26 @@
         }
       }
     },
+    "API Key": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API Key"
+          }
+        }
+      }
+    },
+    "API Key 被拒绝，检查一下这个 Key 是否有效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The API key was rejected. Check that the key is still valid."
+          }
+        }
+      }
+    },
     "Focus Rail · 重点轨道": {
       "localizations": {
         "en": {
@@ -301,6 +321,26 @@
         }
       }
     },
+    "「这一讲最重要的是反向传播：先沿计算图把梯度传回来，再更新参数，这两个步骤不要混。」": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“The key idea in this lecture is backpropagation: send the gradients back through the graph first, then update the parameters. Don't mix up the two steps.”"
+          }
+        }
+      }
+    },
+    "一节课，变成一条复习路径。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One lecture becomes a clear review path."
+          }
+        }
+      }
+    },
     "上一重点": {
       "localizations": {
         "en": {
@@ -321,6 +361,16 @@
         }
       }
     },
+    "下载一次，以后都在本机转写。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download once. Transcribe locally after that."
+          }
+        }
+      }
+    },
     "下载中 %lld%%": {
       "localizations": {
         "en": {
@@ -331,12 +381,42 @@
         }
       }
     },
+    "下载中断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The download stopped"
+          }
+        }
+      }
+    },
     "下载并转写": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Download and transcribe"
+          }
+        }
+      }
+    },
+    "下载转写文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download transcription file"
+          }
+        }
+      }
+    },
+    "不需要选择，也不用记住术语。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There is nothing to choose or memorize."
           }
         }
       }
@@ -391,12 +471,42 @@
         }
       }
     },
+    "也可以切换到回放直链。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can switch to a direct replay link."
+          }
+        }
+      }
+    },
     "从原话前 3 秒播放": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Play from 3 seconds before the quote"
+          }
+        }
+      }
+    },
+    "从结果开始": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start with the result"
+          }
+        }
+      }
+    },
+    "以后无需重复下载。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Future lectures use the same file."
           }
         }
       }
@@ -431,6 +541,26 @@
         }
       }
     },
+    "使用这个链接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use this link"
+          }
+        }
+      }
+    },
+    "例如：深度学习基础": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: Deep Learning Foundations"
+          }
+        }
+      }
+    },
     "保存": {
       "localizations": {
         "en": {
@@ -461,6 +591,16 @@
         }
       }
     },
+    "先使用本地转写，之后在设置中连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start with local transcription and connect later in Settings"
+          }
+        }
+      }
+    },
     "先完成转写，再提取重点": {
       "localizations": {
         "en": {
@@ -477,6 +617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Extract key points from each lecture first, then generate the exam review."
+          }
+        }
+      }
+    },
+    "先求梯度，再更新参数": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compute gradients first, then update parameters"
           }
         }
       }
@@ -581,6 +731,16 @@
         }
       }
     },
+    "准备一次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare once"
+          }
+        }
+      }
+    },
     "分别创建 %lld 个讲次": {
       "localizations": {
         "en": {
@@ -607,6 +767,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Create"
+          }
+        }
+      }
+    },
+    "创建课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create course"
+          }
+        }
+      }
+    },
+    "初次设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First-time setup"
           }
         }
       }
@@ -701,6 +881,16 @@
         }
       }
     },
+    "反向传播": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backpropagation"
+          }
+        }
+      }
+    },
     "发送": {
       "localizations": {
         "en": {
@@ -731,12 +921,62 @@
         }
       }
     },
+    "可以先只用文稿，之后再连接 AI 服务。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can start with the transcript and connect an AI service later."
+          }
+        }
+      }
+    },
+    "可以放心退出": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It is safe to exit"
+          }
+        }
+      }
+    },
+    "可选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional"
+          }
+        }
+      }
+    },
     "合并为一个讲次": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Merge into one lecture"
+          }
+        }
+      }
+    },
+    "名称只保存在本机，也可以稍后修改。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It stays on this Mac and can be changed later."
+          }
+        }
+      }
+    },
+    "名称只保存在本机，也可以随时修改。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It stays on this Mac and can be changed at any time."
           }
         }
       }
@@ -767,6 +1007,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Return to %@"
+          }
+        }
+      }
+    },
+    "回放直链": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replay link"
           }
         }
       }
@@ -1011,12 +1261,42 @@
         }
       }
     },
+    "已经填写的内容和当前步骤保存在这台 Mac。下次打开 Recap，会从这里继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your entries and current step are saved on this Mac. Recap resumes here the next time it opens."
+          }
+        }
+      }
+    },
+    "已选择：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected: %@"
+          }
+        }
+      }
+    },
     "开始使用": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Get started"
+          }
+        }
+      }
+    },
+    "开始导入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start importing"
           }
         }
       }
@@ -1061,6 +1341,26 @@
         }
       }
     },
+    "我现在没有文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I don't have a file right now"
+          }
+        }
+      }
+    },
+    "我的课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My course"
+          }
+        }
+      }
+    },
     "或者复制命令自己在终端跑：": {
       "localizations": {
         "en": {
@@ -1071,12 +1371,32 @@
         }
       }
     },
+    "找不到这个接口或模型，检查服务地址是否需要 /v1，以及模型名是否正确。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That endpoint or model was not found. Check whether the service URL needs /v1 and whether the model name is correct."
+          }
+        }
+      }
+    },
     "排队等待转写": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Queued for transcription"
+          }
+        }
+      }
+    },
+    "推荐文件已放在这台 Mac 上，可以继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recommended file is on this Mac. You can continue."
           }
         }
       }
@@ -1241,12 +1561,42 @@
         }
       }
     },
+    "显示下载日志": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show download log"
+          }
+        }
+      }
+    },
     "显示全部": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Show all"
+          }
+        }
+      }
+    },
+    "暂时不用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        }
+      }
+    },
+    "暂时退出": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exit for now"
           }
         }
       }
@@ -1287,6 +1637,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Update link…"
+          }
+        }
+      }
+    },
+    "服务地址": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Service URL"
+          }
+        }
+      }
+    },
+    "服务返回 HTTP %lld，稍后再试或换一个服务。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The service returned HTTP %lld. Try again later or use another service."
           }
         }
       }
@@ -1351,6 +1721,16 @@
         }
       }
     },
+    "本地转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local transcription"
+          }
+        }
+      }
+    },
     "本地转写完成": {
       "localizations": {
         "en": {
@@ -1397,6 +1777,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Key points in this lecture"
+          }
+        }
+      }
+    },
+    "来自课程平台的直接下载链接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A direct download link from your course platform"
           }
         }
       }
@@ -1461,6 +1851,16 @@
         }
       }
     },
+    "检查并保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check and save"
+          }
+        }
+      }
+    },
     "检查术语": {
       "localizations": {
         "en": {
@@ -1511,12 +1911,42 @@
         }
       }
     },
+    "模型（可留空）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model (optional)"
+          }
+        }
+      }
+    },
     "模型：large-v3-turbo": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Model: large-v3-turbo"
+          }
+        }
+      }
+    },
+    "欢迎使用 Recap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Recap"
+          }
+        }
+      }
+    },
+    "正在下载 · 中断后可以从断点继续": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading · resumes from where it stopped"
           }
         }
       }
@@ -1547,6 +1977,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Extracting key points…"
+          }
+        }
+      }
+    },
+    "正在检查…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
           }
         }
       }
@@ -1601,12 +2041,32 @@
         }
       }
     },
+    "沿着这条线看": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow the line"
+          }
+        }
+      }
+    },
     "波形来自课堂音频，色块表示老师原话所在区间。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "The waveform comes from the lecture audio. Highlighted ranges show where the teacher's exact words occur."
+          }
+        }
+      }
+    },
+    "添加第一讲。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add your first lecture."
           }
         }
       }
@@ -1761,12 +2221,32 @@
         }
       }
     },
+    "相关讲次会自动收进同一个课程。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Related lectures stay together in one course."
+          }
+        }
+      }
+    },
     "知识点：%@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Topic: %@"
+          }
+        }
+      }
+    },
+    "知道了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
           }
         }
       }
@@ -1781,6 +2261,36 @@
         }
       }
     },
+    "离线转写已准备好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline transcription is ready"
+          }
+        }
+      }
+    },
+    "稍后创建": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create later"
+          }
+        }
+      }
+    },
+    "第 %lld 步，共 %lld 步": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step %1$lld of %2$lld"
+          }
+        }
+      }
+    },
     "第 %lld 段 · %@": {
       "localizations": {
         "en": {
@@ -1791,12 +2301,72 @@
         }
       }
     },
+    "第 1 讲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture 1"
+          }
+        }
+      }
+    },
+    "第 2 步 · 约 1.5 GB": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step 2 · about 1.5 GB"
+          }
+        }
+      }
+    },
+    "第 3 步 · 可选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step 3 · optional"
+          }
+        }
+      }
+    },
+    "第 4 步": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step 4"
+          }
+        }
+      }
+    },
+    "第 5 步": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step 5"
+          }
+        }
+      }
+    },
     "第%lld讲": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Lecture %lld"
+          }
+        }
+      }
+    },
+    "第一讲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First lecture"
           }
         }
       }
@@ -1831,6 +2401,16 @@
         }
       }
     },
+    "粘贴回放直链": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste a replay link"
+          }
+        }
+      }
+    },
     "粘贴直链": {
       "localizations": {
         "en": {
@@ -1851,12 +2431,52 @@
         }
       }
     },
+    "约 1.5 GB · 中文与英文课程 · 只下载一次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About 1.5 GB · Chinese and English courses · downloaded once"
+          }
+        }
+      }
+    },
     "终端就绪 · zsh": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Terminal ready · zsh"
+          }
+        }
+      }
+    },
+    "继续": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "继续设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep setting up"
+          }
+        }
+      }
+    },
+    "老师原话 · 00:43:06": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teacher's words · 00:43:06"
           }
         }
       }
@@ -1881,12 +2501,32 @@
         }
       }
     },
+    "自动整理重点和讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create key points and lecture notes automatically"
+          }
+        }
+      }
+    },
     "自动检测": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Auto-detect"
+          }
+        }
+      }
+    },
+    "自动重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic key points"
           }
         }
       }
@@ -1921,6 +2561,16 @@
         }
       }
     },
+    "要自动整理重点吗？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create key points automatically?"
+          }
+        }
+      }
+    },
     "视频文件不在本机": {
       "localizations": {
         "en": {
@@ -1931,12 +2581,32 @@
         }
       }
     },
+    "解释课程、讲次和转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explain course, lecture, and transcript"
+          }
+        }
+      }
+    },
     "解题方法": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Solution path"
+          }
+        }
+      }
+    },
+    "认识 Recap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meet Recap"
           }
         }
       }
@@ -1961,12 +2631,32 @@
         }
       }
     },
+    "讲次：课程里的一次课，例如「第 8 讲」。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture: one class inside a course, such as Lecture 8."
+          }
+        }
+      }
+    },
     "设置": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        }
+      }
+    },
+    "设置 Recap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up Recap"
           }
         }
       }
@@ -2021,6 +2711,36 @@
         }
       }
     },
+    "请检查网络。已经下载的部分会保留，可以重新下载。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your connection. The downloaded portion is kept, so you can download again."
+          }
+        }
+      }
+    },
+    "请粘贴课程回放的直接下载链接。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste a direct download link for the lecture replay."
+          }
+        }
+      }
+    },
+    "请输入课程名称，或选择「稍后创建」。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a course name, or choose Create later."
+          }
+        }
+      }
+    },
     "读取中…": {
       "localizations": {
         "en": {
@@ -2037,6 +2757,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Courses"
+          }
+        }
+      }
+    },
+    "课程名称": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course name"
           }
         }
       }
@@ -2067,6 +2797,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Course folder · …/%@…"
+          }
+        }
+      }
+    },
+    "课程音视频不会在这一步被上传。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This step does not upload your lecture media."
+          }
+        }
+      }
+    },
+    "课程：一个学习主题，例如「深度学习基础」。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course: a subject you are studying, such as Deep Learning Foundations."
+          }
+        }
+      }
+    },
+    "起个名字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Give it a name"
           }
         }
       }
@@ -2131,12 +2891,32 @@
         }
       }
     },
+    "转写：把音频里的讲话变成可以搜索的文字。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript: searchable text created from speech in an audio or video file."
+          }
+        }
+      }
+    },
     "输入提示词，发送到终端里的 CLI": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Type a prompt and send it to the CLI in the terminal"
+          }
+        }
+      }
+    },
+    "输入课程名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the course name"
           }
         }
       }
@@ -2171,6 +2951,16 @@
         }
       }
     },
+    "返回": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        }
+      }
+    },
     "还没有可入队的直链": {
       "localizations": {
         "en": {
@@ -2201,12 +2991,82 @@
         }
       }
     },
+    "还缺少服务地址和 API Key。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The service URL and API key are still missing."
+          }
+        }
+      }
+    },
+    "这个地址返回的不是接口数据，通常是服务地址少了 /v1。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That address did not return API data — the service URL is usually missing /v1."
+          }
+        }
+      }
+    },
+    "这些词是什么意思？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What do these words mean?"
+          }
+        }
+      }
+    },
     "这里还没有内容，但第一步很轻。\n先新建一门课程。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "There's nothing here yet, but getting started is easy.\nCreate a course first."
+          }
+        }
+      }
+    },
+    "这门课叫什么？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is this course called?"
+          }
+        }
+      }
+    },
+    "连不上这个服务：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not reach that service: %@"
+          }
+        }
+      }
+    },
+    "连接 AI 服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect an AI service"
+          }
+        }
+      }
+    },
+    "连接检查只会发送一个很短的测试请求，不会包含课程内容。设置保存在这台 Mac。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The check sends one very short test request and never includes course content. Settings stay on this Mac."
           }
         }
       }
@@ -2251,6 +3111,16 @@
         }
       }
     },
+    "退出 Recap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exit Recap"
+          }
+        }
+      }
+    },
     "选择 %@ 重点线索": {
       "localizations": {
         "en": {
@@ -2267,6 +3137,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose a ggml .bin (e.g. ggml-large-v3-turbo.bin)"
+          }
+        }
+      }
+    },
+    "选择一个文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one file"
           }
         }
       }
@@ -2291,12 +3171,62 @@
         }
       }
     },
+    "选择一条路径": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a path"
+          }
+        }
+      }
+    },
     "选择一条重点，播放器会跳到老师原话附近，并保留前后讲解。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Select a key point to jump near the teacher's exact words while keeping the surrounding explanation."
+          }
+        }
+      }
+    },
+    "选择已有文件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an existing file…"
+          }
+        }
+      }
+    },
+    "选择文件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a file…"
+          }
+        }
+      }
+    },
+    "选择本地文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a local file"
+          }
+        }
+      }
+    },
+    "选择这台 Mac 上的一段课程音频或视频。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a lecture audio or video file on this Mac."
           }
         }
       }
@@ -2417,6 +3347,76 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retry transcription"
+          }
+        }
+      }
+    },
+    "隐藏下载日志": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide download log"
+          }
+        }
+      }
+    },
+    "音视频变成文稿；每条重点都能回到老师原话。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Media becomes text. Every key point stays linked to the teacher's words."
+          }
+        }
+      }
+    },
+    "音频或视频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio or video"
+          }
+        }
+      }
+    },
+    "音频或视频 · 最简单": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio or video · simplest"
+          }
+        }
+      }
+    },
+    "高质量离线转写文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High-quality offline transcription file"
+          }
+        }
+      }
+    },
+    "默认位置：~/whisper-models/ggml-large-v3-turbo.bin。只有手动管理模型时才需要查看这个路径。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default location: ~/whisper-models/ggml-large-v3-turbo.bin. You only need this path when managing the model by hand."
+          }
+        }
+      }
+    },
+    "默认只在本机生成文稿。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local transcription is selected by default."
           }
         }
       }
