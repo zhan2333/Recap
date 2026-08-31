@@ -269,7 +269,7 @@ final class OnboardingChoiceCard: UIControl {
         row.translatesAutoresizingMaskIntoConstraints = false
         addSubview(row)
         NSLayoutConstraint.activate([
-            heightAnchor.constraint(greaterThanOrEqualToConstant: 64),
+            heightAnchor.constraint(greaterThanOrEqualToConstant: 60),
             indicator.widthAnchor.constraint(equalToConstant: 20),
             indicator.heightAnchor.constraint(equalToConstant: 20),
             row.topAnchor.constraint(equalTo: topAnchor, constant: 12),

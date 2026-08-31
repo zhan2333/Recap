@@ -78,18 +78,16 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     split.show(lecture: lecture, in: course)
                 }
             }
-            // The setup sheet needs room to sit inside the library window
-            #if targetEnvironment(macCatalyst)
-            let wanted = CGSize(width: 1240, height: 840)
-            let current = windowScene.effectiveGeometry.systemFrame
-            if current.width < wanted.width || current.height < wanted.height {
-                let frame = CGRect(x: current.minX, y: current.minY,
-                                   width: max(current.width, wanted.width),
-                                   height: max(current.height, wanted.height))
-                windowScene.requestGeometryUpdate(.Mac(systemFrame: frame))
-            }
-            #endif
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                // Asked once the scene is active; the sheet needs room inside the library window
+                #if targetEnvironment(macCatalyst)
+                let current = windowScene.effectiveGeometry.systemFrame
+                let wanted = CGSize(width: max(current.width, 1280), height: max(current.height, 900))
+                if wanted.width > current.width || wanted.height > current.height {
+                    windowScene.requestGeometryUpdate(
+                        .Mac(systemFrame: CGRect(origin: current.origin, size: wanted)))
+                }
+                #endif
                 window.rootViewController?.present(onboarding, animated: true)
             }
         } else {

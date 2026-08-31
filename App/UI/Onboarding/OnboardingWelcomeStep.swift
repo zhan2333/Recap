@@ -27,9 +27,11 @@ final class OnboardingWelcomeStep: OnboardingStepView {
         quote.font = RecapTheme.body(12.5)
         quote.textColor = RecapTheme.muted
         quote.numberOfLines = 0
-        let quoteStack = UIStackView(arrangedSubviews: [source, quote])
+        let preview = OnboardingSourcePreview(time: "00:43:06")
+        let quoteStack = UIStackView(arrangedSubviews: [preview, source, quote])
         quoteStack.axis = .vertical
         quoteStack.spacing = 6
+        quoteStack.setCustomSpacing(15, after: preview)
         quoteStack.translatesAutoresizingMaskIntoConstraints = false
         quoteCard.addSubview(quoteStack)
         NSLayoutConstraint.activate([
@@ -94,6 +96,7 @@ final class OnboardingWelcomeStep: OnboardingStepView {
         quoteCard.layer.cornerRadius = 22
         pointCard.layer.cornerRadius = 22
 
+        self.pointCard = pointCard
         let row = UIStackView(arrangedSubviews: [quoteCard, threadHost, pointCard])
         row.axis = .horizontal
         row.alignment = .center
@@ -104,6 +107,7 @@ final class OnboardingWelcomeStep: OnboardingStepView {
     }
 
     private weak var threadHost: UIView?
+    private weak var pointCard: UIView?
 
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -121,5 +125,107 @@ final class OnboardingWelcomeStep: OnboardingStepView {
         draw.duration = 0.7
         draw.timingFunction = CAMediaTimingFunction(name: .easeOut)
         thread.add(draw, forKey: "draw")
+
+        guard let pointCard else { return }
+        pointCard.alpha = 0
+        pointCard.transform = CGAffineTransform(translationX: 0, y: 12)
+        UIView.animate(withDuration: 0.42, delay: 0.52, usingSpringWithDamping: 0.86, initialSpringVelocity: 0.2) {
+            pointCard.alpha = 1
+            pointCard.transform = .identity
+        }
+    }
+}
+
+// The clip this quote came from: a dark strip with a waveform and its timecode
+final class OnboardingSourcePreview: UIView {
+
+    private let waveform = WaveformView()
+
+    init(time: String) {
+        super.init(frame: .zero)
+        backgroundColor = RecapTheme.ink
+        layer.cornerRadius = 15
+        layer.cornerCurve = .continuous
+        clipsToBounds = true
+
+        let play = UILabel()
+        play.text = "▶"
+        play.font = RecapTheme.body(8)
+        play.textColor = RecapTheme.paper
+        play.textAlignment = .center
+        play.layer.borderWidth = 1
+        play.layer.borderColor = UIColor.white.withAlphaComponent(0.32).cgColor
+        play.layer.cornerRadius = 14
+
+        let stamp = UILabel()
+        stamp.text = time
+        stamp.font = RecapTheme.mono(9, weight: .semibold)
+        stamp.textColor = UIColor.white.withAlphaComponent(0.72)
+
+        let row = UIStackView(arrangedSubviews: [play, waveform, stamp])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 12
+        row.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(row)
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(equalToConstant: 66),
+            play.widthAnchor.constraint(equalToConstant: 28),
+            play.heightAnchor.constraint(equalToConstant: 28),
+            waveform.heightAnchor.constraint(equalToConstant: 18),
+            row.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 13),
+            row.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -13),
+            row.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+}
+
+// The speaking waveform under the play control
+final class WaveformView: UIView {
+
+    private let bars: [UIView]
+
+    override init(frame: CGRect) {
+        bars = (0..<22).map { _ in UIView() }
+        super.init(frame: frame)
+        let stack = UIStackView(arrangedSubviews: bars)
+        stack.axis = .horizontal
+        stack.alignment = .center
+        stack.distribution = .fillEqually
+        stack.spacing = 2
+        for (index, bar) in bars.enumerated() {
+            bar.backgroundColor = UIColor.white.withAlphaComponent(0.82)
+            bar.layer.cornerRadius = 0.5
+            let heights: [CGFloat] = [5, 11, 7, 14, 6, 16, 9, 12, 4, 15, 8, 13, 6, 10, 16, 7, 12, 5, 14, 9, 11, 6]
+            bar.heightAnchor.constraint(equalToConstant: heights[index % heights.count]).isActive = true
+        }
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        guard window != nil else { return }
+        for (index, bar) in bars.enumerated() {
+            let pulse = CABasicAnimation(keyPath: "transform.scale.y")
+            pulse.fromValue = 0.55
+            pulse.toValue = 1
+            pulse.duration = 0.7
+            pulse.beginTime = CACurrentMediaTime() + Double(index) * 0.02
+            pulse.autoreverses = true
+            pulse.repeatCount = 3
+            pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            bar.layer.add(pulse, forKey: "speak")
+        }
     }
 }

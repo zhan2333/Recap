@@ -82,7 +82,7 @@ final class OnboardingAIStep: OnboardingStepView {
 
         let wrapper = UIStackView(arrangedSubviews: [scene, container])
         wrapper.axis = .vertical
-        wrapper.spacing = 14
+        wrapper.spacing = 12
         fill(with: wrapper)
     }
 

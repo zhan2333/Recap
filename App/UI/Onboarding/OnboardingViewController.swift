@@ -41,6 +41,8 @@ final class OnboardingViewController: UIViewController {
     private let guideTitle = UILabel()
     private let guideDetail = UILabel()
     private let guideBackground = UIView()
+    private let guideNow = UILabel()
+    private let guideArrow = UIView()
     private let footerStatus = UILabel()
     private let savedNote = UILabel()
     private let backButton = UIButton(type: .system)
@@ -48,11 +50,12 @@ final class OnboardingViewController: UIViewController {
 
     private var stepViews: [Step: OnboardingStepView] = [:]
     private var progressFillWidth: NSLayoutConstraint?
+    private var dotWidths: [Step: NSLayoutConstraint] = [:]
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = RecapTheme.paper
-        preferredContentSize = CGSize(width: 960, height: 680)
+        preferredContentSize = CGSize(width: 980, height: 780)
         buildChrome()
         step = Step(rawValue: min(Settings.onboardingStep, Step.setupSteps.count - 1)) ?? .welcome
         maxReachable = step.rawValue
@@ -181,14 +184,24 @@ final class OnboardingViewController: UIViewController {
             stageCopy.topAnchor.constraint(greaterThanOrEqualTo: copyColumn.topAnchor),
         ])
 
-        guideIndex.font = RecapTheme.mono(10, weight: .semibold)
+        guideIndex.font = RecapTheme.mono(9, weight: .bold)
         guideIndex.textColor = RecapTheme.signalText
+        guideIndex.textAlignment = .center
+        guideIndex.backgroundColor = RecapTheme.paper
+        guideIndex.layer.cornerRadius = 10
+        guideIndex.layer.cornerCurve = .continuous
+        guideIndex.layer.masksToBounds = true
+        guideIndex.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        guideIndex.heightAnchor.constraint(equalToConstant: 30).isActive = true
+        guideNow.text = String(localized: "现在")
+        guideNow.font = RecapTheme.body(9, weight: .semibold)
+        guideNow.textColor = RecapTheme.quiet
         guideTitle.font = RecapTheme.body(12, weight: .semibold)
         guideTitle.textColor = RecapTheme.ink
         guideDetail.font = RecapTheme.body(11)
         guideDetail.textColor = RecapTheme.muted
         guideDetail.numberOfLines = 0
-        let guideText = UIStackView(arrangedSubviews: [guideTitle, guideDetail])
+        let guideText = UIStackView(arrangedSubviews: [guideNow, guideTitle, guideDetail])
         guideText.axis = .vertical
         guideText.spacing = 2
         let guide = UIStackView(arrangedSubviews: [guideIndex, guideText])
@@ -210,7 +223,23 @@ final class OnboardingViewController: UIViewController {
             guide.leadingAnchor.constraint(equalTo: guideBackground.leadingAnchor),
             guide.trailingAnchor.constraint(equalTo: guideBackground.trailingAnchor),
         ])
-        let guideRow = UIStackView(arrangedSubviews: [UIView(), guideBackground])
+        guideArrow.backgroundColor = RecapTheme.signal
+        guideArrow.translatesAutoresizingMaskIntoConstraints = false
+        let guideColumn = UIView()
+        guideBackground.translatesAutoresizingMaskIntoConstraints = false
+        guideColumn.addSubview(guideBackground)
+        guideColumn.addSubview(guideArrow)
+        NSLayoutConstraint.activate([
+            guideBackground.topAnchor.constraint(equalTo: guideColumn.topAnchor),
+            guideBackground.leadingAnchor.constraint(equalTo: guideColumn.leadingAnchor),
+            guideBackground.trailingAnchor.constraint(equalTo: guideColumn.trailingAnchor),
+            guideArrow.topAnchor.constraint(equalTo: guideBackground.bottomAnchor, constant: 6),
+            guideArrow.trailingAnchor.constraint(equalTo: guideBackground.trailingAnchor, constant: -27),
+            guideArrow.widthAnchor.constraint(equalToConstant: 1),
+            guideArrow.heightAnchor.constraint(equalToConstant: 18),
+            guideArrow.bottomAnchor.constraint(equalTo: guideColumn.bottomAnchor),
+        ])
+        let guideRow = UIStackView(arrangedSubviews: [UIView(), guideColumn])
         guideRow.axis = .horizontal
 
         guideBackground.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
@@ -218,7 +247,7 @@ final class OnboardingViewController: UIViewController {
 
         let contentColumn = UIStackView(arrangedSubviews: [stageContent, guideRow])
         contentColumn.axis = .vertical
-        contentColumn.spacing = 18
+        contentColumn.spacing = 16
 
         // Steps with forms can outgrow the stage, especially in English; let them scroll
         let scroller = UIScrollView()
@@ -259,23 +288,39 @@ final class OnboardingViewController: UIViewController {
 
         backButton.preferredBehavioralStyle = .pad
         var backConfig = UIButton.Configuration.plain()
-        backConfig.attributedTitle = AttributedString("←  " + String(localized: "返回"), attributes: AttributeContainer([
+        backConfig.attributedTitle = AttributedString(String(localized: "返回"), attributes: AttributeContainer([
             .font: RecapTheme.body(12), .foregroundColor: RecapTheme.muted,
         ]))
+        backConfig.image = UIImage(systemName: "arrow.left",
+                                   withConfiguration: UIImage.SymbolConfiguration(pointSize: 10, weight: .semibold))
+        backConfig.imagePlacement = .leading
+        backConfig.imagePadding = 8
         backConfig.background.strokeColor = RecapTheme.line
         backConfig.background.strokeWidth = 1
         backConfig.background.cornerRadius = 17
         backConfig.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 16, bottom: 9, trailing: 16)
         backButton.configuration = backConfig
+        backButton.tintColor = RecapTheme.muted
+        backButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 92).isActive = true
         backButton.addAction(UIAction { [weak self] _ in self?.goBack() }, for: .touchUpInside)
 
         primaryButton.preferredBehavioralStyle = .pad
         var primaryConfig = UIButton.Configuration.filled()
         primaryConfig.baseBackgroundColor = RecapTheme.ink
         primaryConfig.baseForegroundColor = RecapTheme.paper
-        primaryConfig.background.cornerRadius = 17
-        primaryConfig.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 22, bottom: 9, trailing: 22)
+        primaryConfig.background.cornerRadius = 15
+        primaryConfig.image = UIImage(systemName: "arrow.right",
+                                      withConfiguration: UIImage.SymbolConfiguration(pointSize: 10, weight: .semibold))
+        primaryConfig.imagePlacement = .trailing
+        primaryConfig.imagePadding = 14
+        primaryConfig.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 18, bottom: 9, trailing: 18)
         primaryButton.configuration = primaryConfig
+        primaryButton.tintColor = RecapTheme.paper
+        primaryButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 126).isActive = true
+        primaryButton.layer.shadowColor = RecapTheme.ink.cgColor
+        primaryButton.layer.shadowOpacity = 0.15
+        primaryButton.layer.shadowRadius = 11
+        primaryButton.layer.shadowOffset = CGSize(width: 0, height: 8)
         primaryButton.addAction(UIAction { [weak self] _ in self?.advance() }, for: .touchUpInside)
 
         let statusSide = UIStackView(arrangedSubviews: [footerStatus, UIView()])
@@ -353,10 +398,12 @@ final class OnboardingViewController: UIViewController {
         dot.isUserInteractionEnabled = false
         dot.translatesAutoresizingMaskIntoConstraints = false
         button.addSubview(dot)
+        let dotWidth = dot.widthAnchor.constraint(equalToConstant: 10)
+        dotWidths[item] = dotWidth
         NSLayoutConstraint.activate([
             button.widthAnchor.constraint(equalToConstant: 30),
             button.heightAnchor.constraint(equalToConstant: 30),
-            dot.widthAnchor.constraint(equalToConstant: 10),
+            dotWidth,
             dot.heightAnchor.constraint(equalToConstant: 10),
             dot.centerXAnchor.constraint(equalTo: button.centerXAnchor),
             dot.centerYAnchor.constraint(equalTo: button.centerYAnchor),
@@ -372,8 +419,11 @@ final class OnboardingViewController: UIViewController {
             let passed = item.rawValue < step.rawValue
             let isCurrent = item == step
             dot.backgroundColor = passed || isCurrent ? RecapTheme.signal : RecapTheme.paper
-            dot.layer.borderColor = (isCurrent ? RecapTheme.signal : RecapTheme.line).cgColor
-            dot.transform = isCurrent ? CGAffineTransform(scaleX: 1.25, y: 1.25) : .identity
+            dot.layer.borderColor = (passed || isCurrent ? RecapTheme.signal : RecapTheme.line).cgColor
+            UIView.animate(withDuration: 0.28) {
+                self.dotWidths[item]?.constant = isCurrent ? 26 : 10
+                self.view.layoutIfNeeded()
+            }
             button.isEnabled = item.rawValue <= maxReachable
         }
         let total = Step.setupSteps.count
@@ -422,8 +472,10 @@ final class OnboardingViewController: UIViewController {
         ])
         stepView.onStateChange = { [weak self] in self?.refreshPrimary() }
 
-        backButton.isHidden = target == .welcome || target == .done
+        backButton.isEnabled = target != .welcome && target != .done
+        backButton.alpha = backButton.isEnabled ? 1 : 0.38
         guideBackground.isHidden = target == .done
+        guideArrow.isHidden = target == .done
         refreshStepList()
         refreshPrimary()
 
@@ -437,6 +489,8 @@ final class OnboardingViewController: UIViewController {
                     piece.transform = .identity
                 }
             }
+            breathe(primaryButton, delay: 0.9)
+            breathe(guideBackground, delay: 0.5)
         }
     }
 
@@ -460,6 +514,19 @@ final class OnboardingViewController: UIViewController {
         } else {
             finish()
         }
+    }
+
+    // action-breathe / guide-breathe: two soft lifts pointing at what to do next
+    private func breathe(_ view: UIView, delay: TimeInterval) {
+        let lift = CABasicAnimation(keyPath: "transform.translation.y")
+        lift.fromValue = 0
+        lift.toValue = -2
+        lift.duration = 0.6
+        lift.beginTime = CACurrentMediaTime() + delay
+        lift.autoreverses = true
+        lift.repeatCount = 2
+        lift.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        view.layer.add(lift, forKey: "breathe")
     }
 
     private func refreshPrimary() {
