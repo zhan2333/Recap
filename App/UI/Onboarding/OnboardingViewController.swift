@@ -236,15 +236,17 @@ final class OnboardingViewController: UIViewController {
             centeringHost.widthAnchor.constraint(equalTo: scroller.frameLayoutGuide.widthAnchor),
             // Short steps sit centred like the design; tall ones grow and scroll
             centeringHost.heightAnchor.constraint(greaterThanOrEqualTo: scroller.frameLayoutGuide.heightAnchor),
-            contentColumn.leadingAnchor.constraint(equalTo: centeringHost.leadingAnchor),
-            contentColumn.trailingAnchor.constraint(equalTo: centeringHost.trailingAnchor),
+            contentColumn.leadingAnchor.constraint(equalTo: centeringHost.leadingAnchor, constant: 20),
+            contentColumn.trailingAnchor.constraint(equalTo: centeringHost.trailingAnchor, constant: -20),
             contentColumn.centerYAnchor.constraint(equalTo: centeringHost.centerYAnchor),
             contentColumn.topAnchor.constraint(greaterThanOrEqualTo: centeringHost.topAnchor),
         ])
 
         let stage = UIStackView(arrangedSubviews: [copyColumn, scroller])
+        // Step content always draws above the copy column
+        stage.bringSubviewToFront(scroller)
         stage.axis = .horizontal
-        stage.spacing = 52
+        stage.spacing = 32
         stage.alignment = .fill
 
         // Footer: status left, actions right
