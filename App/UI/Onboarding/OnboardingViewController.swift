@@ -563,7 +563,11 @@ final class OnboardingViewController: UIViewController {
                     self.finish()
                 }
             case .finish:
-                self.show(.done, animated: true)
+                if self.step == .done {
+                    self.finish()
+                } else {
+                    self.show(.done, animated: true)
+                }
             }
         }
     }
