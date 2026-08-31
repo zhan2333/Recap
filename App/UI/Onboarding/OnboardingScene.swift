@@ -588,3 +588,37 @@ final class OnboardingMediaChip: UIView {
         }
     }
 }
+
+
+// The hairline the page guide drops onto the action it points at
+final class OnboardingGuideArrow: UIView {
+
+    private let shape = CAShapeLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        shape.strokeColor = RecapTheme.signal.cgColor
+        shape.fillColor = nil
+        shape.lineWidth = 1
+        shape.lineCap = .round
+        shape.lineJoin = .round
+        layer.addSublayer(shape)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let middle = bounds.midX
+        let head: CGFloat = 4
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: middle, y: 0))
+        path.addLine(to: CGPoint(x: middle, y: bounds.maxY))
+        path.move(to: CGPoint(x: middle - head, y: bounds.maxY - head))
+        path.addLine(to: CGPoint(x: middle, y: bounds.maxY))
+        path.addLine(to: CGPoint(x: middle + head, y: bounds.maxY - head))
+        shape.path = path.cgPath
+        shape.frame = bounds
+    }
+}

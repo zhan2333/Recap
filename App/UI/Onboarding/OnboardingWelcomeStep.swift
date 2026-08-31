@@ -11,6 +11,9 @@ import UIKit
 final class OnboardingWelcomeStep: OnboardingStepView {
 
     private let thread = CAShapeLayer()
+    private let startRing = UIView()
+    private let endRing = UIView()
+    private let node = UIView()
 
     override func build() {
         let quoteCard = UIView()
@@ -43,6 +46,32 @@ final class OnboardingWelcomeStep: OnboardingStepView {
 
         let threadHost = UIView()
         threadHost.widthAnchor.constraint(equalToConstant: 64).isActive = true
+        threadHost.heightAnchor.constraint(equalToConstant: 14).isActive = true
+        for end in [startRing, endRing] {
+            end.backgroundColor = RecapTheme.paper
+            end.layer.borderWidth = 2
+            end.layer.borderColor = RecapTheme.signal.cgColor
+            end.layer.cornerRadius = 5
+            end.translatesAutoresizingMaskIntoConstraints = false
+            threadHost.addSubview(end)
+            NSLayoutConstraint.activate([
+                end.widthAnchor.constraint(equalToConstant: 10),
+                end.heightAnchor.constraint(equalToConstant: 10),
+                end.centerYAnchor.constraint(equalTo: threadHost.centerYAnchor),
+            ])
+        }
+        startRing.centerXAnchor.constraint(equalTo: threadHost.leadingAnchor).isActive = true
+        endRing.centerXAnchor.constraint(equalTo: threadHost.trailingAnchor).isActive = true
+        node.backgroundColor = RecapTheme.signal
+        node.layer.cornerRadius = 3.5
+        node.translatesAutoresizingMaskIntoConstraints = false
+        threadHost.addSubview(node)
+        NSLayoutConstraint.activate([
+            node.widthAnchor.constraint(equalToConstant: 7),
+            node.heightAnchor.constraint(equalToConstant: 7),
+            node.centerYAnchor.constraint(equalTo: threadHost.centerYAnchor),
+            node.centerXAnchor.constraint(equalTo: threadHost.leadingAnchor),
+        ])
         thread.strokeColor = RecapTheme.signal.cgColor
         thread.lineWidth = 1.5
         thread.lineCap = .round
@@ -125,6 +154,13 @@ final class OnboardingWelcomeStep: OnboardingStepView {
         draw.duration = 0.7
         draw.timingFunction = CAMediaTimingFunction(name: .easeOut)
         thread.add(draw, forKey: "draw")
+
+        node.alpha = 0
+        node.transform = .identity
+        UIView.animate(withDuration: 0.62, delay: 0.26, options: [.curveEaseInOut]) {
+            self.node.alpha = 1
+            self.node.transform = CGAffineTransform(translationX: threadHost.bounds.width, y: 0)
+        }
 
         guard let pointCard else { return }
         pointCard.alpha = 0

@@ -10,6 +10,8 @@ import UIKit
 // Two endings: the first lecture is already transcribing, or the app is simply ready
 final class OnboardingDoneStep: OnboardingStepView {
 
+    private weak var badge: UIView?
+
     override var primaryTitle: String {
         host?.recordedCourse == nil ? String(localized: "打开 Recap") : String(localized: "打开课程")
     }
@@ -28,6 +30,7 @@ final class OnboardingDoneStep: OnboardingStepView {
         badge.layer.masksToBounds = true
         badge.widthAnchor.constraint(equalToConstant: 44).isActive = true
         badge.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        self.badge = badge
         let badgeRow = UIStackView(arrangedSubviews: [badge, UIView()])
         badgeRow.axis = .horizontal
 
@@ -80,5 +83,16 @@ final class OnboardingDoneStep: OnboardingStepView {
 
     override func performPrimary(_ completion: @escaping (PrimaryResult) -> Void) {
         completion(.finish)
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        guard window != nil, let badge else { return }
+        badge.alpha = 0
+        badge.transform = CGAffineTransform(translationX: 0, y: -12).rotated(by: -8 * .pi / 180)
+        UIView.animate(withDuration: 0.42, delay: 0.1, usingSpringWithDamping: 0.78, initialSpringVelocity: 0.3) {
+            badge.alpha = 1
+            badge.transform = .identity
+        }
     }
 }

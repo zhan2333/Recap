@@ -42,7 +42,7 @@ final class OnboardingViewController: UIViewController {
     private let guideDetail = UILabel()
     private let guideBackground = UIView()
     private let guideNow = UILabel()
-    private let guideArrow = UIView()
+    private let guideArrow = OnboardingGuideArrow()
     private let footerStatus = UILabel()
     private let savedNote = UILabel()
     private let backButton = UIButton(type: .system)
@@ -223,7 +223,6 @@ final class OnboardingViewController: UIViewController {
             guide.leadingAnchor.constraint(equalTo: guideBackground.leadingAnchor),
             guide.trailingAnchor.constraint(equalTo: guideBackground.trailingAnchor),
         ])
-        guideArrow.backgroundColor = RecapTheme.signal
         guideArrow.translatesAutoresizingMaskIntoConstraints = false
         let guideColumn = UIView()
         guideBackground.translatesAutoresizingMaskIntoConstraints = false
@@ -234,9 +233,8 @@ final class OnboardingViewController: UIViewController {
             guideBackground.leadingAnchor.constraint(equalTo: guideColumn.leadingAnchor),
             guideBackground.trailingAnchor.constraint(equalTo: guideColumn.trailingAnchor),
             guideArrow.topAnchor.constraint(equalTo: guideBackground.bottomAnchor, constant: 6),
-            guideArrow.trailingAnchor.constraint(equalTo: guideBackground.trailingAnchor, constant: -27),
-            guideArrow.widthAnchor.constraint(equalToConstant: 1),
-            guideArrow.heightAnchor.constraint(equalToConstant: 18),
+            guideArrow.widthAnchor.constraint(equalToConstant: 10),
+            guideArrow.heightAnchor.constraint(equalToConstant: 22),
             guideArrow.bottomAnchor.constraint(equalTo: guideColumn.bottomAnchor),
         ])
         let guideRow = UIStackView(arrangedSubviews: [UIView(), guideColumn])
@@ -356,6 +354,8 @@ final class OnboardingViewController: UIViewController {
             root.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
             root.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
             root.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -14),
+            // Aimed at the action it is pointing to, now that both share an ancestor
+            guideArrow.centerXAnchor.constraint(equalTo: primaryButton.centerXAnchor),
         ])
     }
 
