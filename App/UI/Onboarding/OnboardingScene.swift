@@ -462,6 +462,16 @@ final class OnboardingPaperStack: UIView {
 // Where lectures land: a folder with a tab, in signal tint
 final class OnboardingFolder: UIView {
 
+    private let name = UILabel()
+
+    // Retitling crossfades so the folder keeps its identity while typing
+    func retitle(_ title: String) {
+        guard name.text != title else { return }
+        UIView.transition(with: name, duration: 0.22, options: [.transitionCrossDissolve]) {
+            self.name.text = title
+        }
+    }
+
     init(title: String, detail: String) {
         super.init(frame: .zero)
         let surface = RecapTheme.signalSoft
@@ -482,7 +492,6 @@ final class OnboardingFolder: UIView {
         body.layer.borderWidth = 1
         body.layer.borderColor = border.cgColor
 
-        let name = UILabel()
         name.text = title
         name.font = RecapTheme.display(16, weight: .semibold)
         name.textColor = RecapTheme.ink

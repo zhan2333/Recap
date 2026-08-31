@@ -31,6 +31,10 @@ final class OnboardingAIStep: OnboardingStepView {
 
     override var isPrimaryEnabled: Bool { !isChecking }
 
+    private var connectCard: OnboardingChoiceCard?
+    private var laterCard: OnboardingChoiceCard?
+    private var formSection = UIStackView()
+
     override func build() {
         container.axis = .vertical
         container.spacing = 10
@@ -41,49 +45,57 @@ final class OnboardingAIStep: OnboardingStepView {
                 first: String(localized: "只要文稿"),
                 second: String(localized: "文稿 + 重点")),
         ])
+
+        let connect = optionCard(
+            title: String(localized: "连接 AI 服务"),
+            detail: String(localized: "自动整理重点和讲义"),
+            selected: mode == .connect
+        ) { [weak self] in self?.select(.connect) }
+        let later = optionCard(
+            title: String(localized: "暂时不用"),
+            detail: String(localized: "先使用本地转写，之后在设置中连接"),
+            selected: mode == .later
+        ) { [weak self] in self?.select(.later) }
+        connectCard = connect
+        laterCard = later
+
+        error.font = RecapTheme.body(11, weight: .semibold)
+        error.textColor = RecapTheme.error
+        error.numberOfLines = 0
+        error.isHidden = true
+
+        formSection = UIStackView(arrangedSubviews: [
+            field(label: String(localized: "服务地址"), placeholder: "https://api.example.com/v1", value: baseURL) { [weak self] in self?.baseURL = $0 },
+            field(label: String(localized: "API Key"), placeholder: "••••••••••••", secure: true, value: apiKey) { [weak self] in self?.apiKey = $0 },
+            field(label: String(localized: "模型（可留空）"), placeholder: "model-name", value: model) { [weak self] in self?.model = $0 },
+            note(String(localized: "连接检查只会发送一个很短的测试请求，不会包含课程内容。设置保存在这台 Mac。")),
+            error,
+        ])
+        formSection.axis = .vertical
+        formSection.spacing = 10
+        formSection.isHidden = mode != .connect
+        formSection.alpha = mode == .connect ? 1 : 0
+
+        container.addArrangedSubview(connect)
+        container.addArrangedSubview(later)
+        container.addArrangedSubview(formSection)
+
         let wrapper = UIStackView(arrangedSubviews: [scene, container])
         wrapper.axis = .vertical
         wrapper.spacing = 14
         fill(with: wrapper)
-        rebuild()
     }
 
-    private func rebuild() {
-        container.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        container.addArrangedSubview(optionCard(
-            title: String(localized: "连接 AI 服务"),
-            detail: String(localized: "自动整理重点和讲义"),
-            selected: mode == .connect
-        ) { [weak self] in
-            self?.mode = .connect
-            self?.rebuild()
-        })
-        container.addArrangedSubview(optionCard(
-            title: String(localized: "暂时不用"),
-            detail: String(localized: "先使用本地转写，之后在设置中连接"),
-            selected: mode == .later
-        ) { [weak self] in
-            self?.mode = .later
-            self?.rebuild()
-        })
-
-        if mode == .connect {
-            container.addArrangedSubview(field(
-                label: String(localized: "服务地址"), placeholder: "https://api.example.com/v1", value: baseURL
-            ) { [weak self] in self?.baseURL = $0 })
-            container.addArrangedSubview(field(
-                label: String(localized: "API Key"), placeholder: "••••••••••••", secure: true, value: apiKey
-            ) { [weak self] in self?.apiKey = $0 })
-            container.addArrangedSubview(field(
-                label: String(localized: "模型（可留空）"), placeholder: "model-name", value: model
-            ) { [weak self] in self?.model = $0 })
-            container.addArrangedSubview(note(String(localized: "连接检查只会发送一个很短的测试请求，不会包含课程内容。设置保存在这台 Mac。")))
-            error.isHidden = true
-            container.addArrangedSubview(error)
+    // Selection restyles the cards and folds the form in or out
+    private func select(_ next: Mode) {
+        guard next != mode else { return }
+        mode = next
+        connectCard?.isChosen = mode == .connect
+        laterCard?.isChosen = mode == .later
+        animateContentChange {
+            formSection.isHidden = mode != .connect
+            formSection.alpha = mode == .connect ? 1 : 0
         }
-        error.font = RecapTheme.body(11, weight: .semibold)
-        error.textColor = RecapTheme.error
-        error.numberOfLines = 0
         onStateChange?()
     }
 

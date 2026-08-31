@@ -117,7 +117,7 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
         advancedToggle.configuration = advancedConfig
         advancedToggle.addAction(UIAction { [weak self] _ in
             guard let self else { return }
-            self.advancedBody.isHidden.toggle()
+            self.animateContentChange { self.advancedBody.isHidden.toggle() }
             self.setAdvancedTitle()
         }, for: .touchUpInside)
         setAdvancedTitle()
@@ -131,7 +131,13 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
         refresh()
     }
 
-    private func refresh() {
+    private func refresh(animated: Bool = false) {
+        guard !animated else {
+            UIView.transition(with: card, duration: 0.26, options: [.transitionCrossDissolve]) {
+                self.refresh()
+            }
+            return
+        }
         if Settings.modelExists {
             cardSymbol.text = "Aa"
             cardTitle.text = String(localized: "离线转写已准备好")
@@ -172,7 +178,7 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
     }
 
     private func toggleTerminal() {
-        terminal.isHidden.toggle()
+        animateContentChange { terminal.isHidden.toggle() }
         setToggleTitle()
     }
 
@@ -191,10 +197,12 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
         }
         isDownloading = true
         terminal.clear()
-        terminalToggle.isHidden = false
-        progressTrack.isHidden = false
         setProgress(0)
-        refresh()
+        animateContentChange {
+            terminalToggle.isHidden = false
+            progressTrack.isHidden = false
+        }
+        refresh(animated: true)
 
         ShellBridge.run(Self.downloadCommand) { [weak self] chunk in
             self?.terminal.append(chunk)
@@ -204,12 +212,16 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
             self.isDownloading = false
             if code == 0 && Settings.modelExists {
                 self.setProgress(1)
-                self.refresh()
+                self.refresh(animated: true)
                 completion(.next)
             } else {
-                self.cardTitle.text = String(localized: "下载中断")
-                self.cardDetail.text = String(localized: "请检查网络。已经下载的部分会保留，可以重新下载。")
-                self.terminal.isHidden = false
+                UIView.transition(with: self.card, duration: 0.26, options: [.transitionCrossDissolve]) {
+                    self.cardTitle.text = String(localized: "下载中断")
+                    self.cardDetail.text = String(localized: "请检查网络。已经下载的部分会保留，可以重新下载。")
+                }
+                self.animateContentChange {
+                    self.terminal.isHidden = false
+                }
                 self.setToggleTitle()
                 self.onStateChange?()
                 completion(.stay)

@@ -52,7 +52,7 @@ final class OnboardingViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = RecapTheme.paper
-        preferredContentSize = CGSize(width: 1000, height: 752)
+        preferredContentSize = CGSize(width: 960, height: 680)
         buildChrome()
         step = Step(rawValue: min(Settings.onboardingStep, Step.setupSteps.count - 1)) ?? .welcome
         maxReachable = step.rawValue
@@ -463,9 +463,14 @@ final class OnboardingViewController: UIViewController {
     private func refreshPrimary() {
         let stepView = stepViews[step]
         let title = stepView?.primaryTitle ?? String(localized: "继续")
-        primaryButton.configuration?.attributedTitle = AttributedString(title, attributes: AttributeContainer([
+        let attributed = AttributedString(title, attributes: AttributeContainer([
             .font: RecapTheme.body(12, weight: .semibold), .foregroundColor: RecapTheme.paper,
         ]))
+        if primaryButton.configuration?.attributedTitle != attributed {
+            UIView.transition(with: primaryButton, duration: 0.22, options: [.transitionCrossDissolve]) {
+                self.primaryButton.configuration?.attributedTitle = attributed
+            }
+        }
         primaryButton.isEnabled = stepView?.isPrimaryEnabled ?? true
     }
 

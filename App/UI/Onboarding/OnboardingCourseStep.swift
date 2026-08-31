@@ -10,6 +10,7 @@ import UIKit
 final class OnboardingCourseStep: OnboardingStepView {
 
     private var name = Settings.onboardingCourseName
+    private weak var folder: OnboardingFolder?
     private let error = UILabel()
 
     override var primaryTitle: String { String(localized: "创建课程") }
@@ -19,15 +20,23 @@ final class OnboardingCourseStep: OnboardingStepView {
         error.textColor = RecapTheme.error
         error.numberOfLines = 0
         error.isHidden = true
+        error.alpha = 0
 
         let input = field(
             label: String(localized: "课程名称"),
             placeholder: String(localized: "例如：深度学习基础"),
             value: name
         ) { [weak self] value in
-            self?.name = value
+            guard let self else { return }
+            self.name = value
             Settings.onboardingCourseName = value
-            self?.error.isHidden = true
+            self.folder?.retitle(value.isEmpty ? String(localized: "深度学习基础") : value)
+            if !self.error.isHidden {
+                self.animateContentChange {
+                    self.error.isHidden = true
+                    self.error.alpha = 0
+                }
+            }
         }
 
         let skip = textAction(String(localized: "稍后创建")) { [weak self] in
@@ -35,12 +44,11 @@ final class OnboardingCourseStep: OnboardingStepView {
             self?.requestAdvance?()
         }
 
-        let scene = OnboardingScene(pieces: [
-            OnboardingPaperStack(),
-            OnboardingFolder(
-                title: name.isEmpty ? String(localized: "深度学习基础") : name,
-                detail: String(localized: "本机保存")),
-        ], spacing: 28, minHeight: 176)
+        let folder = OnboardingFolder(
+            title: name.isEmpty ? String(localized: "深度学习基础") : name,
+            detail: String(localized: "本机保存"))
+        self.folder = folder
+        let scene = OnboardingScene(pieces: [OnboardingPaperStack(), folder], spacing: 28, minHeight: 176)
         fill(with: stack([
             scene,
             input,
@@ -54,7 +62,10 @@ final class OnboardingCourseStep: OnboardingStepView {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             error.text = String(localized: "请输入课程名称，或选择「稍后创建」。")
-            error.isHidden = false
+            animateContentChange {
+                error.isHidden = false
+                error.alpha = 1
+            }
             completion(.stay)
             return
         }

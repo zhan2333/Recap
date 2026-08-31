@@ -137,67 +137,22 @@ class OnboardingStepView: UIView {
         ])
     }
 
-    // The design's choice card: a 20pt indicator, title and detail, optional meta on the right
+    // Choice cards keep their identity so selection restyles instead of rebuilding
     func optionCard(title: String, detail: String, meta: String? = nil, selected: Bool,
-                    action: @escaping () -> Void) -> UIView {
-        let card = UIControl()
-        card.backgroundColor = selected ? RecapTheme.signalSoft : RecapTheme.paper
-        card.layer.cornerRadius = 18
-        card.layer.cornerCurve = .continuous
-        card.layer.borderWidth = 1
-        card.layer.borderColor = (selected ? RecapTheme.signal.withAlphaComponent(0.32) : RecapTheme.line).cgColor
-
-        let indicator = UILabel()
-        indicator.text = selected ? "✓" : ""
-        indicator.font = RecapTheme.body(10, weight: .bold)
-        indicator.textColor = RecapTheme.paper
-        indicator.textAlignment = .center
-        indicator.backgroundColor = selected ? RecapTheme.ink : .clear
-        indicator.layer.cornerRadius = 10
-        indicator.layer.masksToBounds = true
-        indicator.layer.borderWidth = 1
-        indicator.layer.borderColor = (selected ? RecapTheme.ink : RecapTheme.line).cgColor
-
-        let name = UILabel()
-        name.text = title
-        name.font = RecapTheme.body(12, weight: .semibold)
-        name.textColor = RecapTheme.ink
-        let caption = UILabel()
-        caption.text = detail
-        caption.font = RecapTheme.body(10)
-        caption.textColor = RecapTheme.muted
-        caption.numberOfLines = 2
-        let text = UIStackView(arrangedSubviews: [name, caption])
-        text.axis = .vertical
-        text.spacing = 3
-
-        var pieces: [UIView] = [indicator, text]
-        if let meta {
-            let metaLabel = UILabel()
-            metaLabel.text = meta
-            metaLabel.font = RecapTheme.body(9, weight: .semibold)
-            metaLabel.textColor = RecapTheme.signalText
-            pieces.append(UIView())
-            pieces.append(metaLabel)
-        }
-        let row = UIStackView(arrangedSubviews: pieces)
-        row.axis = .horizontal
-        row.alignment = .center
-        row.spacing = 11
-        row.isUserInteractionEnabled = false
-        row.translatesAutoresizingMaskIntoConstraints = false
-        card.addSubview(row)
-        NSLayoutConstraint.activate([
-            card.heightAnchor.constraint(greaterThanOrEqualToConstant: 64),
-            indicator.widthAnchor.constraint(equalToConstant: 20),
-            indicator.heightAnchor.constraint(equalToConstant: 20),
-            row.topAnchor.constraint(equalTo: card.topAnchor, constant: 12),
-            row.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -12),
-            row.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 14),
-            row.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
-        ])
+                    action: @escaping () -> Void) -> OnboardingChoiceCard {
+        let card = OnboardingChoiceCard(title: title, detail: detail, meta: meta)
+        card.isChosen = selected
         card.addAction(UIAction { _ in action() }, for: .touchUpInside)
         return card
+    }
+
+    // Layout changes ripple through a centred scroll area, so animate them
+    func animateContentChange(_ changes: () -> Void) {
+        changes()
+        guard let root = host?.view else { return }
+        UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut]) {
+            root.layoutIfNeeded()
+        }
     }
 
     func textAction(_ title: String, action: @escaping () -> Void) -> UIButton {
@@ -259,5 +214,96 @@ class OnboardingStepView: UIView {
         label.numberOfLines = 0
         label.isHidden = true
         return label
+    }
+}
+
+// MARK: - Choice card
+
+final class OnboardingChoiceCard: UIControl {
+
+    private let indicator = UILabel()
+
+    var isChosen = false {
+        didSet { applySelection(animated: true) }
+    }
+
+    init(title: String, detail: String, meta: String?) {
+        super.init(frame: .zero)
+        layer.cornerRadius = 18
+        layer.cornerCurve = .continuous
+        layer.borderWidth = 1
+
+        indicator.font = RecapTheme.body(10, weight: .bold)
+        indicator.textAlignment = .center
+        indicator.layer.cornerRadius = 10
+        indicator.layer.masksToBounds = true
+        indicator.layer.borderWidth = 1
+
+        let name = UILabel()
+        name.text = title
+        name.font = RecapTheme.body(12, weight: .semibold)
+        name.textColor = RecapTheme.ink
+        let caption = UILabel()
+        caption.text = detail
+        caption.font = RecapTheme.body(10)
+        caption.textColor = RecapTheme.muted
+        caption.numberOfLines = 2
+        let text = UIStackView(arrangedSubviews: [name, caption])
+        text.axis = .vertical
+        text.spacing = 3
+
+        var pieces: [UIView] = [indicator, text]
+        if let meta {
+            let metaLabel = UILabel()
+            metaLabel.text = meta
+            metaLabel.font = RecapTheme.body(9, weight: .semibold)
+            metaLabel.textColor = RecapTheme.signalText
+            pieces.append(UIView())
+            pieces.append(metaLabel)
+        }
+        let row = UIStackView(arrangedSubviews: pieces)
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 11
+        row.isUserInteractionEnabled = false
+        row.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(row)
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(greaterThanOrEqualToConstant: 64),
+            indicator.widthAnchor.constraint(equalToConstant: 20),
+            indicator.heightAnchor.constraint(equalToConstant: 20),
+            row.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            row.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+            row.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            row.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+        ])
+        applySelection(animated: false)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    private func applySelection(animated: Bool) {
+        let apply = {
+            self.backgroundColor = self.isChosen ? RecapTheme.signalSoft : RecapTheme.paper
+            self.layer.borderColor = (self.isChosen ? RecapTheme.signal.withAlphaComponent(0.32) : RecapTheme.line).cgColor
+            self.indicator.backgroundColor = self.isChosen ? RecapTheme.ink : .clear
+            self.indicator.layer.borderColor = (self.isChosen ? RecapTheme.ink : RecapTheme.line).cgColor
+            self.indicator.textColor = RecapTheme.paper
+        }
+        guard animated else {
+            apply()
+            indicator.text = isChosen ? "✓" : ""
+            return
+        }
+        UIView.animate(withDuration: 0.22, delay: 0, options: [.curveEaseInOut], animations: apply)
+        UIView.transition(with: indicator, duration: 0.22, options: [.transitionCrossDissolve]) {
+            self.indicator.text = self.isChosen ? "✓" : ""
+        }
+        // The chosen card gives a small settle, like the design's selection feedback
+        if isChosen {
+            UIView.animate(withDuration: 0.16, animations: { self.transform = CGAffineTransform(scaleX: 1.012, y: 1.012) }) { _ in
+                UIView.animate(withDuration: 0.2) { self.transform = .identity }
+            }
+        }
     }
 }
