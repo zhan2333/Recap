@@ -16,6 +16,7 @@ extension OnboardingViewController.Step {
         case .ai: String(localized: "自动重点")
         case .course: String(localized: "课程")
         case .lecture: String(localized: "第一讲")
+        case .done: String(localized: "完成")
         }
     }
 
@@ -26,6 +27,7 @@ extension OnboardingViewController.Step {
         case .ai: String(localized: "可选")
         case .course: String(localized: "起个名字")
         case .lecture: String(localized: "音频或视频")
+        case .done: ""
         }
     }
 
@@ -36,6 +38,7 @@ extension OnboardingViewController.Step {
         case .ai: String(localized: "第 3 步 · 可选")
         case .course: String(localized: "第 4 步")
         case .lecture: String(localized: "第 5 步")
+        case .done: String(localized: "设置完成")
         }
     }
 
@@ -46,6 +49,7 @@ extension OnboardingViewController.Step {
         case .ai: String(localized: "要自动整理重点吗？")
         case .course: String(localized: "这门课叫什么？")
         case .lecture: String(localized: "添加第一讲。")
+        case .done: ""
         }
     }
 
@@ -56,6 +60,7 @@ extension OnboardingViewController.Step {
         case .ai: String(localized: "可以先只用文稿，之后再连接 AI 服务。")
         case .course: String(localized: "相关讲次会自动收进同一个课程。")
         case .lecture: String(localized: "选择这台 Mac 上的一段课程音频或视频。")
+        case .done: ""
         }
     }
 
@@ -66,6 +71,7 @@ extension OnboardingViewController.Step {
         case .ai: String(localized: "选择一条路径")
         case .course: String(localized: "输入课程名")
         case .lecture: String(localized: "选择一个文件")
+        case .done: ""
         }
     }
 
@@ -76,6 +82,7 @@ extension OnboardingViewController.Step {
         case .ai: String(localized: "默认只在本机生成文稿。")
         case .course: String(localized: "名称只保存在本机，也可以稍后修改。")
         case .lecture: String(localized: "也可以切换到回放直链。")
+        case .done: ""
         }
     }
 }

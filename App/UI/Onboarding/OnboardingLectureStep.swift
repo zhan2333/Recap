@@ -27,6 +27,8 @@ final class OnboardingLectureStep: OnboardingStepView, UIDocumentPickerDelegate 
         }
     }
 
+    private let sceneHost = UIView()
+
     override func build() {
         error.font = RecapTheme.body(11, weight: .semibold)
         error.textColor = RecapTheme.error
@@ -34,7 +36,16 @@ final class OnboardingLectureStep: OnboardingStepView, UIDocumentPickerDelegate 
         error.isHidden = true
         container.axis = .vertical
         container.spacing = 10
-        fill(with: container)
+        let scene = OnboardingScene(
+            leading: OnboardingScene.chip("MP4"),
+            trailing: OnboardingScene.chip(
+                host?.recordedCourse?.name ?? String(localized: "课程"),
+                detail: String(localized: "第一讲"), tinted: true)
+        )
+        let wrapper = UIStackView(arrangedSubviews: [scene, container])
+        wrapper.axis = .vertical
+        wrapper.spacing = 14
+        fill(with: wrapper)
         rebuild()
     }
 

@@ -271,6 +271,16 @@
         }
       }
     },
+    "Recap 准备好了。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recap is ready."
+          }
+        }
+      }
+    },
     "Terminal Studio": {
       "localizations": {
         "en": {
@@ -301,6 +311,26 @@
         }
       }
     },
+    "✓ 本机完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "✓ Done locally"
+          }
+        }
+      }
+    },
+    "✓ 进度保存在这台 Mac": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "✓ Progress is saved on this Mac"
+          }
+        }
+      }
+    },
     "❯ 历史会话（只读） · %@\n\n": {
       "localizations": {
         "en": {
@@ -327,6 +357,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "“The key idea in this lecture is backpropagation: send the gradients back through the graph first, then update the parameters. Don't mix up the two steps.”"
+          }
+        }
+      }
+    },
+    "一个课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One course"
           }
         }
       }
@@ -731,6 +771,16 @@
         }
       }
     },
+    "再添加一讲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add another lecture"
+          }
+        }
+      }
+    },
     "准备一次": {
       "localizations": {
         "en": {
@@ -907,6 +957,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        }
+      }
+    },
+    "只要文稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript only"
           }
         }
       }
@@ -1111,6 +1171,16 @@
         }
       }
     },
+    "完成后，文稿和重点会出现在课程里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When it finishes, the transcript and key points appear in the course."
+          }
+        }
+      }
+    },
     "完整文稿": {
       "localizations": {
         "en": {
@@ -1181,12 +1251,32 @@
         }
       }
     },
+    "尚未创建课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No course yet"
+          }
+        }
+      }
+    },
     "尚未提取": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Not extracted yet"
+          }
+        }
+      }
+    },
+    "尚未添加资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No media yet"
           }
         }
       }
@@ -1371,6 +1461,26 @@
         }
       }
     },
+    "打开 Recap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Recap"
+          }
+        }
+      }
+    },
+    "打开课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open course"
+          }
+        }
+      }
+    },
     "找不到这个接口或模型，检查服务地址是否需要 /v1，以及模型名是否正确。": {
       "localizations": {
         "en": {
@@ -1487,6 +1597,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Textbook imported"
+          }
+        }
+      }
+    },
+    "散落的讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loose lectures"
+          }
+        }
+      }
+    },
+    "文稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript"
+          }
+        }
+      }
+    },
+    "文稿 + 重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript + key points"
           }
         }
       }
@@ -1641,6 +1781,16 @@
         }
       }
     },
+    "有资料时，再从课程里添加音频或视频。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you have media, add audio or video from the course."
+          }
+        }
+      }
+    },
     "服务地址": {
       "localizations": {
         "en": {
@@ -1737,6 +1887,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "On-device transcription complete"
+          }
+        }
+      }
+    },
+    "本机保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kept on this Mac"
           }
         }
       }
@@ -1967,6 +2127,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Installing…"
+          }
+        }
+      }
+    },
+    "正在开始…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting…"
           }
         }
       }
@@ -2371,6 +2541,16 @@
         }
       }
     },
+    "第一讲开始转写了。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first lecture is transcribing."
+          }
+        }
+      }
+    },
     "等待处理": {
       "localizations": {
         "en": {
@@ -2671,6 +2851,16 @@
         }
       }
     },
+    "设置完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setup complete"
+          }
+        }
+      }
+    },
     "证据线索": {
       "localizations": {
         "en": {
@@ -2957,6 +3147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Back"
+          }
+        }
+      }
+    },
+    "返回添加资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go back and add media"
           }
         }
       }

@@ -35,7 +35,12 @@ final class OnboardingCourseStep: OnboardingStepView {
             self?.requestAdvance?()
         }
 
+        let scene = OnboardingScene(
+            leading: OnboardingScene.chip(String(localized: "散落的讲次")),
+            trailing: OnboardingScene.chip(String(localized: "一个课程"), detail: String(localized: "本机保存"), tinted: true)
+        )
         fill(with: stack([
+            scene,
             input,
             note(String(localized: "名称只保存在本机，也可以随时修改。")),
             error,

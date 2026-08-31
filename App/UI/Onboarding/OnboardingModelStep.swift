@@ -91,7 +91,11 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
 
         let advanced = note(String(localized: "默认位置：~/whisper-models/ggml-large-v3-turbo.bin。只有手动管理模型时才需要查看这个路径。"))
 
-        fill(with: stack([card, pick, terminalToggle, terminal, advanced], spacing: 10))
+        let scene = OnboardingScene(
+            leading: OnboardingScene.chip("Aa", detail: "1.5 GB"),
+            trailing: OnboardingScene.macFrame(badge: String(localized: "✓ 本机完成"))
+        )
+        fill(with: stack([scene, card, pick, terminalToggle, terminal, advanced], spacing: 10))
         refresh()
     }
 

@@ -16,6 +16,7 @@
 		1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D5A138FA1BF50DBCCC35D1 /* TranscriptViewController.swift */; };
 		1ED21351811066B3286595E1 /* BatchAddLectureSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9825A3F595F774D5AF0C9A55 /* BatchAddLectureSheet.swift */; };
 		2D694B52068B24B20C1ADEE7 /* TerminalOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 561F999A30A529ACBE7869E3 /* TerminalOutputView.swift */; };
+		33DE90A729F253E3ACD62922 /* OnboardingScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED006BD186051E5A46A501FA /* OnboardingScene.swift */; };
 		35D7B9C5E2378E513C0D1991 /* OnboardingStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DA56496AB35BEA728C402E /* OnboardingStep.swift */; };
 		37C6B1CE6DFD7161ECFB7E24 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */; };
 		4D9E45E8EBBD3F548A85CF90 /* TerminalStudioViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EEEBC4A354CAB0789B0B48B /* TerminalStudioViewController.swift */; };
@@ -33,6 +34,7 @@
 		8DB68D877F1B18A690D807B9 /* recap-r-mark.png in Resources */ = {isa = PBXBuildFile; fileRef = 5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */; };
 		91E63379CAC6B867A40ECF82 /* OnboardingModelStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = F250DB3AE98BE07336EB019A /* OnboardingModelStep.swift */; };
 		9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B84F6FA84480A57562810F7 /* SceneDelegate.swift */; };
+		A9EF2E9049E1B2CF13B0B1AF /* OnboardingDoneStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E4913C7B3979D2AA532928A /* OnboardingDoneStep.swift */; };
 		ABA1677873A7AC347D8C1E34 /* MarkdownViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */; };
 		AC5C00D0EE7A17E4F256C4D0 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF07F81006BA32EFA6020422 /* UpdateChecker.swift */; };
 		B5C337CBDA7637648DF120FD /* EvidenceReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30AF5F43694C7E8CFA4DE5C /* EvidenceReviewView.swift */; };
@@ -68,6 +70,7 @@
 		224A0D4835EA9FE5F416758A /* recap-review-skill.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "recap-review-skill.md"; sourceTree = "<group>"; };
 		2309376905840F6CEE18EC31 /* OnboardingWelcomeStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWelcomeStep.swift; sourceTree = "<group>"; };
 		3822695569806EF08ECC2E35 /* PDFViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFViewController.swift; sourceTree = "<group>"; };
+		3E4913C7B3979D2AA532928A /* OnboardingDoneStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDoneStep.swift; sourceTree = "<group>"; };
 		42A50B7D1BB20A2E73F430D2 /* WaveformGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformGenerator.swift; sourceTree = "<group>"; };
 		456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		4CA68D9332A939536EEE3D92 /* LaTeXCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaTeXCompiler.swift; sourceTree = "<group>"; };
@@ -97,6 +100,7 @@
 		D349115A5C23C711AB33AF33 /* Recap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Recap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E0EEB693F131F46234ED3DF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownViewController.swift; sourceTree = "<group>"; };
+		ED006BD186051E5A46A501FA /* OnboardingScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingScene.swift; sourceTree = "<group>"; };
 		F250DB3AE98BE07336EB019A /* OnboardingModelStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingModelStep.swift; sourceTree = "<group>"; };
 		F596D0AE81FB36CC9976B7C9 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -142,8 +146,10 @@
 			children = (
 				C6FF05B586AE502B8FC116DB /* OnboardingAIStep.swift */,
 				03F2C6CCF516901480EE734D /* OnboardingCourseStep.swift */,
+				3E4913C7B3979D2AA532928A /* OnboardingDoneStep.swift */,
 				4FD60E773B773F04663F4077 /* OnboardingLectureStep.swift */,
 				F250DB3AE98BE07336EB019A /* OnboardingModelStep.swift */,
+				ED006BD186051E5A46A501FA /* OnboardingScene.swift */,
 				C2DA56496AB35BEA728C402E /* OnboardingStep.swift */,
 				505C301E3BBE5C9F28A1C147 /* OnboardingViewController.swift */,
 				2309376905840F6CEE18EC31 /* OnboardingWelcomeStep.swift */,
@@ -352,8 +358,10 @@
 				ABA1677873A7AC347D8C1E34 /* MarkdownViewController.swift in Sources */,
 				7FA901F41F43A93ADD81B4B7 /* OnboardingAIStep.swift in Sources */,
 				FA580BBA23BD8145CD327197 /* OnboardingCourseStep.swift in Sources */,
+				A9EF2E9049E1B2CF13B0B1AF /* OnboardingDoneStep.swift in Sources */,
 				0406E2AE80047A61694D69F5 /* OnboardingLectureStep.swift in Sources */,
 				91E63379CAC6B867A40ECF82 /* OnboardingModelStep.swift in Sources */,
+				33DE90A729F253E3ACD62922 /* OnboardingScene.swift in Sources */,
 				35D7B9C5E2378E513C0D1991 /* OnboardingStep.swift in Sources */,
 				08A31EB8D86B84F0AFCD4C3C /* OnboardingViewController.swift in Sources */,
 				084BD0D91D1FBF1120925A22 /* OnboardingWelcomeStep.swift in Sources */,

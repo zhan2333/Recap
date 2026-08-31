@@ -11,7 +11,9 @@ import UIKit
 final class OnboardingViewController: UIViewController {
 
     enum Step: Int, CaseIterable {
-        case welcome, model, ai, course, lecture
+        case welcome, model, ai, course, lecture, done
+
+        static var setupSteps: [Step] { [.welcome, .model, .ai, .course, .lecture] }
     }
 
     struct Outcome {
@@ -37,7 +39,9 @@ final class OnboardingViewController: UIViewController {
     private let guideIndex = UILabel()
     private let guideTitle = UILabel()
     private let guideDetail = UILabel()
+    private let guideBackground = UIView()
     private let footerStatus = UILabel()
+    private let savedNote = UILabel()
     private let backButton = UIButton(type: .system)
     private let primaryButton = UIButton(type: .system)
 
@@ -48,7 +52,7 @@ final class OnboardingViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = RecapTheme.paper
         buildChrome()
-        step = Step(rawValue: min(Settings.onboardingStep, Step.allCases.count - 1)) ?? .welcome
+        step = Step(rawValue: min(Settings.onboardingStep, Step.setupSteps.count - 1)) ?? .welcome
         maxReachable = step.rawValue
         show(step, animated: false)
     }
@@ -73,7 +77,7 @@ final class OnboardingViewController: UIViewController {
         brandText.axis = .vertical
         brandText.spacing = 1
         brandText.alignment = .leading
-        let brand = UIStackView(arrangedSubviews: [mark, brandText])
+        let brand = UIStackView(arrangedSubviews: [mark, brandText, UIView()])
         brand.axis = .horizontal
         brand.spacing = 9
         brand.alignment = .center
@@ -85,65 +89,88 @@ final class OnboardingViewController: UIViewController {
         let exitButton = quietButton(title: String(localized: "暂时退出"), accessibility: nil) { [weak self] in
             self?.presentExitConfirmation()
         }
+        let actions = UIStackView(arrangedSubviews: [UIView(), helpButton, exitButton])
+        actions.axis = .horizontal
+        actions.spacing = 8
+        actions.alignment = .center
 
-        let header = UIStackView(arrangedSubviews: [brand, UIView(), helpButton, exitButton])
-        header.axis = .horizontal
-        header.alignment = .center
-        header.spacing = 8
-
-        // Sidebar: progress and the five steps
+        // Centered progress: five dots riding a track, count label above them
         let progressLabel = UILabel()
         progressLabel.text = String(localized: "设置 Recap")
-        progressLabel.font = RecapTheme.body(11, weight: .semibold)
-        progressLabel.textColor = RecapTheme.muted
-        progressCount.font = RecapTheme.mono(11, weight: .semibold)
-        progressCount.textColor = RecapTheme.ink
-        let progressRow = UIStackView(arrangedSubviews: [progressLabel, UIView(), progressCount])
-        progressRow.axis = .horizontal
+        progressLabel.font = RecapTheme.body(10, weight: .semibold)
+        progressLabel.textColor = RecapTheme.quiet
+        progressCount.font = RecapTheme.mono(10, weight: .semibold)
+        progressCount.textColor = RecapTheme.muted
+        let labelRow = UIStackView(arrangedSubviews: [UIView(), progressLabel, progressCount])
+        labelRow.axis = .horizontal
+        labelRow.spacing = 6
 
         progressTrack.backgroundColor = RecapTheme.line
-        progressTrack.layer.cornerRadius = 1.5
+        progressTrack.layer.cornerRadius = 1
         progressTrack.clipsToBounds = true
-        progressFill.backgroundColor = RecapTheme.ink
+        progressFill.backgroundColor = RecapTheme.signal
         progressFill.translatesAutoresizingMaskIntoConstraints = false
         progressTrack.addSubview(progressFill)
         let fillWidth = progressFill.widthAnchor.constraint(equalToConstant: 0)
         progressFillWidth = fillWidth
+
+        stepList.axis = .horizontal
+        stepList.distribution = .fillEqually
+        stepList.alignment = .center
+        for item in Step.setupSteps {
+            stepList.addArrangedSubview(stepDot(item))
+        }
+
+        let dots = UIView()
+        for piece in [progressTrack, stepList] as [UIView] {
+            piece.translatesAutoresizingMaskIntoConstraints = false
+            dots.addSubview(piece)
+        }
         NSLayoutConstraint.activate([
-            progressTrack.heightAnchor.constraint(equalToConstant: 3),
+            dots.widthAnchor.constraint(equalToConstant: 246),
+            dots.heightAnchor.constraint(equalToConstant: 30),
+            progressTrack.heightAnchor.constraint(equalToConstant: 2),
+            progressTrack.centerYAnchor.constraint(equalTo: dots.centerYAnchor),
+            progressTrack.leadingAnchor.constraint(equalTo: dots.leadingAnchor, constant: 24),
+            progressTrack.trailingAnchor.constraint(equalTo: dots.trailingAnchor, constant: -24),
             progressFill.leadingAnchor.constraint(equalTo: progressTrack.leadingAnchor),
             progressFill.topAnchor.constraint(equalTo: progressTrack.topAnchor),
             progressFill.bottomAnchor.constraint(equalTo: progressTrack.bottomAnchor),
             fillWidth,
+            stepList.topAnchor.constraint(equalTo: dots.topAnchor),
+            stepList.bottomAnchor.constraint(equalTo: dots.bottomAnchor),
+            stepList.leadingAnchor.constraint(equalTo: dots.leadingAnchor),
+            stepList.trailingAnchor.constraint(equalTo: dots.trailingAnchor),
         ])
 
-        stepList.axis = .vertical
-        stepList.spacing = 2
-        for item in Step.allCases {
-            stepList.addArrangedSubview(stepRow(item))
-        }
+        let progress = UIStackView(arrangedSubviews: [labelRow, dots])
+        progress.axis = .vertical
+        progress.spacing = 4
+        progress.alignment = .center
 
-        let sidebar = UIStackView(arrangedSubviews: [progressRow, progressTrack, stepList, UIView()])
-        sidebar.axis = .vertical
-        sidebar.spacing = 10
-        sidebar.setCustomSpacing(18, after: progressTrack)
-        sidebar.widthAnchor.constraint(equalToConstant: 214).isActive = true
+        let header = UIStackView(arrangedSubviews: [brand, progress, actions])
+        header.axis = .horizontal
+        header.alignment = .center
+        header.spacing = 20
+        brand.widthAnchor.constraint(equalTo: actions.widthAnchor).isActive = true
 
-        // Stage
+        // Stage: copy on the left, the step's own content on the right
         stageEyebrow.font = RecapTheme.body(11, weight: .semibold)
         stageEyebrow.textColor = RecapTheme.signalText
-        stageTitle.font = RecapTheme.display(26, weight: .semibold)
+        stageTitle.font = RecapTheme.display(34, weight: .medium)
         stageTitle.textColor = RecapTheme.ink
         stageTitle.numberOfLines = 0
         stageDescription.font = RecapTheme.body(13)
         stageDescription.textColor = RecapTheme.muted
         stageDescription.numberOfLines = 0
-        let stageCopy = UIStackView(arrangedSubviews: [stageEyebrow, stageTitle, stageDescription])
+        let stageCopy = UIStackView(arrangedSubviews: [stageEyebrow, stageTitle, stageDescription, UIView()])
         stageCopy.axis = .vertical
-        stageCopy.spacing = 6
+        stageCopy.spacing = 10
+        stageCopy.setCustomSpacing(14, after: stageEyebrow)
+        stageCopy.widthAnchor.constraint(equalToConstant: 300).isActive = true
 
         guideIndex.font = RecapTheme.mono(10, weight: .semibold)
-        guideIndex.textColor = RecapTheme.quiet
+        guideIndex.textColor = RecapTheme.signalText
         guideTitle.font = RecapTheme.body(12, weight: .semibold)
         guideTitle.textColor = RecapTheme.ink
         guideDetail.font = RecapTheme.body(11)
@@ -155,13 +182,14 @@ final class OnboardingViewController: UIViewController {
         let guide = UIStackView(arrangedSubviews: [guideIndex, guideText])
         guide.axis = .horizontal
         guide.spacing = 10
-        guide.alignment = .top
+        guide.alignment = .center
         guide.isLayoutMarginsRelativeArrangement = true
-        guide.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 11, leading: 13, bottom: 11, trailing: 13)
-        let guideBackground = UIView()
-        guideBackground.backgroundColor = RecapTheme.surface.withAlphaComponent(0.6)
+        guide.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 9, leading: 12, bottom: 9, trailing: 14)
         guideBackground.layer.cornerRadius = RecapTheme.radiusMD
         guideBackground.layer.cornerCurve = .continuous
+        guideBackground.layer.borderWidth = 1
+        guideBackground.layer.borderColor = RecapTheme.signal.withAlphaComponent(0.35).cgColor
+        guideBackground.backgroundColor = RecapTheme.signalSoft.withAlphaComponent(0.5)
         guide.translatesAutoresizingMaskIntoConstraints = false
         guideBackground.addSubview(guide)
         NSLayoutConstraint.activate([
@@ -170,23 +198,38 @@ final class OnboardingViewController: UIViewController {
             guide.leadingAnchor.constraint(equalTo: guideBackground.leadingAnchor),
             guide.trailingAnchor.constraint(equalTo: guideBackground.trailingAnchor),
         ])
+        let guideRow = UIStackView(arrangedSubviews: [UIView(), guideBackground])
+        guideRow.axis = .horizontal
 
-        let stage = UIStackView(arrangedSubviews: [stageCopy, stageContent, UIView(), guideBackground])
-        stage.axis = .vertical
-        stage.spacing = 20
+        let contentColumn = UIStackView(arrangedSubviews: [stageContent, guideRow])
+        contentColumn.axis = .vertical
+        contentColumn.spacing = 24
 
-        // Footer
-        footerStatus.font = RecapTheme.body(11)
+        let stage = UIStackView(arrangedSubviews: [stageCopy, contentColumn])
+        stage.axis = .horizontal
+        stage.spacing = 46
+        stage.alignment = .center
+
+        // Footer: status left, actions right
+        footerStatus.font = RecapTheme.body(10, weight: .semibold)
         footerStatus.textColor = RecapTheme.quiet
+        savedNote.text = String(localized: "✓ 进度保存在这台 Mac")
+        savedNote.font = RecapTheme.body(10)
+        savedNote.textColor = RecapTheme.quiet
+        let statusColumn = UIStackView(arrangedSubviews: [footerStatus, savedNote])
+        statusColumn.axis = .vertical
+        statusColumn.spacing = 2
+        statusColumn.alignment = .leading
+
         backButton.preferredBehavioralStyle = .pad
         var backConfig = UIButton.Configuration.plain()
-        backConfig.attributedTitle = AttributedString(String(localized: "返回"), attributes: AttributeContainer([
+        backConfig.attributedTitle = AttributedString("←  " + String(localized: "返回"), attributes: AttributeContainer([
             .font: RecapTheme.body(12), .foregroundColor: RecapTheme.muted,
         ]))
         backConfig.background.strokeColor = RecapTheme.line
         backConfig.background.strokeWidth = 1
-        backConfig.background.cornerRadius = RecapTheme.radiusSM
-        backConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
+        backConfig.background.cornerRadius = 17
+        backConfig.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 16, bottom: 9, trailing: 16)
         backButton.configuration = backConfig
         backButton.addAction(UIAction { [weak self] _ in self?.goBack() }, for: .touchUpInside)
 
@@ -194,39 +237,35 @@ final class OnboardingViewController: UIViewController {
         var primaryConfig = UIButton.Configuration.filled()
         primaryConfig.baseBackgroundColor = RecapTheme.ink
         primaryConfig.baseForegroundColor = RecapTheme.paper
-        primaryConfig.background.cornerRadius = RecapTheme.radiusSM
-        primaryConfig.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 20, bottom: 9, trailing: 20)
+        primaryConfig.background.cornerRadius = 17
+        primaryConfig.contentInsets = NSDirectionalEdgeInsets(top: 9, leading: 22, bottom: 9, trailing: 22)
         primaryButton.configuration = primaryConfig
         primaryButton.addAction(UIAction { [weak self] _ in self?.advance() }, for: .touchUpInside)
 
-        let footer = UIStackView(arrangedSubviews: [footerStatus, UIView(), backButton, primaryButton])
+        let footer = UIStackView(arrangedSubviews: [statusColumn, UIView(), backButton, primaryButton])
         footer.axis = .horizontal
         footer.alignment = .center
         footer.spacing = 10
 
-        let main = UIStackView(arrangedSubviews: [stage, footer])
-        main.axis = .vertical
-        main.spacing = 18
+        let topRule = UIView()
+        topRule.backgroundColor = RecapTheme.line
+        topRule.heightAnchor.constraint(equalToConstant: 1).isActive = true
+        let bottomRule = UIView()
+        bottomRule.backgroundColor = RecapTheme.line
+        bottomRule.heightAnchor.constraint(equalToConstant: 1).isActive = true
 
-        let columns = UIStackView(arrangedSubviews: [sidebar, main])
-        columns.axis = .horizontal
-        columns.spacing = 30
-        columns.alignment = .fill
-
-        let separator = UIView()
-        separator.backgroundColor = RecapTheme.line
-        separator.heightAnchor.constraint(equalToConstant: 1).isActive = true
-
-        let root = UIStackView(arrangedSubviews: [header, separator, columns])
+        let root = UIStackView(arrangedSubviews: [header, topRule, stage, bottomRule, footer])
         root.axis = .vertical
-        root.spacing = 16
+        root.spacing = 18
+        root.setCustomSpacing(0, after: header)
+        root.setCustomSpacing(0, after: stage)
         root.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(root)
         NSLayoutConstraint.activate([
-            root.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 18),
-            root.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            root.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            root.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            root.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 14),
+            root.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
+            root.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
+            root.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -14),
         ])
     }
 
@@ -249,45 +288,58 @@ final class OnboardingViewController: UIViewController {
 
     // MARK: - Step list
 
-    private func stepRow(_ item: Step) -> UIButton {
+    private func stepDot(_ item: Step) -> UIButton {
         let button = UIButton(type: .system)
         button.preferredBehavioralStyle = .pad
-        button.contentHorizontalAlignment = .leading
         button.tag = item.rawValue + 1
+        button.accessibilityLabel = item.navTitle
         var config = UIButton.Configuration.plain()
-        config.contentInsets = NSDirectionalEdgeInsets(top: 7, leading: 9, bottom: 7, trailing: 9)
-        config.background.cornerRadius = RecapTheme.radiusSM
+        config.contentInsets = .zero
         button.configuration = config
         button.addAction(UIAction { [weak self] _ in
             guard let self, item.rawValue <= self.maxReachable else { return }
             self.show(item, animated: true)
         }, for: .touchUpInside)
+
+        let dot = UIView()
+        dot.tag = 99
+        dot.layer.cornerRadius = 5
+        dot.layer.borderWidth = 1
+        dot.isUserInteractionEnabled = false
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        button.addSubview(dot)
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 30),
+            button.heightAnchor.constraint(equalToConstant: 30),
+            dot.widthAnchor.constraint(equalToConstant: 10),
+            dot.heightAnchor.constraint(equalToConstant: 10),
+            dot.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+            dot.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+        ])
         return button
     }
 
     private func refreshStepList() {
-        for item in Step.allCases {
+        for item in Step.setupSteps {
             guard let button = stepList.arrangedSubviews.compactMap({ $0 as? UIButton })
-                .first(where: { $0.tag == item.rawValue + 1 }) else { continue }
+                .first(where: { $0.tag == item.rawValue + 1 }),
+                  let dot = button.viewWithTag(99) else { continue }
+            let passed = item.rawValue < step.rawValue
             let isCurrent = item == step
-            let reachable = item.rawValue <= maxReachable
-            let color = isCurrent ? RecapTheme.ink : (reachable ? RecapTheme.muted : RecapTheme.quiet.withAlphaComponent(0.6))
-            var title = AttributedString("\(item.rawValue + 1)  \(item.navTitle)")
-            title.font = RecapTheme.body(12, weight: isCurrent ? .semibold : .regular)
-            title.foregroundColor = color
-            var subtitle = AttributedString(item.navDetail)
-            subtitle.font = RecapTheme.body(10.5)
-            subtitle.foregroundColor = RecapTheme.quiet
-            button.configuration?.attributedTitle = title
-            button.configuration?.attributedSubtitle = subtitle
-            button.configuration?.background.backgroundColor = isCurrent ? RecapTheme.selection : .clear
-            button.isEnabled = reachable
+            dot.backgroundColor = passed || isCurrent ? RecapTheme.signal : RecapTheme.paper
+            dot.layer.borderColor = (isCurrent ? RecapTheme.signal : RecapTheme.line).cgColor
+            dot.transform = isCurrent ? CGAffineTransform(scaleX: 1.25, y: 1.25) : .identity
+            button.isEnabled = item.rawValue <= maxReachable
         }
-        let total = CGFloat(Step.allCases.count)
-        progressCount.text = "\(step.rawValue + 1) / \(Int(total))"
-        footerStatus.text = String(localized: "第 \(step.rawValue + 1) 步，共 \(Int(total)) 步")
+        let total = Step.setupSteps.count
+        let shown = min(step.rawValue + 1, total)
+        progressCount.text = "\(shown) / \(total)"
+        footerStatus.text = step == .done
+            ? String(localized: "设置完成")
+            : String(localized: "第 \(shown) 步，共 \(total) 步")
         view.layoutIfNeeded()
-        progressFillWidth?.constant = progressTrack.bounds.width * CGFloat(step.rawValue + 1) / total
+        let ratio = CGFloat(step.rawValue) / CGFloat(total - 1)
+        progressFillWidth?.constant = progressTrack.bounds.width * min(ratio, 1)
         UIView.animate(withDuration: 0.28) { self.view.layoutIfNeeded() }
     }
 
@@ -298,9 +350,16 @@ final class OnboardingViewController: UIViewController {
         maxReachable = max(maxReachable, target.rawValue)
         Settings.onboardingStep = target.rawValue
 
+        let hasLecture = outcome.lecture != nil
         stageEyebrow.text = target.eyebrow
-        stageTitle.text = target.title
-        stageDescription.text = target.detail
+        stageTitle.text = target == .done
+            ? (hasLecture ? String(localized: "第一讲开始转写了。") : String(localized: "Recap 准备好了。"))
+            : target.title
+        stageDescription.text = target == .done
+            ? (hasLecture
+                ? String(localized: "完成后，文稿和重点会出现在课程里。")
+                : String(localized: "有资料时，再从课程里添加音频或视频。"))
+            : target.detail
         guideIndex.text = String(format: "%02d", target.rawValue + 1)
         guideTitle.text = target.guideTitle
         guideDetail.text = target.guideDetail
@@ -318,7 +377,8 @@ final class OnboardingViewController: UIViewController {
         ])
         stepView.onStateChange = { [weak self] in self?.refreshPrimary() }
 
-        backButton.isHidden = target == .welcome
+        backButton.isHidden = target == .welcome || target == .done
+        guideBackground.isHidden = target == .done
         refreshStepList()
         refreshPrimary()
 
@@ -340,6 +400,7 @@ final class OnboardingViewController: UIViewController {
         case .ai: view = OnboardingAIStep(host: self)
         case .course: view = OnboardingCourseStep(host: self)
         case .lecture: view = OnboardingLectureStep(host: self)
+        case .done: view = OnboardingDoneStep(host: self)
         }
         view.requestAdvance = { [weak self] in self?.skipCurrentStep() }
         return view
@@ -381,7 +442,7 @@ final class OnboardingViewController: UIViewController {
                     self.finish()
                 }
             case .finish:
-                self.finish()
+                self.show(.done, animated: true)
             }
         }
     }
@@ -389,6 +450,13 @@ final class OnboardingViewController: UIViewController {
     // MARK: - Completion
 
     var recordedCourse: Course? { outcome.course }
+    var recordedLecture: Lecture? { outcome.lecture }
+
+    // The finished stage can send the user back for one more lecture
+    func returnToLectureStep() {
+        stepViews[.done] = nil
+        show(.lecture, animated: true)
+    }
 
     func record(course: Course) {
         outcome.course = course
