@@ -76,8 +76,11 @@ final class OnboardingAIStep: OnboardingStepView {
         formSection.isHidden = mode != .connect
         formSection.alpha = mode == .connect ? 1 : 0
 
-        container.addArrangedSubview(connect)
-        container.addArrangedSubview(later)
+        let choices = UIStackView(arrangedSubviews: [connect, later])
+        choices.axis = .horizontal
+        choices.distribution = .fillEqually
+        choices.spacing = 10
+        container.addArrangedSubview(choices)
         container.addArrangedSubview(formSection)
 
         let wrapper = UIStackView(arrangedSubviews: [scene, container])

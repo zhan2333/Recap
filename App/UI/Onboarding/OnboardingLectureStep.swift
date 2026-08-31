@@ -86,8 +86,11 @@ final class OnboardingLectureStep: OnboardingStepView, UIDocumentPickerDelegate 
             self?.requestAdvance?()
         }
 
-        container.addArrangedSubview(local)
-        container.addArrangedSubview(link)
+        let choices = UIStackView(arrangedSubviews: [local, link])
+        choices.axis = .horizontal
+        choices.distribution = .fillEqually
+        choices.spacing = 10
+        container.addArrangedSubview(choices)
         container.addArrangedSubview(selectedRow)
         container.addArrangedSubview(linkSection)
         container.addArrangedSubview(error)

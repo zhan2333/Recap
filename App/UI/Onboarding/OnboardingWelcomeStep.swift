@@ -179,7 +179,7 @@ final class OnboardingSourcePreview: UIView {
 
     init(time: String) {
         super.init(frame: .zero)
-        backgroundColor = RecapTheme.ink
+        backgroundColor = UIColor(red: 0.11, green: 0.10, blue: 0.09, alpha: 1)
         layer.cornerRadius = 15
         layer.cornerCurve = .continuous
         clipsToBounds = true
@@ -187,81 +187,94 @@ final class OnboardingSourcePreview: UIView {
         let play = UILabel()
         play.text = "▶"
         play.font = RecapTheme.body(8)
-        play.textColor = RecapTheme.paper
+        play.textColor = .white
         play.textAlignment = .center
         play.layer.borderWidth = 1
         play.layer.borderColor = UIColor.white.withAlphaComponent(0.32).cgColor
         play.layer.cornerRadius = 14
+
+        let rule = UIView()
+        rule.backgroundColor = UIColor.white.withAlphaComponent(0.22)
 
         let stamp = UILabel()
         stamp.text = time
         stamp.font = RecapTheme.mono(9, weight: .semibold)
         stamp.textColor = UIColor.white.withAlphaComponent(0.72)
 
-        let row = UIStackView(arrangedSubviews: [play, waveform, stamp])
-        row.axis = .horizontal
-        row.alignment = .center
-        row.spacing = 12
-        row.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(row)
+        for piece in [play, waveform, rule, stamp] as [UIView] {
+            piece.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(piece)
+        }
         NSLayoutConstraint.activate([
             heightAnchor.constraint(equalToConstant: 66),
             play.widthAnchor.constraint(equalToConstant: 28),
             play.heightAnchor.constraint(equalToConstant: 28),
+            play.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 13),
+            play.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+            // The strip sits on its baseline: play, waveform and stamp all align to the bottom
+            waveform.leadingAnchor.constraint(equalTo: play.trailingAnchor, constant: 12),
+            waveform.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 0.46),
             waveform.heightAnchor.constraint(equalToConstant: 18),
-            row.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 13),
-            row.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -13),
-            row.centerYAnchor.constraint(equalTo: centerYAnchor),
+            waveform.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14),
+            rule.leadingAnchor.constraint(equalTo: waveform.leadingAnchor),
+            rule.trailingAnchor.constraint(equalTo: waveform.trailingAnchor),
+            rule.topAnchor.constraint(equalTo: waveform.bottomAnchor),
+            rule.heightAnchor.constraint(equalToConstant: 1),
+            stamp.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -13),
+            stamp.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14),
         ])
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 }
 
-// The speaking waveform under the play control
+// One continuous silhouette, the shape the design clips out of a filled block
 final class WaveformView: UIView {
 
-    private let bars: [UIView]
+    private let shape = CAShapeLayer()
+    // x, y as fractions of the box, from the design's clip-path
+    private static let peaks: [(CGFloat, CGFloat)] = [
+        (0, 0.55), (0.07, 0.22), (0.14, 0.66), (0.22, 0.35), (0.30, 0.75), (0.38, 0.17),
+        (0.46, 0.56), (0.54, 0.28), (0.62, 0.68), (0.70, 0.40), (0.78, 0.76), (0.86, 0.24),
+        (0.94, 0.52), (1, 0.43),
+    ]
 
     override init(frame: CGRect) {
-        bars = (0..<22).map { _ in UIView() }
         super.init(frame: frame)
-        let stack = UIStackView(arrangedSubviews: bars)
-        stack.axis = .horizontal
-        stack.alignment = .center
-        stack.distribution = .fillEqually
-        stack.spacing = 2
-        for (index, bar) in bars.enumerated() {
-            bar.backgroundColor = UIColor.white.withAlphaComponent(0.82)
-            bar.layer.cornerRadius = 0.5
-            let heights: [CGFloat] = [5, 11, 7, 14, 6, 16, 9, 12, 4, 15, 8, 13, 6, 10, 16, 7, 12, 5, 14, 9, 11, 6]
-            bar.heightAnchor.constraint(equalToConstant: heights[index % heights.count]).isActive = true
-        }
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(stack)
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
-        ])
+        backgroundColor = .clear
+        shape.fillColor = UIColor.white.withAlphaComponent(0.82).cgColor
+        layer.addSublayer(shape)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    override func didMoveToWindow() {
-        super.didMoveToWindow()
-        guard window != nil else { return }
-        for (index, bar) in bars.enumerated() {
-            let pulse = CABasicAnimation(keyPath: "transform.scale.y")
-            pulse.fromValue = 0.55
-            pulse.toValue = 1
-            pulse.duration = 0.7
-            pulse.beginTime = CACurrentMediaTime() + Double(index) * 0.02
-            pulse.autoreverses = true
-            pulse.repeatCount = 3
-            pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            bar.layer.add(pulse, forKey: "speak")
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: 0, y: bounds.height * Self.peaks[0].1))
+        for peak in Self.peaks.dropFirst() {
+            path.addLine(to: CGPoint(x: bounds.width * peak.0, y: bounds.height * peak.1))
         }
+        path.addLine(to: CGPoint(x: bounds.width, y: bounds.height))
+        path.addLine(to: CGPoint(x: 0, y: bounds.height))
+        path.close()
+        shape.path = path.cgPath
+        shape.frame = bounds
+        shape.anchorPoint = CGPoint(x: 0.5, y: 1)
+        shape.position = CGPoint(x: bounds.midX, y: bounds.maxY)
+        guard shape.animation(forKey: "speak") == nil, window != nil else { return }
+        let speak = CAKeyframeAnimation(keyPath: "transform.scale.y")
+        speak.values = [0.55, 1, 0.55]
+        speak.keyTimes = [0, 0.5, 1]
+        speak.duration = 0.7
+        speak.repeatCount = 3
+        speak.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        shape.add(speak, forKey: "speak")
+        let fade = CAKeyframeAnimation(keyPath: "opacity")
+        fade.values = [0.55, 1, 0.55]
+        fade.keyTimes = [0, 0.5, 1]
+        fade.duration = 0.7
+        fade.repeatCount = 3
+        shape.add(fade, forKey: "fade")
     }
 }

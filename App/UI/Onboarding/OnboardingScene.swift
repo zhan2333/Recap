@@ -10,7 +10,7 @@ import UIKit
 // The framed panel every journey diagram sits in
 final class OnboardingScene: UIView {
 
-    init(pieces: [UIView], spacing: CGFloat = 0, minHeight: CGFloat = 160) {
+    init(pieces: [UIView], spacing: CGFloat = 0, minHeight: CGFloat = 180) {
         super.init(frame: .zero)
         layer.cornerRadius = 26
         layer.cornerCurve = .continuous
@@ -28,7 +28,7 @@ final class OnboardingScene: UIView {
             heightAnchor.constraint(greaterThanOrEqualToConstant: minHeight),
             row.centerXAnchor.constraint(equalTo: centerXAnchor),
             row.centerYAnchor.constraint(equalTo: centerYAnchor),
-            row.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 20),
+            row.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 24),
             row.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 24),
         ])
     }
@@ -309,7 +309,7 @@ final class OnboardingBranchThread: UIView {
         layer.addSublayer(shape)
         NSLayoutConstraint.activate([
             widthAnchor.constraint(equalToConstant: 64),
-            heightAnchor.constraint(equalToConstant: 84),
+            heightAnchor.constraint(equalToConstant: 72),
         ])
     }
 

@@ -26,6 +26,7 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
     private var progressWidth: NSLayoutConstraint?
     private var isDownloading = false
     private var pickButton: UIButton?
+    private weak var pick: UIView?
     private let cardSymbol = UILabel()
     private let cardMark = UILabel()
     private let advancedToggle = UIButton(type: .system)
@@ -91,8 +92,10 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
             cardStack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -14),
         ])
 
-        let pick = textAction(String(localized: "选择已有文件…")) { [weak self] in self?.pickModel() }
-        pickButton = pick
+        let pickButton = secondaryAction(String(localized: "选择已有文件…")) { [weak self] in self?.pickModel() }
+        self.pickButton = pickButton
+        let pick = UIStackView(arrangedSubviews: [pickButton, UIView()])
+        pick.axis = .horizontal
 
         terminal.isHidden = true
         terminal.heightAnchor.constraint(equalToConstant: 132).isActive = true
@@ -127,6 +130,7 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
             OnboardingThread(distance: 70),
             OnboardingMacFrame(badge: String(localized: "✓ 本机完成")),
         ])
+        self.pick = pick
         fill(with: stack([scene, card, pick, terminalToggle, terminal, advancedToggle, advancedBody], spacing: 10))
         refresh()
     }
@@ -144,7 +148,7 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
             cardDetail.text = String(localized: "推荐文件已放在这台 Mac 上，可以继续。")
             cardMark.text = "✓"
             card.layer.borderColor = RecapTheme.complete.withAlphaComponent(0.4).cgColor
-            pickButton?.isHidden = true
+            pick?.isHidden = true
         } else {
             cardSymbol.text = isDownloading ? "↓" : "✓"
             cardSymbol.textColor = isDownloading ? RecapTheme.signalText : RecapTheme.ink
@@ -156,7 +160,7 @@ final class OnboardingModelStep: OnboardingStepView, UIDocumentPickerDelegate {
             cardMark.textColor = RecapTheme.quiet
             card.layer.borderColor = RecapTheme.ink.withAlphaComponent(0.35).cgColor
             card.backgroundColor = RecapTheme.selection
-            pickButton?.isHidden = isDownloading
+            pick?.isHidden = isDownloading
         }
         onStateChange?()
     }

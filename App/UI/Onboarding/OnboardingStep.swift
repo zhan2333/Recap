@@ -155,6 +155,24 @@ class OnboardingStepView: UIView {
         }
     }
 
+    func secondaryAction(_ title: String, action: @escaping () -> Void) -> UIButton {
+        let button = UIButton(type: .system)
+        button.preferredBehavioralStyle = .pad
+        var config = UIButton.Configuration.plain()
+        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([
+            .font: RecapTheme.body(11, weight: .semibold), .foregroundColor: RecapTheme.muted,
+        ]))
+        config.background.strokeColor = RecapTheme.line
+        config.background.strokeWidth = 1
+        config.background.cornerRadius = 13
+        config.background.backgroundColor = RecapTheme.paper
+        config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
+        button.configuration = config
+        button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        button.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        return button
+    }
+
     func textAction(_ title: String, action: @escaping () -> Void) -> UIButton {
         let button = UIButton(type: .system)
         button.preferredBehavioralStyle = .pad

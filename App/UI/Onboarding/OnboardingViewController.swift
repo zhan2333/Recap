@@ -201,7 +201,8 @@ final class OnboardingViewController: UIViewController {
         guideDetail.font = RecapTheme.body(11)
         guideDetail.textColor = RecapTheme.muted
         guideDetail.numberOfLines = 0
-        let guideText = UIStackView(arrangedSubviews: [guideNow, guideTitle, guideDetail])
+        guideDetail.isHidden = true
+        let guideText = UIStackView(arrangedSubviews: [guideNow, guideTitle])
         guideText.axis = .vertical
         guideText.spacing = 2
         let guide = UIStackView(arrangedSubviews: [guideIndex, guideText])
@@ -394,6 +395,13 @@ final class OnboardingViewController: UIViewController {
 
         let dot = UIView()
         dot.tag = 99
+        let check = UILabel()
+        check.tag = 98
+        check.font = RecapTheme.body(7, weight: .bold)
+        check.textColor = RecapTheme.paper
+        check.textAlignment = .center
+        check.translatesAutoresizingMaskIntoConstraints = false
+        dot.addSubview(check)
         dot.layer.cornerRadius = 5
         dot.layer.borderWidth = 1
         dot.isUserInteractionEnabled = false
@@ -408,6 +416,8 @@ final class OnboardingViewController: UIViewController {
             dot.heightAnchor.constraint(equalToConstant: 10),
             dot.centerXAnchor.constraint(equalTo: button.centerXAnchor),
             dot.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+            check.centerXAnchor.constraint(equalTo: dot.centerXAnchor),
+            check.centerYAnchor.constraint(equalTo: dot.centerYAnchor),
         ])
         return button
     }
@@ -421,6 +431,7 @@ final class OnboardingViewController: UIViewController {
             let isCurrent = item == step
             dot.backgroundColor = passed || isCurrent ? RecapTheme.signal : RecapTheme.paper
             dot.layer.borderColor = (passed || isCurrent ? RecapTheme.signal : RecapTheme.line).cgColor
+            (dot.viewWithTag(98) as? UILabel)?.text = passed && !isCurrent ? "✓" : ""
             UIView.animate(withDuration: 0.28) {
                 self.dotWidths[item]?.constant = isCurrent ? 26 : 10
                 self.view.layoutIfNeeded()
@@ -458,7 +469,7 @@ final class OnboardingViewController: UIViewController {
             : target.detail
         guideIndex.text = String(format: "%02d", target.rawValue + 1)
         guideTitle.text = target.guideTitle
-        guideDetail.text = target.guideDetail
+        guideBackground.accessibilityLabel = "\(target.guideTitle)。\(target.guideDetail)"
 
         let stepView = stepViews[target] ?? makeStepView(for: target)
         stepViews[target] = stepView

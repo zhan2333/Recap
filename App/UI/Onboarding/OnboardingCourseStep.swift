@@ -48,7 +48,7 @@ final class OnboardingCourseStep: OnboardingStepView {
             title: name.isEmpty ? String(localized: "深度学习基础") : name,
             detail: String(localized: "本机保存"))
         self.folder = folder
-        let scene = OnboardingScene(pieces: [OnboardingPaperStack(), folder], spacing: 28, minHeight: 160)
+        let scene = OnboardingScene(pieces: [OnboardingPaperStack(), folder], spacing: 28, minHeight: 180)
         fill(with: stack([
             scene,
             input,
