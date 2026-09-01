@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://recap.rio2333.com/"><b>recap.rio2333.com</b></a>
+</p>
+
+<p align="center">
   <a href="README.md">English</a> · 简体中文
 </p>
 
@@ -80,7 +84,7 @@
 
 ## 安装
 
-1. 从 **[Releases](https://github.com/zhan2333/Recap/releases)** 下载最新 dmg
+1. 从 **[recap.rio2333.com](https://recap.rio2333.com/)** 或 **[Releases](https://github.com/zhan2333/Recap/releases)** 下载最新 dmg
 2. 把 Recap 拖入「应用程序」——dmg 已公证，直接打开即可
 3. 跟随引导下载 whisper 模型，然后新建课程、添加第一个讲次
 

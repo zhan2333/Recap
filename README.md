@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://recap.rio2333.com/"><b>recap.rio2333.com</b></a>
+</p>
+
+<p align="center">
   English · <a href="README.zh-Hans.md">简体中文</a>
 </p>
 
@@ -80,7 +84,7 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 
 ## Installation
 
-1. Download the latest dmg from **[Releases](https://github.com/zhan2333/Recap/releases)**
+1. Download the latest dmg from **[recap.rio2333.com](https://recap.rio2333.com/)** or the **[Releases](https://github.com/zhan2333/Recap/releases)** page
 2. Drag Recap into Applications — the dmg is notarized and opens right away
 3. Follow onboarding to fetch the whisper model, then create a course and add your first lecture
 
