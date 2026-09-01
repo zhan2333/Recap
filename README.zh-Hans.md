@@ -100,19 +100,21 @@
 
 ## 技术实现
 
-Recap 是用 UIKit 写的原生 Mac Catalyst app。除了你自己配置的那一步，下面的流程全部在本机完成。
+Recap 是用 UIKit 写的原生 Mac Catalyst app。它的大部分设计其实是同一个判断重复了很多遍：让工作发生在数据本来所在的地方，其余的交给你已经付过钱的工具。
 
-**流水线**：讲次以本地文件或回放直链进入，`PipelineKit` 负责下载，`AudioExtractor` 用 `AVAssetReader` 解码后，再经流式 `AVAudioConverter` 重采样到 16 kHz 单声道——重采样必须单独一遍，交给 reader 一步完成会得到帧数正确但内容损坏的音频。`TranscriptionKit` 把样本喂给 whisper.cpp，拿回带时间戳的分段。`LectureQueue` 负责阶段编排、退出后续跑，并把多段视频合并成一条时间线。
+**用你自己的 CLI 订阅干活，不必再买一份 API。** Terminal Studio 是一个真终端：跑在 PTY 上的登录 shell，起点就在课程目录，由 SwiftTerm 渲染。它会检测这台 Mac 上已经装好的 agent（claude / codex / gemini / grok / kimi），并以**你的身份**运行它们，用的是它们本来就持有的登录态。也就是说，如果你已经在付 Claude 或 Codex 的订阅，提取重点、生成讲义就跑在这份订阅上——Recap 不会把你的任务代理到它自己的 key 上，你也不用为了用上好模型再单独开一个 API 账号。更想用 key？同样的任务也能走你配置的任意 OpenAI-compatible 接口。两条路遵循同一份说明。
 
-**转写在本机**：whisper.cpp 用官方 XCFramework，外加从同一 tag 编出的 arm64 Mac Catalyst 切片（`scripts/fetch-whisper.sh`、`scripts/build-whisper-macabi.sh`）。模型是一次性下载的 ggml `large-v3-turbo`；转写语言可以跟随音频，也可以钉死中文或英文。
+**skill 内置在 app 里，任何 agent 一进门就已经知道规矩。** `App/recap-review-skill.md` 既是产品规格也是给 agent 的说明书：它定义了课程目录的文件名和 JSON 形状，并按四种约定自动安装（`.claude/skills`、`.agents/skills`、`AGENTS.md`、`GEMINI.md`）。你在这个目录里启动哪个 agent，它都已经知道该读什么、写什么、写到哪——你不需要自己调提示词，而它的产物落地就是 app 能直接展示的文件。
 
-**分析是可选的，而且用你自己的接口**：`AnalysisKit` 对接任意 OpenAI-compatible 服务。`LectureAnalyzer` 提取考试重点；`EvidenceMatcher` 把每条重点连回文稿——取「最长公共子串」和「二元组重合度」中较高的一个，阈值 0.55，结果按算法版本号缓存，匹配算法一变缓存自动失效。`HandoutGenerator` 产出 LaTeX，`LaTeXCompiler` 用两遍 `xelatex` 编译。
+**课程目录本身就是契约，不是数据库。** 媒体、`segments.json`、`analysis.json`、LaTeX 源码和 PDF 都是同一个目录下的普通文件。所以同一门课在 app 里、在你自己的终端里、在脚本里都成立；agent 写完的那一刻，界面上就能看到。
 
-**课程目录就是契约**：每门课是 Application Support 下的一个目录，装着媒体、`segments.json`、`analysis.json`、LaTeX 源码和 PDF。内置 skill（`App/recap-review-skill.md`）写的是同一套文件名和数据形状，并按四种 CLI 约定自动安装——任何 agent 进入这个目录，产出的东西 app 都认得。
+**转写全程不出这台 Mac。** whisper.cpp 用官方 XCFramework，外加从同一 tag 编出的 arm64 Mac Catalyst 切片，课程录像在进程内解码并转写——不装 ffmpeg，不装 Python，不上传。`AudioExtractor` 用 `AVAssetReader` 解码，再单独走一遍流式重采样到 16 kHz 单声道：交给 reader 一步转换会得到帧数正确但内容损坏的音频。
 
-**Catalyst 下的子进程**：Catalyst 自身不能起进程，所以 `Plugin/ShellRunner.swift` 是一个运行时加载的纯 macOS bundle，协议在 `App/Models/ShellBridge.swift` 里逐字镜像。Terminal Studio 用 `forkpty` 启动 shell，让子进程成为拥有该终端的会话领导者——这正是 SIGWINCH 和 Ctrl+C 能像真实终端一样工作的前提——再由 SwiftTerm 在独立窗口里渲染。
+**每条结论都留着出处。** `EvidenceMatcher` 把提取出的每条重点连回文稿——取「最长公共子串」和「二元组重合度」中较高的一个，阈值 0.55。这正是点一条重点就能让播放器跳到老师说这句话的那一刻的原因，也是 skill 要求引用贴近口语原话、而不是改写成书面语的原因。
 
-**发布**：`scripts/package-release.sh` 完成 Release 构建、Developer ID + 强化运行时签名、安装 dmg 排版、公证与 staple。app 内则由常驻 pill 下载新版本、就地替换并自动重启。
+**加上教材，agent 的识别会明显更准。** 语音转写最容易听错的，恰好是最要紧的那些词——人名、公式、专业术语；而只有转写稿时，agent 没有任何依据判断某个词是听错了还是本来如此。导入教材后，app 会带页码标记提取全文，skill 先整理出目录、把教材切成分章文件，之后只读这一讲对应的那一章。于是 agent 手里同时有正确的术语和上下文论证：它能纠正听错的词、指出某个说法出自第几页，并按教材的结构组织讲义，而不是靠猜。
+
+**发布也是产品的一部分。** `scripts/package-release.sh` 完成 Release 构建、Developer ID + 强化运行时签名、安装 dmg 排版、公证与 staple。app 内则由常驻 pill 下载新版本、就地替换并自动重启——更新是一次点击，不用再跑一趟下载页。
 
 ## 参与贡献
 
