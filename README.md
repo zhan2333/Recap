@@ -27,7 +27,7 @@
 
 ![Recap](docs/hero-en.png)
 
-Course replay → on-device transcript → exam key points → lecture-note PDF, all inside one native Mac app. Transcription runs a whisper model fully offline; only the optional analysis step talks to an LLM endpoint you configure yourself — no ffmpeg, no Python, no external binaries.
+Course replay → on-device transcript → exam key points → lecture-note PDF, all inside one native Mac app. Transcription runs a whisper model fully offline. Only the step that organises key points needs a model, and it uses whatever endpoint you configure. No ffmpeg, no Python, nothing else to install.
 
 ## Features
 
@@ -39,7 +39,7 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 </p>
 
 - Paste direct links to classroom replays or import local audio/video; whisper transcribes on this device. Batch-paste many links at once, and merge multi-part videos into a single lecture
-- **Evidence Thread**: every extracted key point links back to the teacher's exact words in the transcript — takeaways are reading entry points, never posing as something the teacher said
+- **Evidence Thread**: every extracted key point links back to where the teacher said it in the transcript. The takeaway is the way in; the words are what count
 - The key-points page collects must-memorize items, core concepts, solution paths, common mix-ups, and assignments; a course-wide exam review is one click away
 
 ### Learning player · Focus Rail
@@ -60,12 +60,12 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 </p>
 
 - Run your own CLI inside the course context: installed tools (claude / codex / gemini / grok / kimi) are detected automatically, with the bundled skill, transcript, and key points already attached
-- Watch the live terminal output, stop anytime, and open the finished PDF straight from the artifact pane — the command stays here, and so does its artifact
+- Terminal output is live and you can stop at any point. Finished files appear in the artifact pane on the right, one click to open
 
 ### Lecture notes
 
-- Generated without leaving the app: run your CLI in Terminal Studio, or pick "Generate with API" — both follow the same bundled skill and end in a LaTeX-typeset PDF (TikZ diagrams included), rendered in place with a night mode
-- Notes follow the course language — English courses get English notes on an English LaTeX template, Chinese courses keep the ctex one; any CLI in the course folder works too (`claude "Generate lecture notes for Week 1"`)
+- No need to leave the app: run your CLI in Terminal Studio, or pick "Generate with API". Both follow the same bundled skill and end in a LaTeX-typeset PDF with TikZ diagrams, readable in the app with a night mode
+- Notes follow the course language: English courses use an English template, Chinese courses the ctex one. You can also just tell a CLI in the course folder: `claude "Generate lecture notes for Week 1"`
 
 ## macOS Integration
 
@@ -85,7 +85,7 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 ## Installation
 
 1. Download the latest dmg from **[recap.rio2333.com](https://recap.rio2333.com/)** or the **[Releases](https://github.com/zhan2333/Recap/releases)** page
-2. Drag Recap into Applications — the dmg is notarized and opens right away
+2. Drag Recap into Applications. The dmg is notarized, so it opens right away
 3. Follow onboarding to fetch the whisper model, then create a course and add your first lecture
 
 <p align="center">
@@ -98,23 +98,33 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
   <img src="docs/icon-clear-dark.png" width="88" alt="Clear dark icon">
 </p>
 
-## Why it works this way
+## How it is built
 
-Recap is a native Mac Catalyst app in UIKit, and most of its design is one decision repeated: do the work where the data already is, and let tools you already pay for do the rest.
+Recap is a native Mac Catalyst app written in UIKit. One trade-off runs through it: do on this machine whatever can be done here, and for the parts that need a model, use the tools you already have rather than building another stack inside the app.
 
-**Your CLI subscription does the thinking — no second API bill.** Terminal Studio is a real terminal: a login shell on a PTY, opened in the course folder, rendered with SwiftTerm. It detects the agents already installed on your Mac (claude, codex, gemini, grok, kimi) and runs them as *you*, with the credentials they already hold. If you pay for a Claude or Codex subscription, extracting key points and writing lecture notes runs on that subscription — Recap never proxies your work through a key of its own, and you don't need a separate API account to get the good models. Prefer a key? The same jobs also run through any OpenAI-compatible endpoint you configure. Both paths follow the same instructions.
+**Use the CLI subscription you already pay for**
 
-**The skill ships inside the app, so any agent arrives already briefed.** `App/recap-review-skill.md` is both the product spec and the agent's instructions: it defines the file names and JSON shapes of a course folder, and it installs itself under four conventions (`.claude/skills`, `.agents/skills`, `AGENTS.md`, `GEMINI.md`). Whatever agent you launch in that folder already knows what to read, what to write, and where — no prompt engineering on your side, and its output lands in files the app renders directly.
+Terminal Studio is a real terminal: a login shell on a PTY, opened in the course folder. It detects which agents are installed on your Mac (claude, codex, gemini, grok, kimi) and runs them as you, with the accounts they are already signed into. So if you pay for a Claude or Codex subscription, extracting key points and writing lecture notes run on that subscription, and you don't need a separate API account to reach the good models. If you would rather use an API key, the same jobs run through any OpenAI-compatible endpoint you configure. Both paths follow the same instructions.
 
-**The course folder is the contract, not a database.** Media, `segments.json`, `analysis.json`, the LaTeX source and the PDF are plain files in one directory. That is why the same course works from the app, from your own terminal, or from a script — and why an agent's work shows up in the UI the moment it finishes writing.
+**The skill ships with the app, so an agent knows what to do on arrival**
 
-**Transcription never leaves the Mac.** whisper.cpp is vendored as the official XCFramework plus an arm64 Mac Catalyst slice built from the same tag, so a lecture recording is decoded and transcribed in-process — no ffmpeg, no Python, no upload. `AudioExtractor` decodes with `AVAssetReader` and resamples to 16 kHz mono in a separate streaming pass, because asking the reader to convert in one step returns the right frame count with wrong audio.
+`App/recap-review-skill.md` is both the product spec and the agent's instructions: it says what each file in a course folder is called and what shape it has. It installs itself under four conventions (`.claude/skills`, `.agents/skills`, `AGENTS.md`, `GEMINI.md`), so whichever agent you start in that folder knows what to read and where to write. You don't write prompts for it, and what it produces is what the app already renders.
 
-**Every takeaway keeps its receipt.** `EvidenceMatcher` links each extracted point back to the transcript by taking the better of a longest-common-substring and a bigram-overlap score, accepting matches above 0.55. That is what lets a key point jump the player to the moment the teacher said it, and it is why the skill asks for quotes close to the spoken words rather than polished prose.
+**A course is a plain folder, not a database**
 
-**Adding the textbook makes the agent measurably better.** Speech-to-text mishears exactly the words that matter — names, formulas, domain terms — and a transcript alone gives an agent no way to tell a mishearing from a real term. Import the textbook and the app extracts its text with page markers; the skill then builds a table of contents, splits it into per-chapter files, and reads only the chapter a lecture belongs to. The agent now has the correct terminology and the surrounding argument next to the transcript, so it can correct misheard terms, cite the page a claim comes from, and write lecture notes that follow the book's structure instead of guessing at it.
+Media, `segments.json`, `analysis.json`, the LaTeX source and the PDF all sit in one directory. The same course works from the app, from your own terminal, or from a script.
 
-**Shipping is part of the product.** `scripts/package-release.sh` builds Release, signs with Developer ID and the hardened runtime, lays out the installer dmg, notarizes and staples it. In the app, a persistent pill downloads the new release, replaces the bundle in place and relaunches — updating is one click, not a trip to a download page.
+**Transcription stays on this Mac**
+
+whisper.cpp is vendored as the official XCFramework, plus an arm64 Mac Catalyst slice built from the same tag, so a recording is decoded and transcribed in-process. Decoding uses `AVAssetReader`, and resampling to 16 kHz mono is a separate streaming pass: letting the reader convert in one step returns the right frame count with the wrong audio.
+
+**Every key point can go back to the words**
+
+`EvidenceMatcher` matches each point against the transcript, taking the better of a longest-common-substring and a bigram-overlap score and accepting anything above 0.55. That is what lets a key point send the player to the moment it was said, and it is why the skill asks for quotes written close to the spoken words rather than tidied into prose.
+
+**Importing the textbook makes an agent noticeably better**
+
+Speech-to-text mishears the words that matter most: names, formulas, domain terms. Given only a transcript, an agent has no way to tell a mishearing from a real term. Once the textbook is imported, the app extracts its text with page markers, and the skill builds a table of contents, splits the book into one file per chapter, and reads only the chapter a lecture belongs to. With the correct terminology and the surrounding argument at hand, the agent can fix misheard terms, say which page a claim comes from, and follow the book's structure instead of guessing at it.
 
 ## Contributing
 
