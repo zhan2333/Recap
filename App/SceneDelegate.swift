@@ -52,6 +52,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         #endif
 
         UNUserNotificationCenter.current().delegate = self
+        MenuBarController.install()
 
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = MainSplitViewController()
