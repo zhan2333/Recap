@@ -49,6 +49,7 @@
 		D21128496414482812B7924E /* PipelineKit in Frameworks */ = {isa = PBXBuildFile; productRef = A274F8399FA5EDA4B3CE84DD /* PipelineKit */; };
 		D5C9254CEBE25AD0D2D48162 /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */; };
 		D742402BFA22E5EB83E20B00 /* LectureQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 676EC9FC010F8689B3A7E396 /* LectureQueue.swift */; };
+		D744543F9194102D81A0014A /* TranscriptChunkWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D6B6967C9AD394E5FEDF2B7 /* TranscriptChunkWriter.swift */; };
 		D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE010D7F5C9CEB7CF7000C77 /* Settings.swift */; };
 		DB5005A472A2861E6E97225C /* DetailHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13099B29E78D6084BE81FFF /* DetailHeaderView.swift */; };
 		F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EAA252231B59F41A4E68A2A /* Library.swift */; };
@@ -82,6 +83,7 @@
 		505C301E3BBE5C9F28A1C147 /* OnboardingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
 		561F999A30A529ACBE7869E3 /* TerminalOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalOutputView.swift; sourceTree = "<group>"; };
 		5BC1A354E66A8D230E221269 /* DownloadGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadGate.swift; sourceTree = "<group>"; };
+		5D6B6967C9AD394E5FEDF2B7 /* TranscriptChunkWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptChunkWriter.swift; sourceTree = "<group>"; };
 		5E37ED690FC7C2FF61570139 /* RecapTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapTheme.swift; sourceTree = "<group>"; };
 		5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "recap-r-mark.png"; sourceTree = "<group>"; };
 		616F809051DE4C0195CAA00B /* RecapKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecapKit; path = RecapKit; sourceTree = SOURCE_ROOT; };
@@ -137,6 +139,7 @@
 				BE010D7F5C9CEB7CF7000C77 /* Settings.swift */,
 				8A01234BCEBBEF3102133BDF /* ShellBridge.swift */,
 				949790158F82748418DD2110 /* StatusItemBridge.swift */,
+				5D6B6967C9AD394E5FEDF2B7 /* TranscriptChunkWriter.swift */,
 				CF07F81006BA32EFA6020422 /* UpdateChecker.swift */,
 				42A50B7D1BB20A2E73F430D2 /* WaveformGenerator.swift */,
 			);
@@ -389,6 +392,7 @@
 				B3B06F9AFB1016CB78677321 /* StatusItemBridge.swift in Sources */,
 				2D694B52068B24B20C1ADEE7 /* TerminalOutputView.swift in Sources */,
 				4D9E45E8EBBD3F548A85CF90 /* TerminalStudioViewController.swift in Sources */,
+				D744543F9194102D81A0014A /* TranscriptChunkWriter.swift in Sources */,
 				1B02E00DAF1DC3812B1DA630 /* TranscriptViewController.swift in Sources */,
 				AC5C00D0EE7A17E4F256C4D0 /* UpdateChecker.swift in Sources */,
 				6EFB38676CE7420CBA1BCDD7 /* WaveformGenerator.swift in Sources */,

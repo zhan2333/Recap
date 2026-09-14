@@ -321,9 +321,20 @@ final class TranscriptViewController: UIViewController {
         header.modeTabs.select(3)
 
         let transcript = plainText
+        // Timed lines let a long transcript be read in pieces; without them it goes in whole
+        let lines = segments.isEmpty
+            ? [TranscriptLine(start: 0, end: 0, text: transcript)]
+            : segments.map { TranscriptLine(start: $0.start, end: $0.end, text: $0.text) }
         Task {
             do {
-                let result = try await LectureAnalyzer().extract(transcript: transcript, client: ChatClient(config: config))
+                let result = try await LectureAnalyzer().extract(
+                    lines: lines, client: ChatClient(config: config)
+                ) { [weak self] done, total in
+                    guard total > 1 else { return }
+                    Task { @MainActor in
+                        self?.emptyLabel.text = String(localized: "正在提取重点：第 \(done + 1) / \(total) 部分")
+                    }
+                }
                 try JSONEncoder().encode(result)
                     .write(to: LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json"), options: .atomic)
                 analysis = result
@@ -353,7 +364,13 @@ final class TranscriptViewController: UIViewController {
         )
         alert.addAction(UIAlertAction(title: String(localized: "用 CLI agent 提取"), style: .default) { [weak self] _ in
             guard let self else { return }
-            self.presentTerminalStudio(prompt: String(localized: "提取「\(self.lecture.name)」的考试重点"))
+            // A long transcript is split on disk first, so the agent reads it piece by piece
+            let index = TranscriptChunkWriter.writeIfNeeded(
+                lecture: self.lecture, in: self.course, segments: self.segments)
+            let prompt = index == nil
+                ? String(localized: "提取「\(self.lecture.name)」的考试重点")
+                : String(localized: "提取「\(self.lecture.name)」的考试重点。文稿较长，已经按时间切分，先读 \(self.lecture.id.uuidString).文稿索引.md 再按需读分段文件")
+            self.presentTerminalStudio(prompt: prompt)
         })
         alert.addAction(UIAlertAction(title: String(localized: "用 API 提取"), style: .default) { [weak self] _ in
             self?.analyze()

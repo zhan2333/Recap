@@ -90,6 +90,62 @@ public struct LectureAnalyzer {
         return try Self.parse(response)
     }
 
+    // A transcript past the budget is read in pieces and the findings merged, since the
+    // endpoint only sees what we send it
+    public func extract(
+        lines: [TranscriptLine],
+        client: ChatClient,
+        maxTokens: Int = 12_000,
+        onProgress: (@Sendable (Int, Int) -> Void)? = nil
+    ) async throws -> LectureAnalysis {
+        let chunks = TranscriptChunker.chunks(from: lines, maxTokens: maxTokens)
+        guard chunks.count > 1 else {
+            onProgress?(0, 1)
+            let text = lines.map(\.text).joined(separator: "\n")
+            let analysis = try await extract(transcript: text, client: client)
+            onProgress?(1, 1)
+            return analysis
+        }
+
+        var parts: [LectureAnalysis] = []
+        for chunk in chunks {
+            onProgress?(chunk.index, chunks.count)
+            let response = try await client.complete(
+                system: Self.systemPrompt,
+                user: """
+                这是一节课转写稿的第 \(chunk.index + 1) / \(chunks.count) 部分，时间范围 \(chunk.timeRange)。
+                只针对这一部分提取，不要推测其他部分的内容。
+
+                \(chunk.text)
+                """
+            )
+            parts.append(try Self.parse(response))
+        }
+        onProgress?(chunks.count, chunks.count)
+        return Self.merge(parts)
+    }
+
+    // Findings arrive per piece; identical entries are folded and the first wording wins
+    static func merge(_ parts: [LectureAnalysis]) -> LectureAnalysis {
+        func unique(_ lists: [[String]]) -> [String] {
+            var seen = Set<String>()
+            return lists.flatMap { $0 }.filter { seen.insert($0.trimmingCharacters(in: .whitespaces)).inserted }
+        }
+        var signals: [LectureAnalysis.ExamSignal] = []
+        var seenQuotes = Set<String>()
+        for signal in parts.flatMap(\.examSignals) where seenQuotes.insert(signal.quote).inserted {
+            signals.append(signal)
+        }
+        return LectureAnalysis(
+            examSignals: signals,
+            mustMemorize: unique(parts.map(\.mustMemorize)),
+            answerApproaches: unique(parts.map(\.answerApproaches)),
+            confusablePoints: unique(parts.map(\.confusablePoints)),
+            keyConcepts: unique(parts.map(\.keyConcepts)),
+            assignments: unique(parts.map(\.assignments))
+        )
+    }
+
     // Tolerant of code fences, surrounding prose, and the most common LLM JSON defect: raw control characters inside string literals.
     static func parse(_ raw: String) throws -> LectureAnalysis {
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)

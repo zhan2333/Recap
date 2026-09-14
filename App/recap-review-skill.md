@@ -23,6 +23,8 @@ description: 在 Recap 课程目录里做课堂复习资料：提取老师强调
 ./<讲次UUID>.srt               字幕（回溯"老师第几分钟说的"）
 ./<讲次UUID>.analysis.json     重点提取结果（本 skill 的产物之一）
 ./<讲次UUID>.handout.md        本讲讲义（产物）
+./<讲次UUID>.文稿索引.md       文稿分段索引（文稿很长时才有）
+./<讲次UUID>.文稿分段/partNN.txt  按时间切好的文稿分段
 ./textbook.txt                 教材全文，含【第N页】页码标记（可能不存在）
 ./教材目录.md                  教材目录（产物，分章的依据）
 ./教材分章/chNN.txt            教材分章原文（产物）
@@ -41,6 +43,8 @@ description: 在 Recap 课程目录里做课堂复习资料：提取老师强调
 ## 任务一：提取本讲重点 → `<UUID>.analysis.json`
 
 通读该讲转写稿，输出**严格符合以下结构**的 JSON（字段名一字不差，Recap.app 按此解码）：
+
+**存在 `<UUID>.文稿索引.md` 时**：说明这一讲的文稿很长，已经按时间切成 `<UUID>.文稿分段/partNN.txt`。先读索引拿到分段清单，再**逐段读、逐段提取**，最后合并成一份 `analysis.json`——不要一次把整份 `<UUID>.txt` 读进来。合并时同一条 `quote` 只保留一次。
 
 ```json
 {
