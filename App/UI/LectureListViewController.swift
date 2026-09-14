@@ -291,7 +291,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             })
         }
         actions.append(UIAction(title: String(localized: "生成考试重点"), image: UIImage(systemName: "star.circle")) { [weak self] _ in
-            self?.generateDigest()
+            self?.promptDigestChannel()
         })
         let reviewPDF = store.courseFileURL(course, name: "review.pdf")
         if FileManager.default.fileExists(atPath: reviewPDF.path) {
@@ -349,6 +349,40 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             }
             isWorking = false
             refreshToolsMenu()
+        }
+    }
+
+    // Same two paths as a lecture's key points, asked the same way
+    private func promptDigestChannel() {
+        guard !isWorking else { return }
+        let alert = UIAlertController(
+            title: String(localized: "生成课程考试重点"),
+            message: String(localized: "汇总本课程各讲已提取的重点，产出一份课程级复习资料。"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: String(localized: "用 CLI agent 生成"), style: .default) { [weak self] _ in
+            guard let self else { return }
+            Settings.prefersCLIChannel = true
+            self.openStudioForCourse(prompt: String(localized: "汇总「\(self.course.name)」各讲的重点，生成课程考试重点"))
+        })
+        alert.addAction(UIAlertAction(title: String(localized: "用 API 生成"), style: .default) { [weak self] _ in
+            Settings.prefersCLIChannel = false
+            self?.generateDigest()
+        })
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        present(alert, animated: true)
+    }
+
+    // The studio opens in the course folder, which is all a course-wide task needs
+    private func openStudioForCourse(prompt: String) {
+        guard let anchor = LibraryStore.shared.lectures(in: course).first else {
+            presentInfo(title: String(localized: "还没有讲次"), message: String(localized: "先添加讲次再生成课程考试重点。"))
+            return
+        }
+        let activity = TerminalStudioViewController.sceneActivity(lecture: anchor, prompt: prompt)
+        let request = UISceneSessionActivationRequest(userActivity: activity)
+        UIApplication.shared.activateSceneSession(for: request) { error in
+            NSLog("Terminal Studio window failed: %@", error.localizedDescription)
         }
     }
 

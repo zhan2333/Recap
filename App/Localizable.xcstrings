@@ -741,6 +741,16 @@
         }
       }
     },
+    "先添加讲次再生成课程考试重点。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a lecture before writing the course exam review."
+          }
+        }
+      }
+    },
     "先配置 AI 接口": {
       "localizations": {
         "en": {
@@ -2441,6 +2451,26 @@
         }
       }
     },
+    "汇总「%@」各讲的重点，生成课程考试重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gather the key points from every lecture of “%@” and write the course exam review"
+          }
+        }
+      }
+    },
+    "汇总本课程各讲已提取的重点，产出一份课程级复习资料。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gathers the key points already extracted from each lecture into one review for the whole course."
+          }
+        }
+      }
+    },
     "没有可汇总的讲次": {
       "localizations": {
         "en": {
@@ -2587,6 +2617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Generate the notes PDF"
+          }
+        }
+      }
+    },
+    "生成课程考试重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course exam review"
           }
         }
       }
