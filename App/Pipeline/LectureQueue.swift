@@ -82,6 +82,10 @@ final class LectureQueue {
                         }
                         try await group.waitForAll()
                     }
+                    // Fresh media invalidates whatever that part transcribed to last time
+                    for entry in pending {
+                        try? FileManager.default.removeItem(at: store.partTranscriptURL(entry.part, in: course))
+                    }
                 }
                 self.mark(lecture, in: course) { $0.phase = .downloaded }
 
@@ -93,27 +97,33 @@ final class LectureQueue {
         }
     }
 
-    // Re-runs transcription for an already-downloaded lecture.
-    func retranscribe(_ lecture: Lecture, in course: Course) {
+    // Re-runs transcription for an already-downloaded lecture. Parts already transcribed are
+    // reused, so merging and resuming cost nothing; freshPass throws that away and runs whisper again.
+    func retranscribe(_ lecture: Lecture, in course: Course, freshPass: Bool = false) {
         let store = LibraryStore.shared
         let parts = store.mediaParts(of: lecture, in: course)
         guard parts.contains(where: { FileManager.default.fileExists(atPath: $0.url.path) }) else { return }
+        if freshPass {
+            for entry in parts {
+                try? FileManager.default.removeItem(at: store.partTranscriptURL(entry.part, in: course))
+            }
+        }
         setActivity(.waitingToTranscribe, for: lecture.id)
-        Task { await chainTranscription(of: lecture, in: course) }
+        Task { await chainTranscription(of: lecture, in: course, reuseParts: !freshPass) }
     }
 
-    private func chainTranscription(of lecture: Lecture, in course: Course) async {
+    private func chainTranscription(of lecture: Lecture, in course: Course, reuseParts: Bool = true) async {
         let previous = transcribeTail
         let task = Task {
             await previous?.value
-            await self.runTranscription(of: lecture, in: course)
+            await self.runTranscription(of: lecture, in: course, reuseParts: reuseParts)
         }
         transcribeTail = task
         await task.value
     }
 
     // Transcribes every part in order and concatenates onto one global timeline
-    private func runTranscription(of lecture: Lecture, in course: Course) async {
+    private func runTranscription(of lecture: Lecture, in course: Course, reuseParts: Bool = true) async {
         let store = LibraryStore.shared
         let token = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .idleSystemSleepDisabled,
@@ -124,23 +134,34 @@ final class LectureQueue {
 
         do {
             setActivity(.transcribing(0), for: lecture.id)
+            if reuseParts { store.backfillPartCaches(of: lecture, in: course) }
             let parts = store.mediaParts(of: lecture, in: course)
                 .filter { FileManager.default.fileExists(atPath: $0.url.path) }
-            let engine = try self.engine.get()
             let lectureID = lecture.id
             let partCount = parts.count
 
             var allSegments: [TranscriptSegment] = []
             var updatedParts: [MediaPart] = []
+            var spans: [UUID: ClosedRange<TimeInterval>] = [:]
             var offset: TimeInterval = 0
 
             for (index, entry) in parts.enumerated() {
-                let samples = try await AudioExtractor.pcm16kMono(from: entry.url)
+                let cacheURL = store.partTranscriptURL(entry.part, in: course)
                 let assetDuration = try? await AVURLAsset(url: entry.url).load(.duration).seconds
-                let transcript = try await Self.transcribeOffMain(engine: engine, samples: samples) { [weak self] progress in
-                    Task { @MainActor in
-                        self?.setActivity(.transcribing((Double(index) + progress) / Double(partCount)), for: lectureID)
+                let transcript: Transcript
+                if reuseParts, let cached = Self.cachedTranscript(at: cacheURL) {
+                    transcript = cached
+                    setActivity(.transcribing(Double(index + 1) / Double(partCount)), for: lectureID)
+                } else {
+                    // The model is only needed for parts that still have to be heard
+                    let engine = try self.engine.get()
+                    let samples = try await AudioExtractor.pcm16kMono(from: entry.url)
+                    transcript = try await Self.transcribeOffMain(engine: engine, samples: samples) { [weak self] progress in
+                        Task { @MainActor in
+                            self?.setActivity(.transcribing((Double(index) + progress) / Double(partCount)), for: lectureID)
+                        }
                     }
+                    try? JSONEncoder().encode(transcript.segments).write(to: cacheURL, options: .atomic)
                 }
                 let currentOffset = offset
                 allSegments += transcript.segments.map {
@@ -155,8 +176,10 @@ final class LectureQueue {
                 var updated = entry.part
                 updated.duration = partDuration
                 updatedParts.append(updated)
+                spans[entry.part.id] = currentOffset...(currentOffset + partDuration)
                 offset += partDuration
             }
+            store.stampPriorSpans(spans, of: lecture, in: course)
 
             let merged = Transcript(segments: allSegments)
             try merged.srt.write(to: store.productURL(lecture, in: course, ext: "srt"), atomically: true, encoding: .utf8)
@@ -199,10 +222,15 @@ final class LectureQueue {
         guard !analysisFresh,
               let transcript = try? String(contentsOf: store.productURL(lecture, in: course, ext: "txt"), encoding: .utf8),
               !transcript.isEmpty else { return }
+        // A transcript past the budget is a job worth choosing a channel for, not one to start silently
+        guard TranscriptChunker.estimatedTokens(transcript) <= 12_000 else { return }
 
         setActivity(.analyzing, for: lecture.id)
         do {
-            let result = try await LectureAnalyzer().extract(transcript: transcript, client: ChatClient(config: config))
+            let references = store.priorAnalyses(of: lecture, in: course).references
+            let result = try await LectureAnalyzer().extract(
+                transcript: transcript, client: ChatClient(config: config), references: references
+            )
             try JSONEncoder().encode(result).write(to: analysisURL, options: .atomic)
             mark(lecture, in: course) { $0.errorMessage = nil }
         } catch {
@@ -216,6 +244,13 @@ final class LectureQueue {
     }
 
     // whisper_full blocks
+    private static func cachedTranscript(at url: URL) -> Transcript? {
+        guard let data = try? Data(contentsOf: url),
+              let segments = try? JSONDecoder().decode([TranscriptSegment].self, from: data),
+              !segments.isEmpty else { return nil }
+        return Transcript(segments: segments)
+    }
+
     private static func transcribeOffMain(
         engine: WhisperCppEngine,
         samples: [Float],

@@ -317,7 +317,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             guard let self,
                   let merged = LibraryStore.shared.mergeLectures(ids, in: self.course) else { return }
             self.reload()
-            // The parts now share one timeline, so the old per-lecture transcripts no longer apply
+            // Each part keeps the transcript it already had; this only lays them on one timeline
             LectureQueue.shared.retranscribe(merged, in: self.course)
         }
         let nav = UINavigationController(rootViewController: sheet)
@@ -492,7 +492,10 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                 }
                 workActions.append(UIAction(title: title, image: UIImage(systemName: "waveform")) { [weak self] _ in
                     guard let self else { return }
-                    LectureQueue.shared.retranscribe(lecture, in: self.course)
+                    // Asking a transcribed lecture to redo it means the transcript itself is wrong
+                    LectureQueue.shared.retranscribe(
+                        lecture, in: self.course, freshPass: lecture.phase == .transcribed
+                    )
                 })
             }
             if lecture.sourceURL != nil {

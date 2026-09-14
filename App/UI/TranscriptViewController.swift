@@ -50,6 +50,9 @@ final class TranscriptViewController: UIViewController {
 
         header.titleLabel.text = lecture.name
         header.subtitleLabel.text = course.name
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(libraryDidChange), name: LibraryStore.didChange, object: nil
+        )
         header.modeTabs.onSelect = { [weak self] _ in self?.applyMode() }
         header.analyzeButton.addAction(UIAction { [weak self] _ in self?.primaryAction() }, for: .touchUpInside)
 
@@ -335,7 +338,7 @@ final class TranscriptViewController: UIViewController {
         var succeeded = false
         do {
             let result = try await LectureAnalyzer().extract(
-                lines: lines, client: ChatClient(config: config)
+                lines: lines, client: ChatClient(config: config), references: priorReferences()
             ) { [weak self] done, total in
                 guard total > 1 else { return }
                 Task { @MainActor in
@@ -389,6 +392,20 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
+    // The record can be renamed or gain parts while its detail page is open
+    @objc private func libraryDidChange() {
+        guard let current = LibraryStore.shared.lecture(id: lecture.id, in: course) else { return }
+        lecture = current
+        guard title != current.name else { return }
+        title = current.name
+        header.titleLabel.text = current.name
+    }
+
+    // Key points the parts carried before they were merged into this lecture
+    private func priorReferences() -> [LectureAnalyzer.AnalysisReference] {
+        LibraryStore.shared.priorAnalyses(of: lecture, in: course).references
+    }
+
     // Notes need key points, so the API path waits for the extraction before starting them
     private func runViaAPI(_ plan: PrepareLectureSheet.Plan) async {
         if plan.extractKeyPoints {
@@ -414,6 +431,9 @@ final class TranscriptViewController: UIViewController {
         }
         if index != nil {
             prompt += String(localized: "。文稿较长，已经按时间切分，先读 \(lecture.id.uuidString).文稿索引.md 再按需读分段文件")
+        }
+        if !LibraryStore.shared.priorAnalyses(of: lecture, in: course).isEmpty {
+            prompt += String(localized: "。这一讲由多讲合并而来，\(lecture.id.uuidString).合并前重点.json 是合并前各段提取过的重点，作参考用")
         }
         return prompt
     }

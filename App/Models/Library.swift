@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import AnalysisKit
+import TranscriptionKit
 
 struct Course: Codable, Hashable, Identifiable {
     let id: UUID
@@ -40,6 +42,9 @@ struct Lecture: Codable, Hashable, Identifiable {
 final class LibraryStore {
 
     static let shared = LibraryStore()
+
+    // onChange belongs to the list that owns it; anyone else watching a record listens for this
+    static let didChange = Notification.Name("LibraryStoreDidChange")
 
     private(set) var courses: [Course] = []
     private var lecturesByCourse: [UUID: [Lecture]] = [:]
@@ -124,6 +129,11 @@ final class LibraryStore {
         courseDirectory(course).appendingPathComponent("\(part.id.uuidString).mp4")
     }
 
+    // A part's own transcript on its own timeline, so merging and resuming never re-run whisper on it
+    func partTranscriptURL(_ part: MediaPart, in course: Course) -> URL {
+        courseDirectory(course).appendingPathComponent("\(part.id.uuidString).part.json")
+    }
+
     // Uniform media view: multi-part lectures list their parts
     func mediaParts(of lecture: Lecture, in course: Course) -> [(part: MediaPart, url: URL)] {
         if let parts = lecture.parts, !parts.isEmpty {
@@ -195,16 +205,98 @@ final class LibraryStore {
         updated[index] = merged
         lecturesByCourse[course.id] = updated
 
-        // The absorbed records leave behind transcripts written against their own timelines
-        for lecture in sources.dropFirst() {
+        var priors: [PriorAnalysis] = []
+        for lecture in sources {
+            keepTranscriptAsPartCache(of: lecture, in: course)
+            if let prior = priorAnalysis(of: lecture, in: course) { priors.append(prior) }
+            // Every product describes the pre-merge lecture: its timeline is gone, its findings are kept above
             for ext in ["srt", "txt", "segments.json", "analysis.json", "analysis-raw.txt",
                         "handout.pdf", "handout.tex", "handout.md", "matches.json"] {
                 try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
             }
         }
+        if let data = try? JSONEncoder().encode(priors), !priors.isEmpty {
+            try? data.write(to: productURL(merged, in: course, ext: "合并前重点.json"), options: .atomic)
+        }
         persistLectures(of: course)
         notify()
         return merged
+    }
+
+    // A single-media lecture's transcript already sits on its part's own timeline
+    private func keepTranscriptAsPartCache(of lecture: Lecture, in course: Course) {
+        let parts = mediaParts(of: lecture, in: course)
+        guard parts.count == 1 else { return }
+        let cache = partTranscriptURL(parts[0].part, in: course)
+        let transcript = productURL(lecture, in: course, ext: "segments.json")
+        guard !FileManager.default.fileExists(atPath: cache.path),
+              FileManager.default.fileExists(atPath: transcript.path) else { return }
+        try? FileManager.default.copyItem(at: transcript, to: cache)
+    }
+
+    // A lecture transcribed before part caches existed still knows where each part sits, so the
+    // finished transcript can be cut back into per-part pieces instead of being heard again
+    func backfillPartCaches(of lecture: Lecture, in course: Course) {
+        let parts = mediaParts(of: lecture, in: course)
+        let transcriptURL = productURL(lecture, in: course, ext: "segments.json")
+        guard lecture.phase == .transcribed,
+              parts.contains(where: { !FileManager.default.fileExists(atPath: partTranscriptURL($0.part, in: course).path) }),
+              let data = try? Data(contentsOf: transcriptURL),
+              let segments = try? JSONDecoder().decode([TranscriptSegment].self, from: data),
+              !segments.isEmpty else { return }
+        let transcribedAt = modified(transcriptURL)
+
+        var offset: TimeInterval = 0
+        for (index, entry) in parts.enumerated() {
+            // Past a part of unknown length nothing can be placed on the timeline any more
+            guard let duration = entry.part.duration, duration > 0 else { return }
+            let start = offset
+            offset += duration
+            // The tail keeps anything past the summed durations, so no line is lost
+            let upper = index == parts.count - 1 ? TimeInterval.infinity : offset
+            let cache = partTranscriptURL(entry.part, in: course)
+            guard !FileManager.default.fileExists(atPath: cache.path),
+                  modified(entry.url) <= transcribedAt else { continue }
+            // A segment belongs to the part its start falls in, so nothing lands in two pieces
+            let own = segments.filter { $0.start >= start && $0.start < upper }
+                .map { TranscriptSegment(start: $0.start - start, end: $0.end - start, text: $0.text) }
+            guard !own.isEmpty, let encoded = try? JSONEncoder().encode(own) else { continue }
+            try? encoded.write(to: cache, options: .atomic)
+        }
+    }
+
+    private func modified(_ url: URL) -> Date {
+        (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+    }
+
+    private func priorAnalysis(of lecture: Lecture, in course: Course) -> PriorAnalysis? {
+        guard let data = try? Data(contentsOf: productURL(lecture, in: course, ext: "analysis.json")),
+              let analysis = try? JSONDecoder().decode(LectureAnalysis.self, from: data) else { return nil }
+        return PriorAnalysis(
+            name: lecture.name,
+            partIDs: mediaParts(of: lecture, in: course).map(\.part.id),
+            analysis: analysis
+        )
+    }
+
+    func priorAnalyses(of lecture: Lecture, in course: Course) -> [PriorAnalysis] {
+        guard let data = try? Data(contentsOf: productURL(lecture, in: course, ext: "合并前重点.json")),
+              let priors = try? JSONDecoder().decode([PriorAnalysis].self, from: data) else { return [] }
+        return priors
+    }
+
+    // Transcription is what learns where each part sits, so it stamps the ranges back in
+    func stampPriorSpans(_ spans: [UUID: ClosedRange<TimeInterval>], of lecture: Lecture, in course: Course) {
+        var priors = priorAnalyses(of: lecture, in: course)
+        guard !priors.isEmpty else { return }
+        for index in priors.indices {
+            let ranges = priors[index].partIDs.compactMap { spans[$0] }
+            guard let start = ranges.map(\.lowerBound).min(), let end = ranges.map(\.upperBound).max() else { continue }
+            priors[index].start = start
+            priors[index].end = end
+        }
+        guard let data = try? JSONEncoder().encode(priors) else { return }
+        try? data.write(to: productURL(lecture, in: course, ext: "合并前重点.json"), options: .atomic)
     }
 
     func updateLecture(_ lecture: Lecture, in course: Course) {
@@ -219,11 +311,13 @@ final class LibraryStore {
     func deleteLecture(_ lecture: Lecture, in course: Course) {
         lecturesByCourse[course.id]?.removeAll { $0.id == lecture.id }
         for ext in ["mp4", "srt", "txt", "segments.json", "analysis.json", "analysis-raw.txt",
-                    "handout.pdf", "handout.tex", "handout.md", "waveform.json", "matches.json"] {
+                    "handout.pdf", "handout.tex", "handout.md", "waveform.json", "matches.json",
+                    "part.json", "合并前重点.json"] {
             try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
         }
-        for part in lecture.parts ?? [] {
-            try? FileManager.default.removeItem(at: partMediaURL(part, in: course))
+        for (part, url) in mediaParts(of: lecture, in: course) {
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.removeItem(at: partTranscriptURL(part, in: course))
         }
         persistLectures(of: course)
         notify()
@@ -258,5 +352,6 @@ final class LibraryStore {
 
     private func notify() {
         onChange?()
+        NotificationCenter.default.post(name: LibraryStore.didChange, object: nil)
     }
 }

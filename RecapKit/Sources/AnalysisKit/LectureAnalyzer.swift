@@ -80,12 +80,27 @@ public struct LectureAnalyzer {
     exam_signals 里的 quote 必须贴近老师原话，不要改写成书面语。没有内容的字段给空数组。
     """
 
+    // Findings from an earlier pass over the same material, offered as a hint and never as the source
+    public struct AnalysisReference: Sendable {
+        public var range: ClosedRange<TimeInterval>?
+        public var text: String
+
+        public init(range: ClosedRange<TimeInterval>? = nil, text: String) {
+            self.range = range
+            self.text = text
+        }
+    }
+
     public init() {}
 
-    public func extract(transcript: String, client: ChatClient) async throws -> LectureAnalysis {
+    public func extract(
+        transcript: String,
+        client: ChatClient,
+        references: [AnalysisReference] = []
+    ) async throws -> LectureAnalysis {
         let response = try await client.complete(
             system: Self.systemPrompt,
-            user: "以下是一节课的完整转写稿：\n\n\(transcript)"
+            user: "以下是一节课的完整转写稿：\n\n\(transcript)" + Self.referenceBlock(references)
         )
         return try Self.parse(response)
     }
@@ -96,13 +111,14 @@ public struct LectureAnalyzer {
         lines: [TranscriptLine],
         client: ChatClient,
         maxTokens: Int = 12_000,
+        references: [AnalysisReference] = [],
         onProgress: (@Sendable (Int, Int) -> Void)? = nil
     ) async throws -> LectureAnalysis {
         let chunks = TranscriptChunker.chunks(from: lines, maxTokens: maxTokens)
         guard chunks.count > 1 else {
             onProgress?(0, 1)
             let text = lines.map(\.text).joined(separator: "\n")
-            let analysis = try await extract(transcript: text, client: client)
+            let analysis = try await extract(transcript: text, client: client, references: references)
             onProgress?(1, 1)
             return analysis
         }
@@ -110,6 +126,11 @@ public struct LectureAnalyzer {
         var parts: [LectureAnalysis] = []
         for chunk in chunks {
             onProgress?(chunk.index, chunks.count)
+            // Only the references covering this stretch, so a long lecture keeps its prompts small
+            let covering = references.filter {
+                guard let range = $0.range else { return true }
+                return range.overlaps(chunk.start...max(chunk.start, chunk.end))
+            }
             let response = try await client.complete(
                 system: Self.systemPrompt,
                 user: """
@@ -117,12 +138,24 @@ public struct LectureAnalyzer {
                 只针对这一部分提取，不要推测其他部分的内容。
 
                 \(chunk.text)
-                """
+                """ + Self.referenceBlock(covering)
             )
             parts.append(try Self.parse(response))
         }
         onProgress?(chunks.count, chunks.count)
         return Self.merge(parts)
+    }
+
+    private static func referenceBlock(_ references: [AnalysisReference]) -> String {
+        let body = references.map(\.text).filter { !$0.isEmpty }.joined(separator: "\n\n")
+        guard !body.isEmpty else { return "" }
+        return """
+
+
+        这些内容此前单独提取过一份重点，供参考。它可能不全也可能有错，一律以转写稿为准，不要照抄：
+
+        \(body)
+        """
     }
 
     // Findings arrive per piece; identical entries are folded and the first wording wins

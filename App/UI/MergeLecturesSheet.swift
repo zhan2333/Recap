@@ -39,7 +39,7 @@ final class MergeLecturesSheet: UIViewController {
             })
 
         let hint = UILabel()
-        hint.text = String(localized: "选中的讲次会按顺序合成一讲，媒体文件不会重新下载。合成后需要重新转写，之后就能生成一份讲义。")
+        hint.text = String(localized: "选中的讲次会按顺序合成一讲，媒体不会重新下载，已经转写好的段落也不会重转，只是接到同一条时间轴上。原来各段提取过的重点会留作参考。")
         hint.font = RecapTheme.body(12)
         hint.textColor = RecapTheme.muted
         hint.numberOfLines = 0
