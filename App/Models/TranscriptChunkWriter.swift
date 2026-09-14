@@ -15,8 +15,7 @@ import TranscriptionKit
 enum TranscriptChunkWriter {
 
     static func chunkDirectory(for lecture: Lecture, in course: Course) -> URL {
-        LibraryStore.shared.courseDirectory(course)
-            .appendingPathComponent("\(lecture.id.uuidString).文稿分段", isDirectory: true)
+        LibraryStore.shared.chunkDirectory(lecture, in: course)
     }
 
     static func indexURL(for lecture: Lecture, in course: Course) -> URL {

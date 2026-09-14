@@ -134,6 +134,11 @@ final class LibraryStore {
         courseDirectory(course).appendingPathComponent("\(part.id.uuidString).part.json")
     }
 
+    // Holds the pieces a long transcript is cut into for the CLI channel
+    func chunkDirectory(_ lecture: Lecture, in course: Course) -> URL {
+        courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).文稿分段", isDirectory: true)
+    }
+
     // Uniform media view: multi-part lectures list their parts
     func mediaParts(of lecture: Lecture, in course: Course) -> [(part: MediaPart, url: URL)] {
         if let parts = lecture.parts, !parts.isEmpty {
@@ -312,9 +317,10 @@ final class LibraryStore {
         lecturesByCourse[course.id]?.removeAll { $0.id == lecture.id }
         for ext in ["mp4", "srt", "txt", "segments.json", "analysis.json", "analysis-raw.txt",
                     "handout.pdf", "handout.tex", "handout.md", "waveform.json", "matches.json",
-                    "part.json", "合并前重点.json"] {
+                    "part.json", "合并前重点.json", "文稿索引.md"] {
             try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
         }
+        try? FileManager.default.removeItem(at: chunkDirectory(lecture, in: course))
         for (part, url) in mediaParts(of: lecture, in: course) {
             try? FileManager.default.removeItem(at: url)
             try? FileManager.default.removeItem(at: partTranscriptURL(part, in: course))
