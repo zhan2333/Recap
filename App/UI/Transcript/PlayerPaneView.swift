@@ -46,7 +46,9 @@ final class PlayerPaneView: UIView {
 
     private let rail = FocusRailView()
     private let partPicker = UIStackView()
+    private let partMenuButton = UIButton(type: .system)
     private var partPickerRow: UIStackView!
+    private var partPillIsCompact = false
     private let railTitle = UILabel()
     private let railDetail = UILabel()
     private let previousButton = UIButton(type: .system)
@@ -166,7 +168,9 @@ final class PlayerPaneView: UIView {
 
         partPicker.axis = .horizontal
         partPicker.spacing = 8
-        partPickerRow = UIStackView(arrangedSubviews: [partPicker, UIView()])
+        partMenuButton.preferredBehavioralStyle = .pad
+        partMenuButton.isHidden = true
+        partPickerRow = UIStackView(arrangedSubviews: [partPicker, partMenuButton, UIView()])
         partPickerRow.axis = .horizontal
 
         content = UIStackView(arrangedSubviews: [playerViewController.view, partPickerRow, railHeader, rail, lens])
@@ -250,6 +254,7 @@ final class PlayerPaneView: UIView {
     override func layoutSubviews() {
         super.layoutSubviews()
         inspector.isHidden = bounds.width < 1000
+        updatePartPillFit()
     }
 
     deinit {
@@ -390,10 +395,21 @@ final class PlayerPaneView: UIView {
         }
     }
 
+    // Up to six parts stay as pills; beyond that they fold into one menu so the row keeps its size
+    private static let pillPartLimit = 6
+
+    private var usesPartMenu: Bool { playableParts.count > Self.pillPartLimit }
+
     private func rebuildPartPicker() {
         partPicker.arrangedSubviews.forEach { $0.removeFromSuperview() }
         partPickerRow.isHidden = playableParts.count <= 1
+        partMenuButton.isHidden = !usesPartMenu
+        partPicker.isHidden = usesPartMenu
         guard playableParts.count > 1 else { return }
+        guard !usesPartMenu else {
+            rebuildPartMenu()
+            return
+        }
         for index in playableParts.indices {
             let button = UIButton(type: .system)
             // NSButton bridging cannot restyle plain→filled at runtime; force UIKit rendering
@@ -409,14 +425,73 @@ final class PlayerPaneView: UIView {
         stylePartPicker()
     }
 
+    // Pills keep their full labels while they fit, and fall back to bare numbers when they do not
+    private func updatePartPillFit() {
+        guard !usesPartMenu, playableParts.count > 1, partPickerRow?.bounds.width ?? 0 > 0 else { return }
+        let font = RecapTheme.mono(11, weight: .semibold)
+        let insets: CGFloat = 22
+        let full = playableParts.indices.reduce(CGFloat(0)) { total, index in
+            let text = String(localized: "第 \(index + 1) 段 · \(Self.timestamp(playableParts[index].duration))")
+            return total + (text as NSString).size(withAttributes: [.font: font]).width + insets
+        }
+        let needed = full + partPicker.spacing * CGFloat(playableParts.count - 1)
+        let compact = needed > partPickerRow.bounds.width
+        guard compact != partPillIsCompact else { return }
+        partPillIsCompact = compact
+        stylePartPicker()
+    }
+
+    // One button carrying every part, with the timestamp and transcript state per row
+    private func rebuildPartMenu() {
+        partMenuButton.showsMenuAsPrimaryAction = true
+        partMenuButton.menu = UIMenu(children: playableParts.indices.map { index in
+            UIAction(
+                title: String(localized: "第 \(index + 1) 段"),
+                subtitle: Self.timestamp(playableParts[index].duration),
+                state: index == currentPartIndex ? .on : .off
+            ) { [weak self] _ in
+                guard let self, self.playableParts.indices.contains(index) else { return }
+                self.seekGlobal(self.playableParts[index].globalStart, thenPlay: false)
+            }
+        })
+        stylePartMenu()
+    }
+
+    private func stylePartMenu() {
+        guard usesPartMenu else { return }
+        var config = UIButton.Configuration.plain()
+        config.attributedTitle = AttributedString(
+            String(localized: "第 \(currentPartIndex + 1) 段 / 共 \(playableParts.count) 段"),
+            attributes: AttributeContainer([
+                .font: RecapTheme.mono(11, weight: .semibold), .foregroundColor: RecapTheme.ink,
+            ]))
+        config.image = UIImage(systemName: "chevron.up.chevron.down",
+                               withConfiguration: UIImage.SymbolConfiguration(pointSize: 9, weight: .semibold))
+        config.imagePlacement = .trailing
+        config.imagePadding = 6
+        config.background.strokeColor = RecapTheme.line
+        config.background.strokeWidth = 1
+        config.background.cornerRadius = RecapTheme.radiusSM
+        config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 11, bottom: 6, trailing: 11)
+        partMenuButton.configuration = config
+        partMenuButton.tintColor = RecapTheme.muted
+    }
+
     private func stylePartPicker() {
+        guard !usesPartMenu else {
+            rebuildPartMenu()
+            return
+        }
         for (index, view) in partPicker.arrangedSubviews.enumerated() {
             guard let button = view as? UIButton, playableParts.indices.contains(index) else { continue }
             let selected = index == currentPartIndex
             // .plain() never renders background/stroke on Catalyst — selected must be .filled()
             var config = selected ? UIButton.Configuration.filled() : UIButton.Configuration.plain()
+            let title = partPillIsCompact
+                ? "\(index + 1)"
+                : String(localized: "第 \(index + 1) 段 · \(Self.timestamp(playableParts[index].duration))")
             config.attributedTitle = AttributedString(
-                String(localized: "第 \(index + 1) 段 · \(Self.timestamp(playableParts[index].duration))"),
+                title,
                 attributes: AttributeContainer([
                     .font: RecapTheme.mono(11, weight: selected ? .semibold : .regular),
                     .foregroundColor: selected ? RecapTheme.paper : RecapTheme.muted,

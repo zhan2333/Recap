@@ -961,6 +961,16 @@
         }
       }
     },
+    "只下载一次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloaded once"
+          }
+        }
+      }
+    },
     "只要文稿": {
       "localizations": {
         "en": {
@@ -2101,6 +2111,16 @@
         }
       }
     },
+    "正在下载 %lld%% · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading %1$lld%% · %2$@"
+          }
+        }
+      }
+    },
     "正在下载 · 中断后可以从断点继续": {
       "localizations": {
         "en": {
@@ -2141,6 +2161,16 @@
         }
       }
     },
+    "正在提取重点 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extracting key points · %@"
+          }
+        }
+      }
+    },
     "正在提取重点…": {
       "localizations": {
         "en": {
@@ -2167,6 +2197,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reading the transcript and extracting the points the teacher emphasized…"
+          }
+        }
+      }
+    },
+    "正在转写 %lld%% · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribing %1$lld%% · %2$@"
           }
         }
       }
@@ -2231,6 +2271,16 @@
         }
       }
     },
+    "深度学习基础": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deep Learning Foundations"
+          }
+        }
+      }
+    },
     "添加第一讲。": {
       "localizations": {
         "en": {
@@ -2247,6 +2297,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add lecture"
+          }
+        }
+      }
+    },
+    "现在": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
           }
         }
       }
@@ -2451,12 +2511,42 @@
         }
       }
     },
+    "空闲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Idle"
+          }
+        }
+      }
+    },
     "第 %lld 步，共 %lld 步": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Step %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "第 %lld 段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part %lld"
+          }
+        }
+      }
+    },
+    "第 %lld 段 / 共 %lld 段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part %1$lld of %2$lld"
           }
         }
       }
@@ -2581,6 +2671,16 @@
         }
       }
     },
+    "等待转写 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting to transcribe · %@"
+          }
+        }
+      }
+    },
     "粘贴回放直链": {
       "localizations": {
         "en": {
@@ -2607,6 +2707,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Paste links to enqueue"
+          }
+        }
+      }
+    },
+    "约 1.5 GB · 中文与英文课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About 1.5 GB · Chinese and English courses"
           }
         }
       }
@@ -3241,6 +3351,16 @@
         }
       }
     },
+    "进行中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In progress"
+          }
+        }
+      }
+    },
     "连不上这个服务：%@": {
       "localizations": {
         "en": {
@@ -3551,6 +3671,16 @@
         }
       }
     },
+    "队列中 %lld 个讲次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lectures queued"
+          }
+        }
+      }
+    },
     "隐藏下载日志": {
       "localizations": {
         "en": {
@@ -3587,6 +3717,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Audio or video · simplest"
+          }
+        }
+      }
+    },
+    "高级选项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced options"
           }
         }
       }

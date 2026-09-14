@@ -12,7 +12,7 @@ import Foundation
 // lectures enqueued together multiply that.
 actor DownloadGate {
 
-    static let shared = DownloadGate(limit: 3)
+    static let shared = DownloadGate(limit: 5)
 
     private let limit: Int
     private var running = 0
