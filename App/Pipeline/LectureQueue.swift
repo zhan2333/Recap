@@ -65,6 +65,9 @@ final class LectureQueue {
                             let destination = entry.url
                             let total = pending.count
                             group.addTask {
+                                // Waits for a slot, so many parts queue instead of all opening at once
+                                await DownloadGate.shared.acquire()
+                                defer { Task { await DownloadGate.shared.release() } }
                                 try await Downloader().download(
                                     .init(url: sourceURL, referer: "https://look.tongji.edu.cn/"),
                                     to: destination

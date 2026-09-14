@@ -44,6 +44,7 @@
 		BAD8944340A9CCBFECBDF1DF /* AnalysisKit in Frameworks */ = {isa = PBXBuildFile; productRef = E453285FB6C6C290772DBA8B /* AnalysisKit */; };
 		BAF5469021701803372AF638 /* ShellBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A01234BCEBBEF3102133BDF /* ShellBridge.swift */; };
 		BEA3E5807BC109A8EA353EF2 /* RecapShellPlugin.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 6BC0E06F800CA245EDEAB6DC /* RecapShellPlugin.bundle */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C285169C8A07AFBD1457C550 /* DownloadGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BC1A354E66A8D230E221269 /* DownloadGate.swift */; };
 		C569F3ECC248BB5B6BECFFAF /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 865DE015128F9F36BE4DFD91 /* MenuBarController.swift */; };
 		D21128496414482812B7924E /* PipelineKit in Frameworks */ = {isa = PBXBuildFile; productRef = A274F8399FA5EDA4B3CE84DD /* PipelineKit */; };
 		D5C9254CEBE25AD0D2D48162 /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3AA0F828ECA3799D9388FFF /* MainSplitViewController.swift */; };
@@ -80,6 +81,7 @@
 		4FD60E773B773F04663F4077 /* OnboardingLectureStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLectureStep.swift; sourceTree = "<group>"; };
 		505C301E3BBE5C9F28A1C147 /* OnboardingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
 		561F999A30A529ACBE7869E3 /* TerminalOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalOutputView.swift; sourceTree = "<group>"; };
+		5BC1A354E66A8D230E221269 /* DownloadGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadGate.swift; sourceTree = "<group>"; };
 		5E37ED690FC7C2FF61570139 /* RecapTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapTheme.swift; sourceTree = "<group>"; };
 		5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "recap-r-mark.png"; sourceTree = "<group>"; };
 		616F809051DE4C0195CAA00B /* RecapKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecapKit; path = RecapKit; sourceTree = SOURCE_ROOT; };
@@ -194,6 +196,7 @@
 		BAA387544D07BC85D88652C4 /* Pipeline */ = {
 			isa = PBXGroup;
 			children = (
+				5BC1A354E66A8D230E221269 /* DownloadGate.swift */,
 				676EC9FC010F8689B3A7E396 /* LectureQueue.swift */,
 			);
 			path = Pipeline;
@@ -358,6 +361,7 @@
 				1ED21351811066B3286595E1 /* BatchAddLectureSheet.swift in Sources */,
 				69E4A0CD340258D6BFE96575 /* CourseListViewController.swift in Sources */,
 				DB5005A472A2861E6E97225C /* DetailHeaderView.swift in Sources */,
+				C285169C8A07AFBD1457C550 /* DownloadGate.swift in Sources */,
 				B5C337CBDA7637648DF120FD /* EvidenceReviewView.swift in Sources */,
 				67BA261954B3EAA1F4221CB9 /* LaTeXCompiler.swift in Sources */,
 				08C426EB553D45A214CA1172 /* LectureListViewController.swift in Sources */,
