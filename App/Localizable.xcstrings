@@ -1041,12 +1041,42 @@
         }
       }
     },
+    "合并": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge"
+          }
+        }
+      }
+    },
     "合并为一个讲次": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Merge into one lecture"
+          }
+        }
+      }
+    },
+    "合并为一个讲次…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge into one lecture…"
+          }
+        }
+      }
+    },
+    "同一节课的多段视频合并为一讲时，转写会拼成一份文稿，重点和讲义共用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merged into one lecture, the parts of a single class transcribe into one transcript and share its key points and notes."
           }
         }
       }
@@ -1391,6 +1421,16 @@
         }
       }
     },
+    "已选 %lld 讲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld selected"
+          }
+        }
+      }
+    },
     "已选择：%@": {
       "localizations": {
         "en": {
@@ -1547,6 +1587,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Extract exam key points for “%@”"
+          }
+        }
+      }
+    },
+    "提取「%@」的考试重点。文稿较长，已经按时间切分，先读 %@.文稿索引.md 再按需读分段文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract exam key points for “%1$@”. The transcript is long and has been split by time: read %2$@.文稿索引.md first, then the pieces you need"
           }
         }
       }
@@ -2201,6 +2251,16 @@
         }
       }
     },
+    "正在提取重点：第 %lld / %lld 部分": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extracting key points: piece %1$lld of %2$lld"
+          }
+        }
+      }
+    },
     "正在检查…": {
       "localizations": {
         "en": {
@@ -2851,6 +2911,16 @@
         }
       }
     },
+    "至少选择两讲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select at least two"
+          }
+        }
+      }
+    },
     "英文": {
       "localizations": {
         "en": {
@@ -3007,6 +3077,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Found %lld"
+          }
+        }
+      }
+    },
+    "识别到 %lld 条直链": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld links found"
           }
         }
       }
@@ -3461,6 +3541,16 @@
         }
       }
     },
+    "选中的讲次会按顺序合成一讲，媒体文件不会重新下载。合成后需要重新转写，之后就能生成一份讲义。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selected lectures become one lecture in this order, with nothing downloaded again. It transcribes once more, and then produces a single set of notes."
+          }
+        }
+      }
+    },
     "选择 %@ 重点线索": {
       "localizations": {
         "en": {
@@ -3777,6 +3867,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Local transcription is selected by default."
+          }
+        }
+      }
+    },
+    "（正在处理，先等它完成）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " (working, wait for it to finish)"
           }
         }
       }

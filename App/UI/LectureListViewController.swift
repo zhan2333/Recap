@@ -197,20 +197,43 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         sheet.existingLectureCount = LibraryStore.shared.lectures(in: course).count
         sheet.onSubmit = { [weak self] entries in
             guard let self else { return }
-            for entry in entries {
-                let lecture: Lecture
-                if entry.urls.count > 1 {
-                    let parts = entry.urls.map { MediaPart(id: UUID(), sourceURL: $0, duration: nil) }
-                    lecture = LibraryStore.shared.addLecture(named: entry.name, url: nil, parts: parts, to: self.course)
-                } else {
-                    lecture = LibraryStore.shared.addLecture(named: entry.name, url: entry.urls[0], to: self.course)
-                }
-                LectureQueue.shared.enqueue(lecture, in: self.course)
+            // Someone who used + already said how the links group, so only plain lists are asked about
+            let plainList = entries.count > 1 && entries.allSatisfy { $0.urls.count == 1 }
+            guard plainList else {
+                self.enqueue(entries)
+                return
             }
+            let alert = UIAlertController(
+                title: String(localized: "识别到 \(entries.count) 条直链"),
+                message: String(localized: "同一节课的多段视频合并为一讲时，转写会拼成一份文稿，重点和讲义共用。"),
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: String(localized: "合并为一个讲次"), style: .default) { _ in
+                let urls = entries.flatMap(\.urls)
+                self.enqueue([(name: entries[0].name, urls: urls)])
+            })
+            alert.addAction(UIAlertAction(title: String(localized: "分别创建 \(entries.count) 个讲次"), style: .default) { _ in
+                self.enqueue(entries)
+            })
+            alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+            self.present(alert, animated: true)
         }
         let nav = UINavigationController(rootViewController: sheet)
         nav.modalPresentationStyle = .pageSheet
         present(nav, animated: true)
+    }
+
+    private func enqueue(_ entries: [(name: String, urls: [URL])]) {
+        for entry in entries {
+            let lecture: Lecture
+            if entry.urls.count > 1 {
+                let parts = entry.urls.map { MediaPart(id: UUID(), sourceURL: $0, duration: nil) }
+                lecture = LibraryStore.shared.addLecture(named: entry.name, url: nil, parts: parts, to: course)
+            } else {
+                lecture = LibraryStore.shared.addLecture(named: entry.name, url: entry.urls[0], to: course)
+            }
+            LectureQueue.shared.enqueue(lecture, in: course)
+        }
     }
 
     func pickLocalFile() {
