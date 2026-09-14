@@ -487,9 +487,15 @@ final class PlayerPaneView: UIView {
             let selected = index == currentPartIndex
             // .plain() never renders background/stroke on Catalyst — selected must be .filled()
             var config = selected ? UIButton.Configuration.filled() : UIButton.Configuration.plain()
-            let title = partPillIsCompact
-                ? "\(index + 1)"
-                : String(localized: "第 \(index + 1) 段 · \(Self.timestamp(playableParts[index].duration))")
+            let full = String(localized: "第 \(index + 1) 段 · \(Self.timestamp(playableParts[index].duration))")
+            let title = partPillIsCompact ? "\(index + 1)" : full
+            // A number alone would drop the length, so it stays in the tooltip and for VoiceOver
+            button.accessibilityLabel = full
+            if let tip = button.interactions.compactMap({ $0 as? UIToolTipInteraction }).first {
+                tip.defaultToolTip = partPillIsCompact ? full : nil
+            } else if partPillIsCompact {
+                button.addInteraction(UIToolTipInteraction(defaultToolTip: full))
+            }
             config.attributedTitle = AttributedString(
                 title,
                 attributes: AttributeContainer([
@@ -547,6 +553,14 @@ final class PlayerPaneView: UIView {
 
     func pause() {
         player?.pause()
+    }
+
+    // Jumps whole parts, which matters most when there are too many to show as pills
+    func stepPart(_ delta: Int) {
+        guard playableParts.count > 1 else { return }
+        let target = currentPartIndex + delta
+        guard playableParts.indices.contains(target) else { return }
+        seekGlobal(playableParts[target].globalStart, thenPlay: false)
     }
 
     func togglePlayback() {

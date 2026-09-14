@@ -381,12 +381,32 @@
         }
       }
     },
+    "上一段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous part"
+          }
+        }
+      }
+    },
     "上一重点": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Previous Key Point"
+          }
+        }
+      }
+    },
+    "下一段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next part"
           }
         }
       }

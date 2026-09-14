@@ -283,6 +283,11 @@ final class TranscriptViewController: UIViewController {
     func extractKeyPoints() { promptExtractChannel() }
     func startHandoutFlow() { generateHandout() }
     func openTerminalStudio() { presentTerminalStudio() }
+    func stepPart(_ delta: Int) {
+        if header.modeTabs.selectedIndex != 2 { header.modeTabs.select(2) }
+        playerPane.stepPart(delta)
+    }
+
     func stepKeyPoint(_ delta: Int) {
         if header.modeTabs.selectedIndex != 2 { header.modeTabs.select(2) }
         playerPane.step(delta)

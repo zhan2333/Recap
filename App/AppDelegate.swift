@@ -52,6 +52,8 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
             UIMenu(options: .displayInline, children: [
                 UIKeyCommand(title: String(localized: "上一重点"), action: #selector(MainSplitViewController.menuPreviousKeyPoint), input: "[", modifierFlags: .command),
                 UIKeyCommand(title: String(localized: "下一重点"), action: #selector(MainSplitViewController.menuNextKeyPoint), input: "]", modifierFlags: .command),
+                UIKeyCommand(title: String(localized: "上一段"), action: #selector(MainSplitViewController.menuPreviousPart), input: "[", modifierFlags: [.command, .alternate]),
+                UIKeyCommand(title: String(localized: "下一段"), action: #selector(MainSplitViewController.menuNextPart), input: "]", modifierFlags: [.command, .alternate]),
             ]),
         ]), afterMenu: .view)
 

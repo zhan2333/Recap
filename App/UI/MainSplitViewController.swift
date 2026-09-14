@@ -87,6 +87,8 @@ final class MainSplitViewController: UISplitViewController {
     @objc func menuOpenTerminalStudio() { transcript?.openTerminalStudio() }
     @objc func menuPreviousKeyPoint() { transcript?.stepKeyPoint(-1) }
     @objc func menuNextKeyPoint() { transcript?.stepKeyPoint(1) }
+    @objc func menuPreviousPart() { transcript?.stepPart(-1) }
+    @objc func menuNextPart() { transcript?.stepPart(1) }
 
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
         switch action {
@@ -95,7 +97,8 @@ final class MainSplitViewController: UISplitViewController {
         case #selector(menuShowSegments), #selector(menuShowFullText),
              #selector(menuShowPlayer), #selector(menuShowKeyPoints),
              #selector(menuExtractKeyPoints), #selector(menuGenerateHandout),
-             #selector(menuOpenTerminalStudio), #selector(menuPreviousKeyPoint), #selector(menuNextKeyPoint):
+             #selector(menuOpenTerminalStudio), #selector(menuPreviousKeyPoint), #selector(menuNextKeyPoint),
+             #selector(menuPreviousPart), #selector(menuNextPart):
             return transcript != nil
         default:
             return super.canPerformAction(action, withSender: sender)
