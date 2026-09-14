@@ -262,6 +262,11 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                     .show(markdown: text, title: String(localized: "\(self.course.name) 教材"))
             })
         }
+        if store.lectures(in: course).count > 1 {
+            actions.append(UIAction(title: String(localized: "合并为一个讲次…"), image: UIImage(systemName: "arrow.triangle.merge")) { [weak self] _ in
+                self?.presentMergeSheet()
+            })
+        }
         actions.append(UIAction(title: String(localized: "生成考试重点"), image: UIImage(systemName: "star.circle")) { [weak self] _ in
             self?.generateDigest()
         })
@@ -281,6 +286,20 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             })
         }
         return actions
+    }
+
+    private func presentMergeSheet() {
+        let sheet = MergeLecturesSheet(course: course)
+        sheet.onMerge = { [weak self] ids in
+            guard let self,
+                  let merged = LibraryStore.shared.mergeLectures(ids, in: self.course) else { return }
+            self.reload()
+            // The parts now share one timeline, so the old per-lecture transcripts no longer apply
+            LectureQueue.shared.retranscribe(merged, in: self.course)
+        }
+        let nav = UINavigationController(rootViewController: sheet)
+        nav.modalPresentationStyle = .pageSheet
+        present(nav, animated: true)
     }
 
     private func pickTextbook() {

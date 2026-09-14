@@ -175,6 +175,38 @@ final class LibraryStore {
         return lecture
     }
 
+    // Folds several lectures into the first one as its parts. A lecture without parts has an
+    // implicit part carrying its own id, and part media is named after the part, so the files
+    // already sit where the merged lecture will look for them — nothing moves on disk.
+    @discardableResult
+    func mergeLectures(_ ids: [UUID], in course: Course) -> Lecture? {
+        let list = lectures(in: course)
+        let sources = ids.compactMap { id in list.first { $0.id == id } }
+        guard sources.count > 1, var merged = sources.first else { return nil }
+
+        merged.parts = sources.flatMap { mediaParts(of: $0, in: course).map(\.part) }
+        merged.sourceURL = nil
+        merged.phase = .downloaded
+        merged.errorMessage = nil
+
+        let absorbed = Set(sources.dropFirst().map(\.id))
+        var updated = list.filter { !absorbed.contains($0.id) }
+        guard let index = updated.firstIndex(where: { $0.id == merged.id }) else { return nil }
+        updated[index] = merged
+        lecturesByCourse[course.id] = updated
+
+        // The absorbed records leave behind transcripts written against their own timelines
+        for lecture in sources.dropFirst() {
+            for ext in ["srt", "txt", "segments.json", "analysis.json", "analysis-raw.txt",
+                        "handout.pdf", "handout.tex", "handout.md", "matches.json"] {
+                try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
+            }
+        }
+        persistLectures(of: course)
+        notify()
+        return merged
+    }
+
     func updateLecture(_ lecture: Lecture, in course: Course) {
         guard var list = lecturesByCourse[course.id],
               let index = list.firstIndex(where: { $0.id == lecture.id }) else { return }
