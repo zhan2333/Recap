@@ -93,7 +93,7 @@ final class TranscriptViewController: UIViewController {
             emptyLabel.leadingAnchor.constraint(greaterThanOrEqualTo: safe.leadingAnchor, constant: 40),
         ])
 
-        reviewView.onGenerateHandout = { [weak self] in self?.generateHandout() }
+        reviewView.onGenerateHandout = { [weak self] in self?.promptPrepare() }
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(queueActivityChanged(_:)),
@@ -228,7 +228,7 @@ final class TranscriptViewController: UIViewController {
                 self?.extractKeyPoints()
             })
             actions.append(UIAction(title: String(localized: "生成本讲讲义"), image: UIImage(systemName: "doc.text")) { [weak self] _ in
-                self?.generateHandout()
+                self?.promptPrepare()
             })
         }
         if hasHandout {
@@ -280,8 +280,8 @@ final class TranscriptViewController: UIViewController {
     // MARK: - Menu plumbing
 
     func switchMode(_ index: Int) { header.modeTabs.select(index) }
-    func extractKeyPoints() { promptExtractChannel() }
-    func startHandoutFlow() { generateHandout() }
+    func extractKeyPoints() { promptPrepare() }
+    func startHandoutFlow() { promptPrepare() }
     func openTerminalStudio() { presentTerminalStudio() }
     func stepPart(_ delta: Int) {
         if header.modeTabs.selectedIndex != 2 { header.modeTabs.select(2) }
@@ -311,15 +311,17 @@ final class TranscriptViewController: UIViewController {
         } else if hasHandout {
             showHandout()
         } else {
-            generateHandout()
+            promptPrepare()
         }
     }
 
-    private func analyze() {
-        guard !plainText.isEmpty, !isAnalyzing else { return }
+    // Awaitable so notes can follow the key points they need
+    @discardableResult
+    private func analyze() async -> Bool {
+        guard !plainText.isEmpty, !isAnalyzing else { return false }
         guard let config = Settings.chatConfig else {
             presentConfigureAlert()
-            return
+            return false
         }
         isAnalyzing = true
         refreshChrome()
@@ -330,75 +332,90 @@ final class TranscriptViewController: UIViewController {
         let lines = segments.isEmpty
             ? [TranscriptLine(start: 0, end: 0, text: transcript)]
             : segments.map { TranscriptLine(start: $0.start, end: $0.end, text: $0.text) }
-        Task {
-            do {
-                let result = try await LectureAnalyzer().extract(
-                    lines: lines, client: ChatClient(config: config)
-                ) { [weak self] done, total in
-                    guard total > 1 else { return }
-                    Task { @MainActor in
-                        self?.emptyLabel.text = String(localized: "正在提取重点：第 \(done + 1) / \(total) 部分")
-                    }
+        var succeeded = false
+        do {
+            let result = try await LectureAnalyzer().extract(
+                lines: lines, client: ChatClient(config: config)
+            ) { [weak self] done, total in
+                guard total > 1 else { return }
+                Task { @MainActor in
+                    self?.emptyLabel.text = String(localized: "正在提取重点：第 \(done + 1) / \(total) 部分")
                 }
-                try JSONEncoder().encode(result)
-                    .write(to: LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json"), options: .atomic)
-                analysis = result
-                loadContent()
-            } catch {
-                var message = error.localizedDescription
-                if let analyzeError = error as? LectureAnalyzer.AnalyzeError {
-                    let rawURL = LibraryStore.shared.productURL(lecture, in: course, ext: "analysis-raw.txt")
-                    try? analyzeError.rawResponse.write(to: rawURL, atomically: true, encoding: .utf8)
-                    message += String(localized: "\n完整响应已保存到课程目录 analysis-raw.txt。")
-                }
-                presentInfo(title: String(localized: "提取失败"), message: message)
             }
-            isAnalyzing = false
-            refreshChrome()
-            applyMode()
+            try JSONEncoder().encode(result)
+                .write(to: LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json"), options: .atomic)
+            analysis = result
+            succeeded = true
+            loadContent()
+        } catch {
+            var message = error.localizedDescription
+            if let analyzeError = error as? LectureAnalyzer.AnalyzeError {
+                let rawURL = LibraryStore.shared.productURL(lecture, in: course, ext: "analysis-raw.txt")
+                try? analyzeError.rawResponse.write(to: rawURL, atomically: true, encoding: .utf8)
+                message += String(localized: "\n完整响应已保存到课程目录 analysis-raw.txt。")
+            }
+            presentInfo(title: String(localized: "提取失败"), message: message)
         }
+        isAnalyzing = false
+        refreshChrome()
+        applyMode()
+        return succeeded
     }
 
     // Same two channels as handout generation: CLI agent per the bundled skill, or the configured API
-    private func promptExtractChannel() {
+    // One sheet decides both what to make and which path makes it
+    private func promptPrepare() {
         guard !plainText.isEmpty, !isAnalyzing else { return }
-        let alert = UIAlertController(
-            title: String(localized: "提取本讲重点"),
-            message: String(localized: "两种方式产出同一份考试重点：claude 按内置 skill 在课程目录里提取，或用已配置的 API 接口提取。"),
-            preferredStyle: .alert
+        let sheet = PrepareLectureSheet(
+            hasKeyPoints: analysis != nil,
+            hasHandout: hasHandout,
+            preferred: Settings.prefersCLIChannel ? .cli : .api
         )
-        alert.addAction(UIAlertAction(title: String(localized: "用 CLI agent 提取"), style: .default) { [weak self] _ in
-            guard let self else { return }
-            // A long transcript is split on disk first, so the agent reads it piece by piece
-            let index = TranscriptChunkWriter.writeIfNeeded(
-                lecture: self.lecture, in: self.course, segments: self.segments)
-            let prompt = index == nil
-                ? String(localized: "提取「\(self.lecture.name)」的考试重点")
-                : String(localized: "提取「\(self.lecture.name)」的考试重点。文稿较长，已经按时间切分，先读 \(self.lecture.id.uuidString).文稿索引.md 再按需读分段文件")
-            self.presentTerminalStudio(prompt: prompt)
-        })
-        alert.addAction(UIAlertAction(title: String(localized: "用 API 提取"), style: .default) { [weak self] _ in
-            self?.analyze()
-        })
-        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
-        present(alert, animated: true)
+        sheet.onStart = { [weak self] plan in
+            Settings.prefersCLIChannel = plan.channel == .cli
+            self?.run(plan)
+        }
+        let nav = UINavigationController(rootViewController: sheet)
+        nav.modalPresentationStyle = .pageSheet
+        present(nav, animated: true)
     }
 
-    // Two channels: claude CLI (LaTeX → PDF, per the bundled skill) or the configured API (Markdown)
-    private func generateHandout() {
-        let alert = UIAlertController(
-            title: String(localized: "生成本讲讲义"),
-            message: String(localized: "两种方式产出同一份 PDF 讲义：claude 按内置 skill 生成，或用已配置的 API 接口按同一 skill 生成、在本机编译。"),
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: String(localized: "用 CLI agent 生成"), style: .default) { [weak self] _ in
-            self?.presentTerminalStudio()
-        })
-        alert.addAction(UIAlertAction(title: String(localized: "用 API 生成"), style: .default) { [weak self] _ in
-            self?.generateHandoutViaAPI()
-        })
-        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
-        present(alert, animated: true)
+    private func run(_ plan: PrepareLectureSheet.Plan) {
+        switch plan.channel {
+        case .cli:
+            presentTerminalStudio(prompt: cliPrompt(for: plan))
+        case .api:
+            Task { await runViaAPI(plan) }
+        }
+    }
+
+    // Notes need key points, so the API path waits for the extraction before starting them
+    private func runViaAPI(_ plan: PrepareLectureSheet.Plan) async {
+        if plan.extractKeyPoints {
+            guard await analyze() else { return }
+        }
+        if plan.generateHandout {
+            generateHandoutViaAPI()
+        }
+    }
+
+    private func cliPrompt(for plan: PrepareLectureSheet.Plan) -> String {
+        let name = lecture.name
+        // A long transcript is split on disk first, so the agent reads it piece by piece
+        let index = TranscriptChunkWriter.writeIfNeeded(lecture: lecture, in: course, segments: segments)
+        var prompt: String
+        switch (plan.extractKeyPoints, plan.generateHandout) {
+        case (true, true):
+            prompt = String(localized: "提取「\(name)」的考试重点，然后生成讲义")
+        case (true, false):
+            prompt = String(localized: "提取「\(name)」的考试重点")
+        default:
+            prompt = String(localized: "为「\(name)」生成讲义")
+        }
+        if index != nil {
+            prompt += String(localized: "。文稿较长，已经按时间切分，先读 \(lecture.id.uuidString).文稿索引.md 再按需读分段文件")
+        }
+        return prompt
     }
 
     // API channel follows the same bundled skill: LLM writes the .tex, xelatex compiles it locally

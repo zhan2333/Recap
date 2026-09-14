@@ -47,6 +47,12 @@ enum Settings {
         set { UserDefaults.standard.set(newValue.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "llmAPIKey") }
     }
 
+    // Which path last produced key points or notes, so the choice is not asked from scratch
+    static var prefersCLIChannel: Bool {
+        get { UserDefaults.standard.bool(forKey: "prefersCLIChannel") }
+        set { UserDefaults.standard.set(newValue, forKey: "prefersCLIChannel") }
+    }
+
     // First-run setup remembers where it stopped, so exiting mid-flow resumes here
     static var onboardingCompleted: Bool {
         get { UserDefaults.standard.bool(forKey: "onboardingCompleted") }

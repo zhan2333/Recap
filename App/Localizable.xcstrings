@@ -251,6 +251,26 @@
         }
       }
     },
+    "API 接口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API endpoint"
+          }
+        }
+      }
+    },
+    "CLI agent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CLI agent"
+          }
+        }
+      }
+    },
     "Focus Rail · 重点轨道": {
       "localizations": {
         "en": {
@@ -347,6 +367,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "❯ Course context attached (skill · transcript · key points). Enter a task and run.\n"
+          }
+        }
+      }
+    },
+    "。文稿较长，已经按时间切分，先读 %@.文稿索引.md 再按需读分段文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ". The transcript is long and has been split by time: read %@.文稿索引.md first, then the pieces you need"
           }
         }
       }
@@ -561,6 +591,16 @@
         }
       }
     },
+    "从转写稿里找出老师强调的内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finds what the teacher stressed, from the transcript"
+          }
+        }
+      }
+    },
     "以后无需重复下载。": {
       "localizations": {
         "en": {
@@ -637,6 +677,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Preserves the lead-in; not frame-exact"
+          }
+        }
+      }
+    },
+    "做什么": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What to make"
           }
         }
       }
@@ -1181,6 +1231,16 @@
         }
       }
     },
+    "在课程目录里跑你已装的 claude / codex，用它们自己的订阅": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runs the claude / codex you already have in the course folder, on their own subscriptions"
+          }
+        }
+      }
+    },
     "复制命令": {
       "localizations": {
         "en": {
@@ -1391,6 +1451,26 @@
         }
       }
     },
+    "已有讲义，重新生成会覆盖": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes exist; generating again replaces them"
+          }
+        }
+      }
+    },
+    "已有重点，重新提取会覆盖": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key points exist; extracting again replaces them"
+          }
+        }
+      }
+    },
     "已检测 · 就绪": {
       "localizations": {
         "en": {
@@ -1437,6 +1517,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Selected: %@"
+          }
+        }
+      }
+    },
+    "开始": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
           }
         }
       }
@@ -1561,6 +1651,16 @@
         }
       }
     },
+    "按内置 skill 排版成 LaTeX 讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typesets LaTeX notes per the bundled skill"
+          }
+        }
+      }
+    },
     "排队等待转写": {
       "localizations": {
         "en": {
@@ -1601,6 +1701,16 @@
         }
       }
     },
+    "提取「%@」的考试重点，然后生成讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract exam key points for “%@”, then generate the lecture notes"
+          }
+        }
+      }
+    },
     "提取失败": {
       "localizations": {
         "en": {
@@ -1617,6 +1727,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Extract key points"
+          }
+        }
+      }
+    },
+    "提取考试重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extract exam key points"
           }
         }
       }
@@ -1687,6 +1807,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loose lectures"
+          }
+        }
+      }
+    },
+    "整理这一讲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare this lecture"
           }
         }
       }
@@ -2451,6 +2581,16 @@
         }
       }
     },
+    "生成讲义 PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate the notes PDF"
+          }
+        }
+      }
+    },
     "用 API 提取": {
       "localizations": {
         "en": {
@@ -2497,6 +2637,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Download from the command line (about 1.5 GB, via the HF mirror):"
+          }
+        }
+      }
+    },
+    "用哪条路": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which path"
+          }
+        }
+      }
+    },
+    "用设置里配置的 OpenAI-compatible 接口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses the OpenAI-compatible endpoint from Settings"
           }
         }
       }

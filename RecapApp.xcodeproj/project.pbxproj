@@ -53,6 +53,7 @@
 		D744543F9194102D81A0014A /* TranscriptChunkWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D6B6967C9AD394E5FEDF2B7 /* TranscriptChunkWriter.swift */; };
 		D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE010D7F5C9CEB7CF7000C77 /* Settings.swift */; };
 		DB5005A472A2861E6E97225C /* DetailHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13099B29E78D6084BE81FFF /* DetailHeaderView.swift */; };
+		DE881D58D4437497C9322098 /* PrepareLectureSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EBF4783783DDCD112E7A70 /* PrepareLectureSheet.swift */; };
 		F9D8946EB6D71A72D6D59FA5 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EAA252231B59F41A4E68A2A /* Library.swift */; };
 		FA580BBA23BD8145CD327197 /* OnboardingCourseStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F2C6CCF516901480EE734D /* OnboardingCourseStep.swift */; };
 /* End PBXBuildFile section */
@@ -83,6 +84,7 @@
 		4CA68D9332A939536EEE3D92 /* LaTeXCompiler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaTeXCompiler.swift; sourceTree = "<group>"; };
 		4FD60E773B773F04663F4077 /* OnboardingLectureStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLectureStep.swift; sourceTree = "<group>"; };
 		505C301E3BBE5C9F28A1C147 /* OnboardingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
+		50EBF4783783DDCD112E7A70 /* PrepareLectureSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrepareLectureSheet.swift; sourceTree = "<group>"; };
 		561F999A30A529ACBE7869E3 /* TerminalOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalOutputView.swift; sourceTree = "<group>"; };
 		5BC1A354E66A8D230E221269 /* DownloadGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadGate.swift; sourceTree = "<group>"; };
 		5D6B6967C9AD394E5FEDF2B7 /* TranscriptChunkWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptChunkWriter.swift; sourceTree = "<group>"; };
@@ -246,6 +248,7 @@
 				E7D0FB2D9009A959019B60A6 /* MarkdownViewController.swift */,
 				1E6AA5AFB420B0F8D784C041 /* MergeLecturesSheet.swift */,
 				3822695569806EF08ECC2E35 /* PDFViewController.swift */,
+				50EBF4783783DDCD112E7A70 /* PrepareLectureSheet.swift */,
 				5E37ED690FC7C2FF61570139 /* RecapTheme.swift */,
 				456BC39DA0096C1C3E804B72 /* SettingsViewController.swift */,
 				561F999A30A529ACBE7869E3 /* TerminalOutputView.swift */,
@@ -388,6 +391,7 @@
 				084BD0D91D1FBF1120925A22 /* OnboardingWelcomeStep.swift in Sources */,
 				10FCF05C75C867182052A765 /* PDFViewController.swift in Sources */,
 				884BC1A59B305A0ED4A992C9 /* PlayerPaneView.swift in Sources */,
+				DE881D58D4437497C9322098 /* PrepareLectureSheet.swift in Sources */,
 				60D85F6422124DB2521689E3 /* RecapTheme.swift in Sources */,
 				9E9F150F491AE002E21FACD7 /* SceneDelegate.swift in Sources */,
 				D7C3947F3D903A649D4B7168 /* Settings.swift in Sources */,
