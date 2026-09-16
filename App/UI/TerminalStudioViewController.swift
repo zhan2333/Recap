@@ -160,6 +160,7 @@ final class TerminalStudioViewController: UIViewController {
         // SwiftTerm draws glyphs edge-to-edge, so padding and corner clipping live on a container
         terminalView.terminalDelegate = self
         terminalView.focusEffect = nil
+        installWheelForwarding()
         terminalContainer.layer.cornerRadius = RecapTheme.radiusSM
         terminalContainer.layer.cornerCurve = .continuous
         terminalContainer.layer.borderWidth = 1
@@ -393,6 +394,50 @@ final class TerminalStudioViewController: UIViewController {
         }
     }
 
+    // MARK: - Wheel
+
+    private var wheelRemainder: CGFloat = 0
+
+    // A full-screen CLI (claude) paints in the alternate buffer, which by definition has no
+    // scrollback, and it asks to track the mouse — so the wheel has to reach it as mouse reports
+    private func installWheelForwarding() {
+        let wheel = UIPanGestureRecognizer(target: self, action: #selector(handleWheel))
+        wheel.allowedScrollTypesMask = .all
+        wheel.allowedTouchTypes = []
+        wheel.delegate = self
+        terminalView.addGestureRecognizer(wheel)
+    }
+
+    @objc private func handleWheel(_ gesture: UIPanGestureRecognizer) {
+        let terminal = terminalView.getTerminal()
+        guard terminalView.allowMouseReporting, terminal.mouseMode != .off else { return }
+        switch gesture.state {
+        case .began: wheelRemainder = 0
+        case .changed: break
+        default: return
+        }
+        let cellHeight = terminalView.bounds.height / CGFloat(max(1, terminal.rows))
+        let cellWidth = terminalView.bounds.width / CGFloat(max(1, terminal.cols))
+        guard cellHeight > 0, cellWidth > 0 else { return }
+
+        wheelRemainder += gesture.translation(in: terminalView).y
+        gesture.setTranslation(.zero, in: terminalView)
+        let lines = Int(wheelRemainder / cellHeight)
+        guard lines != 0 else { return }
+        wheelRemainder -= CGFloat(lines) * cellHeight
+
+        let point = gesture.location(in: terminalView)
+        let column = min(terminal.cols - 1, max(0, Int(point.x / cellWidth)))
+        let row = min(terminal.rows - 1, max(0, Int(point.y / cellHeight)))
+        // Wheel up is button 4, down is 5; sendEvent encodes them for whichever protocol is on
+        let flags = terminal.encodeButton(
+            button: lines > 0 ? 4 : 5, release: false, shift: false, meta: false, control: false
+        )
+        for _ in 0..<abs(lines) {
+            terminal.sendEvent(buttonFlags: flags, x: column, y: row)
+        }
+    }
+
     private func sendPrompt() {
         guard shellPID > 0,
               let text = promptField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -566,6 +611,19 @@ final class TerminalStudioViewController: UIViewController {
         texRow.update(state: texExists ? String(localized: "已生成") : String(localized: "未生成"), done: texExists)
         pdfRow.update(state: pdfExists ? String(localized: "已生成") : String(localized: "未生成"), done: pdfExists)
         viewHandoutButton.isEnabled = pdfExists
+    }
+}
+
+// MARK: - UIGestureRecognizerDelegate
+
+extension TerminalStudioViewController: UIGestureRecognizerDelegate {
+
+    // The terminal view is itself a scroll view: its own pan still owns the scrollback
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+    ) -> Bool {
+        true
     }
 }
 
