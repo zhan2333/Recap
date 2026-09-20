@@ -159,6 +159,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "2,6"   # iPad + Mac idiom (Optimized for Mac)
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: false
+        "ARCHS[sdk=macosx*]": arm64
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         SWIFT_VERSION: "5.9"
