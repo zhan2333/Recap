@@ -66,6 +66,7 @@ Course replay → on-device transcript → exam key points → lecture-note PDF,
 
 - No need to leave the app: run your CLI in Terminal Studio, or pick "Generate with API". Both follow the same bundled skill and end in a LaTeX-typeset PDF with TikZ diagrams, readable in the app with a night mode
 - Notes follow the course language: English courses use an English template, Chinese courses the ctex one. You can also just tell a CLI in the course folder: `claude "Generate lecture notes for Week 1"`
+- The PDF reader includes bookmarks, back/forward navigation, page jumps, and text search. It follows embedded links and detects plain-text web addresses while reading; older PDFs need to be regenerated if their contents pages have no link targets
 
 ## macOS Integration
 

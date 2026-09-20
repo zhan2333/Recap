@@ -961,6 +961,16 @@
         }
       }
     },
+    "前进到下一位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forward to Next Location"
+          }
+        }
+      }
+    },
     "历史会话": {
       "localizations": {
         "en": {
@@ -1017,6 +1027,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Backpropagation"
+          }
+        }
+      }
+    },
+    "反转 PDF 明暗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invert PDF Colors"
           }
         }
       }
@@ -1201,6 +1221,16 @@
         }
       }
     },
+    "在 PDF 中查找": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find in PDF"
+          }
+        }
+      }
+    },
     "在 app 内下载（约 1.5GB）": {
       "localizations": {
         "en": {
@@ -1371,6 +1401,16 @@
         }
       }
     },
+    "导出 PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export PDF"
+          }
+        }
+      }
+    },
     "尚无文稿——转写完成后在这里查看": {
       "localizations": {
         "en": {
@@ -1457,6 +1497,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Complete · %lld key points"
+          }
+        }
+      }
+    },
+    "已显示前 %lld 处结果，请缩小查找范围。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Showing the first %lld matches. Narrow your search."
           }
         }
       }
@@ -1657,6 +1707,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "That endpoint or model was not found. Check whether the service URL needs /v1 and whether the model name is correct."
+          }
+        }
+      }
+    },
+    "找到 %lld 处结果": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found %lld matches"
           }
         }
       }
@@ -1911,6 +1971,16 @@
         }
       }
     },
+    "无法打开链接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Open Link"
+          }
+        }
+      }
+    },
     "易混易错": {
       "localizations": {
         "en": {
@@ -1937,6 +2007,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Show all"
+          }
+        }
+      }
+    },
+    "暂不支持打开这种链接。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This type of link is not supported yet."
           }
         }
       }
@@ -2031,6 +2111,16 @@
         }
       }
     },
+    "未命名章节": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Untitled Section"
+          }
+        }
+      }
+    },
     "未安装": {
       "localizations": {
         "en": {
@@ -2047,6 +2137,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "No CLI installed"
+          }
+        }
+      }
+    },
+    "未找到匹配文字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching text found"
+          }
+        }
+      }
+    },
+    "未找到可以打开此链接的应用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No app could open this link."
           }
         }
       }
@@ -2401,6 +2511,16 @@
         }
       }
     },
+    "正在查找…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searching…"
+          }
+        }
+      }
+    },
     "正在检查…": {
       "localizations": {
         "en": {
@@ -2437,6 +2557,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loading transcript…"
+          }
+        }
+      }
+    },
+    "此 PDF 没有目录书签": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This PDF has no outline bookmarks."
+          }
+        }
+      }
+    },
+    "此链接指向另一个 PDF，请先在访达中打开对应文件。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This link points to another PDF. Open that file in Finder first."
           }
         }
       }
@@ -2711,6 +2851,16 @@
         }
       }
     },
+    "目录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contents"
+          }
+        }
+      }
+    },
     "直链 token 有时效——若下载失败，重新从云课堂抓取直链后在讲次右键「更新直链」再试。": {
       "localizations": {
         "en": {
@@ -2837,6 +2987,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Part %lld · %@"
+          }
+        }
+      }
+    },
+    "第 %lld 页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page %lld"
           }
         }
       }
@@ -3441,6 +3601,26 @@
         }
       }
     },
+    "跳转": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go"
+          }
+        }
+      }
+    },
+    "跳转到页码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go to Page"
+          }
+        }
+      }
+    },
     "转写": {
       "localizations": {
         "en": {
@@ -3501,12 +3681,32 @@
         }
       }
     },
+    "输入 1–%lld 之间的页码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a page number from 1 to %lld."
+          }
+        }
+      }
+    },
     "输入提示词，发送到终端里的 CLI": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Type a prompt and send it to the CLI in the terminal"
+          }
+        }
+      }
+    },
+    "输入要查找的文字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter text to find"
           }
         }
       }
@@ -3567,6 +3767,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Go back and add media"
+          }
+        }
+      }
+    },
+    "返回跳转前的位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to Previous Location"
           }
         }
       }

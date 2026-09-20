@@ -13,17 +13,80 @@ packages:
     url: https://github.com/migueldeicaza/SwiftTerm
     from: 1.2.0
 targets:
-  RecapLibraryTests:
-    type: bundle.unit-test
-    platform: macOS
-    deploymentTarget: "14.0"
+  RecapPDFTestHost:
+    type: application
+    platform: iOS
     sources:
-      - Tests
+      - Tests/PDFReaderHost
       - path: App
         includes:
           - Models/Library.swift
           - Models/Library+Files.swift
           - Models/PriorAnalysis.swift
+          - Models/PDFNavigation.swift
+          - UI/PDFViewController.swift
+          - UI/PDFLinkView.swift
+          - UI/PDFOutlineViewController.swift
+          - UI/PDFFindViewController.swift
+          - UI/RecapTheme.swift
+          - Localizable.xcstrings
+    dependencies:
+      - package: RecapKit
+        product: AnalysisKit
+      - package: RecapKit
+        product: TranscriptionKit
+      - package: RecapKit
+        product: PipelineKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rio.Recap.PDFTestHost
+        SWIFT_EMIT_LOC_STRINGS: false
+        INFOPLIST_FILE: ""
+        INFOPLIST_KEY_CFBundleDisplayName: Recap PDF
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        SUPPORTS_MACCATALYST: true
+        TARGETED_DEVICE_FAMILY: "2,6"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: true
+
+  RecapPDFTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+        includes:
+          - PDFReaderTests.swift
+    dependencies:
+      - target: RecapPDFTestHost
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rio.Recap.PDFTests
+        INFOPLIST_FILE: ""
+        "TEST_HOST[sdk=macosx*]": "$(BUILT_PRODUCTS_DIR)/RecapPDFTestHost.app/Contents/MacOS/RecapPDFTestHost"
+        SUPPORTS_MACCATALYST: true
+        TARGETED_DEVICE_FAMILY: "2,6"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: true
+
+  RecapLibraryTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests
+        excludes:
+          - PDFReaderHost
+          - PDFReaderTests.swift
+      - path: App
+        includes:
+          - Models/Library.swift
+          - Models/Library+Files.swift
+          - Models/PriorAnalysis.swift
+          - Models/PDFNavigation.swift
       - path: Plugin
         includes:
           - ShellRunner.swift
@@ -103,6 +166,21 @@ targets:
         SWIFT_EMIT_LOC_STRINGS: true
 
 schemes:
+  RecapPDFTestHost:
+    build:
+      targets:
+        RecapPDFTestHost: all
+    run:
+      config: Debug
+
+  RecapPDFTests:
+    build:
+      targets:
+        RecapPDFTests: [test]
+    test:
+      targets:
+        - RecapPDFTests
+
   Recap:
     build:
       targets:
