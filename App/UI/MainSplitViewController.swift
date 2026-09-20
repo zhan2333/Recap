@@ -49,13 +49,14 @@ final class MainSplitViewController: UISplitViewController {
         setViewController(UINavigationController(rootViewController: transcript), for: .secondary)
     }
 
-    func show(markdown: String, title: String) {
-        let viewer = MarkdownViewController(markdown: markdown, title: title)
+    func show(markdown: String, title: String, documentID: UUID, resolveTitle: (() -> String?)? = nil) {
+        let viewer = MarkdownViewController(markdown: markdown, title: title, documentID: documentID, resolveTitle: resolveTitle)
         setViewController(UINavigationController(rootViewController: viewer), for: .secondary)
     }
 
-    func show(pdfAt url: URL, title: String) {
-        let viewer = PDFViewController(fileURL: url, title: title)
+    func show(pdfAt url: URL, title: String, courseID: UUID? = nil,
+              resolveFile: (() -> (url: URL, title: String)?)? = nil) {
+        let viewer = PDFViewController(fileURL: url, title: title, courseID: courseID, resolveFile: resolveFile)
         setViewController(UINavigationController(rootViewController: viewer), for: .secondary)
     }
 

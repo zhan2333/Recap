@@ -19,16 +19,28 @@ final class TerminalStudioViewController: UIViewController {
     static func sceneActivity(lecture: Lecture, prompt: String?) -> NSUserActivity {
         let activity = NSUserActivity(activityType: activityType)
         activity.userInfo = ["lectureID": lecture.id.uuidString, "prompt": prompt ?? ""]
+        if let found = LibraryStore.shared.locate(lectureID: lecture.id) {
+            let token = LibraryStore.shared.beginUsingStorage(in: found.course)
+            activity.userInfo?["storageToken"] = token.uuidString
+        }
         return activity
     }
 
-    private let lecture: Lecture
-    private let course: Course
+    static func releaseStorage(for activity: NSUserActivity) {
+        guard let value = activity.userInfo?["storageToken"] as? String,
+              let token = UUID(uuidString: value) else { return }
+        LibraryStore.shared.endUsingStorage(token)
+    }
+
+    private var lecture: Lecture
+    private var course: Course
     private let initialPrompt: String?
 
     private var detectedTools: [String] = []
     private var toolVersions: [String: String] = [:]
     private var shellPID: Int32 = -1
+    private var shellSessionID: UUID?
+    private var startupStorageToken: UUID?
     private var sessionStart = Date()
     private var lastAnalysisSeen = Date.distantPast
     private var lastPDFSeen = Date.distantPast
@@ -38,12 +50,14 @@ final class TerminalStudioViewController: UIViewController {
     private var pendingSize: (cols: Int32, rows: Int32)?
     private var lastResizeSent = Date.distantPast
     private var previewItem: URL?
+    private var previewStorageToken: UUID?
 
     private let terminalView = TerminalView()
     private let terminalContainer = UIView()
     private let toolButton = UIButton(type: .system)
     private let statusDot = UIView()
     private let statusLabel = UILabel()
+    private let subtitleLabel = UILabel()
     private let contextStack = UIStackView()
     private let promptField = UITextField()
     private let sendButton = UIButton(type: .system)
@@ -57,10 +71,11 @@ final class TerminalStudioViewController: UIViewController {
     private var texURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "handout.tex") }
     private var analysisURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "analysis.json") }
 
-    init(lecture: Lecture, course: Course, initialPrompt: String? = nil) {
+    init(lecture: Lecture, course: Course, initialPrompt: String? = nil, startupStorageToken: UUID? = nil) {
         self.lecture = lecture
         self.course = course
         self.initialPrompt = initialPrompt
+        self.startupStorageToken = startupStorageToken
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -70,6 +85,9 @@ final class TerminalStudioViewController: UIViewController {
         artifactScanTimer?.invalidate()
         resizeTimer?.invalidate()
         if shellPID > 0 { ShellBridge.terminate(shellPID) }
+        for token in [startupStorageToken, previewStorageToken].compactMap({ $0 }) {
+            Task { @MainActor in LibraryStore.shared.endUsingStorage(token) }
+        }
     }
 
     // MARK: - Layout
@@ -82,7 +100,6 @@ final class TerminalStudioViewController: UIViewController {
         titleLabel.text = String(localized: "Terminal Studio")
         titleLabel.font = RecapTheme.body(14, weight: .semibold)
         titleLabel.textColor = RecapTheme.ink
-        let subtitleLabel = UILabel()
         subtitleLabel.text = "\(lecture.name) · \(course.name)"
         subtitleLabel.font = RecapTheme.body(11)
         subtitleLabel.textColor = RecapTheme.quiet
@@ -222,13 +239,7 @@ final class TerminalStudioViewController: UIViewController {
         promptField.heightAnchor.constraint(equalToConstant: 34).isActive = true
 
         // Quick prompts only fill the composer; the user decides when to send
-        let chips: [(title: String, prompt: String)] = [
-            (String(localized: "生成讲义"), String(localized: "为「\(lecture.name)」生成讲义")),
-            (String(localized: "提取重点"), String(localized: "提取「\(lecture.name)」的考试重点")),
-            (String(localized: "检查术语"), String(localized: "检查「\(lecture.name)」转写稿中术语的识别错误，输出勘误清单")),
-            (String(localized: "补示意图"), String(localized: "为「\(lecture.name)」的讲义补充更多 TikZ 示意图并重新编译 PDF")),
-        ]
-        let chipsRow = UIStackView(arrangedSubviews: chips.map { chip in
+        let chipsRow = UIStackView(arrangedSubviews: quickPrompts.enumerated().map { index, chip in
             let button = UIButton(type: .system)
             button.preferredBehavioralStyle = .pad
             var config = UIButton.Configuration.plain()
@@ -240,7 +251,10 @@ final class TerminalStudioViewController: UIViewController {
             config.background.cornerRadius = RecapTheme.radiusSM
             config.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 10, bottom: 5, trailing: 10)
             button.configuration = config
-            button.addAction(UIAction { [weak self] _ in self?.promptField.text = chip.prompt }, for: .touchUpInside)
+            button.addAction(UIAction { [weak self] _ in
+                guard let self else { return }
+                self.promptField.text = self.quickPrompts[index].prompt
+            }, for: .touchUpInside)
             return button
         } + [UIView()])
         chipsRow.axis = .horizontal
@@ -252,8 +266,8 @@ final class TerminalStudioViewController: UIViewController {
         centerColumn.setCustomSpacing(8, after: chipsRow)
 
         // Right: generated artifact
-        texRow.configure(name: "handout.tex")
-        pdfRow.configure(name: "handout.pdf")
+        texRow.configure(name: texURL.lastPathComponent)
+        pdfRow.configure(name: pdfURL.lastPathComponent)
         viewHandoutButton.preferredBehavioralStyle = .pad
         var viewConfig = UIButton.Configuration.filled()
         viewConfig.baseBackgroundColor = RecapTheme.ink
@@ -298,6 +312,12 @@ final class TerminalStudioViewController: UIViewController {
             root.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
         ])
 
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(libraryDidChange), name: LibraryStore.didChange, object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(pathsDidChange(_:)), name: LibraryStore.pathsDidChange, object: nil
+        )
         buildContextCards()
         refreshArtifacts()
         detectTools()
@@ -349,12 +369,24 @@ final class TerminalStudioViewController: UIViewController {
     // MARK: - Shell session
 
     private func startShell() {
+        defer {
+            if let token = startupStorageToken { LibraryStore.shared.endUsingStorage(token) }
+            startupStorageToken = nil
+        }
         guard shellPID <= 0 else { return }
         guard ShellBridge.isAvailable else {
             setStatus(String(localized: "内置终端不可用"), ready: false)
             terminalView.feed(text: String(localized: "内置终端组件加载失败。可在课程目录自行运行 CLI。\r\n"))
             return
         }
+        guard let currentCourse = LibraryStore.shared.course(id: course.id),
+              let currentLecture = LibraryStore.shared.lecture(id: lecture.id, in: currentCourse) else { return }
+        course = currentCourse
+        lecture = currentLecture
+        let store = LibraryStore.shared
+        let storageToken = store.beginUsingStorage(in: course)
+        let sessionID = UUID()
+        shellSessionID = sessionID
         sessionStart = Date()
         lastAnalysisSeen = modified(analysisURL)
         lastPDFSeen = modified(pdfURL)
@@ -364,11 +396,14 @@ final class TerminalStudioViewController: UIViewController {
             cols: Int32(terminal.cols),
             rows: Int32(terminal.rows),
             onData: { [weak self] data in
-                self?.terminalView.feed(byteArray: [UInt8](data)[...])
-                self?.scheduleArtifactScan()
+                guard let self, self.shellSessionID == sessionID else { return }
+                self.terminalView.feed(byteArray: [UInt8](data)[...])
+                self.scheduleArtifactScan()
             },
             onExit: { [weak self] code in
-                guard let self else { return }
+                store.endUsingStorage(storageToken)
+                guard let self, self.shellSessionID == sessionID else { return }
+                self.shellSessionID = nil
                 self.shellPID = -1
                 self.setStatus(String(localized: "会话已结束"), ready: false)
                 self.terminalView.feed(text: String(localized: "\r\n[会话已结束，退出码 \(code)。点「新会话」重新开始]\r\n"))
@@ -376,10 +411,14 @@ final class TerminalStudioViewController: UIViewController {
         )
         if shellPID > 0 {
             setStatus(String(localized: "终端就绪 · zsh"), ready: true)
+        } else {
+            store.endUsingStorage(storageToken)
+            shellSessionID = nil
         }
     }
 
     private func restartShell() {
+        shellSessionID = nil
         if shellPID > 0 {
             ShellBridge.terminate(shellPID)
             shellPID = -1
@@ -449,11 +488,41 @@ final class TerminalStudioViewController: UIViewController {
 
     // MARK: - Context cards
 
+    private var quickPrompts: [(title: String, prompt: String)] {
+        [
+            (String(localized: "生成讲义"), String(localized: "为「\(lecture.name)」生成讲义")),
+            (String(localized: "提取重点"), String(localized: "提取「\(lecture.name)」的考试重点")),
+            (String(localized: "检查术语"), String(localized: "检查「\(lecture.name)」转写稿中术语的识别错误，输出勘误清单")),
+            (String(localized: "补示意图"), String(localized: "为「\(lecture.name)」的讲义补充更多 TikZ 示意图并重新编译 PDF")),
+        ]
+    }
+
+    @objc private func libraryDidChange() {
+        let store = LibraryStore.shared
+        guard let currentCourse = store.course(id: course.id),
+              let currentLecture = store.lecture(id: lecture.id, in: currentCourse) else { return }
+        let namesChanged = course.name != currentCourse.name || lecture.name != currentLecture.name
+        course = currentCourse
+        lecture = currentLecture
+        subtitleLabel.text = "\(lecture.name) · \(course.name)"
+        view.window?.windowScene?.title = "Terminal Studio · \(course.name)"
+        if namesChanged { buildContextCards() }
+        refreshArtifacts()
+    }
+
+    @objc private func pathsDidChange(_ note: Notification) {
+        guard note.userInfo?["courseID"] as? UUID == course.id else { return }
+        libraryDidChange()
+        buildContextCards()
+        scanSessionArtifacts()
+    }
+
     private func buildContextCards() {
         let store = LibraryStore.shared
+        contextStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         contextStack.addArrangedSubview(ContextCard(
             title: course.name,
-            detail: String(localized: "课程文件夹 · …/\(courseDir.lastPathComponent.prefix(8))…")))
+            detail: String(localized: "课程文件夹 · \(courseDir.lastPathComponent)")))
         contextStack.addArrangedSubview(ContextCard(
             title: "Recap Review Skill",
             detail: String(localized: "已内置 · claude / codex / gemini 等通用")))
@@ -464,14 +533,18 @@ final class TerminalStudioViewController: UIViewController {
         let signalsCard = ContextCard(title: String(localized: "考试重点"), detail: String(localized: "读取中…"))
         contextStack.addArrangedSubview(signalsCard)
 
+        let storageToken = store.beginUsingStorage(in: course)
         Task.detached {
             let characterCount = (try? String(contentsOf: txtURL, encoding: .utf8))?.count ?? 0
-            var signalCount = 0
+            let signalCount: Int
             if let data = try? Data(contentsOf: analysisURL),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 signalCount = (json["exam_signals"] as? [Any])?.count ?? 0
+            } else {
+                signalCount = 0
             }
             await MainActor.run {
+                defer { store.endUsingStorage(storageToken) }
                 transcriptCard.update(detail: characterCount > 0
                     ? String(localized: "\(characterCount) 字 · 已转写")
                     : String(localized: "尚未转写"))
@@ -562,7 +635,7 @@ final class TerminalStudioViewController: UIViewController {
         clearSessionArtifacts()
         let fm = FileManager.default
         var found: [URL] = []
-        let dirs = [courseDir, courseDir.appendingPathComponent("教材分章", isDirectory: true)]
+        let dirs = [courseDir, LibraryStore.shared.courseFileURL(course, name: "教材分章")]
         for dir in dirs {
             let items = (try? fm.contentsOfDirectory(
                 at: dir, includingPropertiesForKeys: [.contentModificationDateKey, .isDirectoryKey],
@@ -595,9 +668,13 @@ final class TerminalStudioViewController: UIViewController {
     }
 
     private func preview(_ url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        if let token = previewStorageToken { LibraryStore.shared.endUsingStorage(token) }
+        previewStorageToken = LibraryStore.shared.beginUsingStorage(in: course)
         previewItem = url
         let preview = QLPreviewController()
         preview.dataSource = self
+        preview.delegate = self
         present(preview, animated: true)
     }
 
@@ -606,6 +683,8 @@ final class TerminalStudioViewController: UIViewController {
     }
 
     private func refreshArtifacts() {
+        texRow.configure(name: texURL.lastPathComponent)
+        pdfRow.configure(name: pdfURL.lastPathComponent)
         let texExists = FileManager.default.fileExists(atPath: texURL.path)
         let pdfExists = FileManager.default.fileExists(atPath: pdfURL.path)
         texRow.update(state: texExists ? String(localized: "已生成") : String(localized: "未生成"), done: texExists)
@@ -735,8 +814,10 @@ private final class ArtifactRow: UIView {
 
         nameLabel.font = RecapTheme.mono(11, weight: .semibold)
         nameLabel.textColor = RecapTheme.ink
+        nameLabel.lineBreakMode = .byTruncatingMiddle
         stateLabel.font = RecapTheme.body(10.5)
         stateLabel.textColor = RecapTheme.muted
+        stateLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         dot.layer.cornerRadius = 3
 
         let stack = UIStackView(arrangedSubviews: [dot, nameLabel, UIView(), stateLabel])
@@ -774,7 +855,13 @@ private extension UITextField {
     }
 }
 
-extension TerminalStudioViewController: QLPreviewControllerDataSource {
+extension TerminalStudioViewController: QLPreviewControllerDataSource, QLPreviewControllerDelegate {
+
+    func previewControllerDidDismiss(_ controller: QLPreviewController) {
+        if let token = previewStorageToken { LibraryStore.shared.endUsingStorage(token) }
+        previewStorageToken = nil
+        previewItem = nil
+    }
 
     func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
         previewItem == nil ? 0 : 1

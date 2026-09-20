@@ -14,7 +14,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     private enum Section { case main }
 
-    private let course: Course
+    private var course: Course
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<Section, UUID>!
     private var selectedLectureID: UUID?
@@ -113,6 +113,9 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         LectureQueue.shared.onActivity = { [weak self] lectureID in
             self?.reconfigure(lectureID)
         }
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(libraryDidChange), name: LibraryStore.didChange, object: nil
+        )
         view.addInteraction(UIDropInteraction(delegate: self))
         refreshToolsMenu()
         reload()
@@ -170,6 +173,15 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         var reconfigure = dataSource.snapshot()
         reconfigure.reconfigureItems(reconfigure.itemIdentifiers)
         dataSource.apply(reconfigure, animatingDifferences: false)
+    }
+
+    @objc private func libraryDidChange() {
+        guard let current = LibraryStore.shared.course(id: course.id) else { return }
+        course = current
+        title = current.name
+        headerBar.courseLabel.text = current.name
+        refreshToolsMenu()
+        reload()
     }
 
     private func reconfigure(_ lectureID: UUID) {
@@ -281,8 +293,11 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
            !text.isEmpty {
             actions.append(UIAction(title: String(localized: "查看教材全文"), image: UIImage(systemName: "text.book.closed")) { [weak self] _ in
                 guard let self else { return }
+                let courseID = self.course.id
                 (self.splitViewController as? MainSplitViewController)?
-                    .show(markdown: text, title: String(localized: "\(self.course.name) 教材"))
+                    .show(markdown: text, title: String(localized: "\(self.course.name) 教材"), documentID: courseID) {
+                        LibraryStore.shared.course(id: courseID).map { String(localized: "\($0.name) 教材") }
+                    }
             })
         }
         if store.lectures(in: course).count > 1 {
@@ -297,15 +312,17 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         if FileManager.default.fileExists(atPath: reviewPDF.path) {
             actions.append(UIAction(title: String(localized: "查看考试重点"), image: UIImage(systemName: "star.fill")) { [weak self] _ in
                 guard let self else { return }
-                (self.splitViewController as? MainSplitViewController)?
-                    .show(pdfAt: reviewPDF, title: String(localized: "\(self.course.name)考试重点"))
+                self.showCourseReview()
             })
         } else if let digest = try? String(contentsOf: store.courseFileURL(course, name: "review.md"), encoding: .utf8),
                   !digest.isEmpty {
             actions.append(UIAction(title: String(localized: "查看考试重点"), image: UIImage(systemName: "star.fill")) { [weak self] _ in
                 guard let self else { return }
+                let courseID = self.course.id
                 (self.splitViewController as? MainSplitViewController)?
-                    .show(markdown: digest, title: String(localized: "\(self.course.name)考试重点"))
+                    .show(markdown: digest, title: String(localized: "\(self.course.name)考试重点"), documentID: courseID) {
+                        LibraryStore.shared.course(id: courseID).map { String(localized: "\($0.name)考试重点") }
+                    }
             })
         }
         return actions
@@ -335,7 +352,10 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         guard !isWorking else { return }
         isWorking = true
         refreshToolsMenu()
+        let store = LibraryStore.shared
+        let storageToken = store.beginUsingStorage(in: course)
         Task {
+            defer { store.endUsingStorage(storageToken) }
             do {
                 let text = try await TextbookImporter.extractText(from: url)
                 try text.write(
@@ -382,6 +402,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         let activity = TerminalStudioViewController.sceneActivity(lecture: anchor, prompt: prompt)
         let request = UISceneSessionActivationRequest(userActivity: activity)
         UIApplication.shared.activateSceneSession(for: request) { error in
+            TerminalStudioViewController.releaseStorage(for: activity)
             NSLog("Terminal Studio window failed: %@", error.localizedDescription)
         }
     }
@@ -410,7 +431,9 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         let courseDir = store.courseDirectory(course)
         let texURL = store.courseFileURL(course, name: "review.tex")
         let pdfURL = store.courseFileURL(course, name: "review.pdf")
+        let storageToken = store.beginUsingStorage(in: course)
         Task {
+            defer { store.endUsingStorage(storageToken) }
             do {
                 guard let skillURL = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md"),
                       let skill = try? String(contentsOf: skillURL, encoding: .utf8) else {
@@ -425,15 +448,26 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                     client: ChatClient(config: config)
                 )
                 try tex.write(to: texURL, atomically: true, encoding: .utf8)
-                try await LaTeXCompiler.compile(texURL: texURL, in: courseDir)
-                (splitViewController as? MainSplitViewController)?
-                    .show(pdfAt: pdfURL, title: String(localized: "\(courseName)考试重点"))
+                try await LaTeXCompiler.compile(texURL: texURL, pdfURL: pdfURL, in: courseDir)
+                showCourseReview()
             } catch {
                 presentInfo(title: String(localized: "生成失败"), message: error.localizedDescription)
             }
             isWorking = false
             refreshToolsMenu()
         }
+    }
+
+    private func showCourseReview() {
+        let courseID = course.id
+        let resolve: () -> (url: URL, title: String)? = {
+            let store = LibraryStore.shared
+            guard let course = store.course(id: courseID) else { return nil }
+            return (store.courseFileURL(course, name: "review.pdf"), String(localized: "\(course.name)考试重点"))
+        }
+        guard let file = resolve() else { return }
+        (splitViewController as? MainSplitViewController)?
+            .show(pdfAt: file.url, title: file.title, courseID: courseID, resolveFile: resolve)
     }
 
     private func presentInfo(title: String, message: String) {
@@ -573,18 +607,23 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             guard let self,
                   let urlString = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   let url = URL(string: urlString), url.host != nil else { return }
-            var updated = self.migratedToParts(lecture)
+            guard let current = LibraryStore.shared.lecture(id: lecture.id, in: self.course) else { return }
+            var updated = self.migratedToParts(current)
             updated.parts?.append(MediaPart(id: UUID(), sourceURL: url, duration: nil))
-            LibraryStore.shared.updateLecture(updated, in: self.course)
-            LectureQueue.shared.enqueue(updated, in: self.course)
+            do {
+                try LibraryStore.shared.updateLecture(updated, in: self.course).get()
+                LectureQueue.shared.enqueue(updated, in: self.course)
+            } catch {
+                self.presentInfo(title: String(localized: "保存失败"), message: error.localizedDescription)
+            }
         })
         present(alert, animated: true)
     }
 
-    private var pendingAppendLecture: Lecture?
+    private var pendingAppendLecture: UUID?
 
     private func pickAppendFiles(_ lecture: Lecture) {
-        pendingAppendLecture = lecture
+        pendingAppendLecture = lecture.id
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.movie, .audio], asCopy: true)
         picker.allowsMultipleSelection = true
         picker.delegate = self
@@ -593,19 +632,23 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
 
     private func appendFiles(_ urls: [URL], to lecture: Lecture) {
         let store = LibraryStore.shared
-        var updated = migratedToParts(lecture)
+        guard let current = store.lecture(id: lecture.id, in: course) else { return }
+        var updated = migratedToParts(current)
         let sorted = urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        let parts = sorted.map { _ in MediaPart(id: UUID(), sourceURL: nil, duration: nil) }
+        updated.parts?.append(contentsOf: parts)
         do {
-            for source in sorted {
-                let part = MediaPart(id: UUID(), sourceURL: nil, duration: nil)
+            try store.updateLecture(updated, in: course).get()
+            for (part, source) in zip(parts, sorted) {
                 try FileManager.default.copyItem(at: source, to: store.partMediaURL(part, in: course))
-                updated.parts?.append(part)
             }
-            store.updateLecture(updated, in: course)
             LectureQueue.shared.retranscribe(updated, in: course)
         } catch {
-            updated.errorMessage = error.localizedDescription
-            store.updateLecture(updated, in: course)
+            if var current = store.lecture(id: lecture.id, in: course) {
+                current.errorMessage = error.localizedDescription
+                store.updateLecture(current, in: course)
+            }
+            presentInfo(title: String(localized: "导入失败"), message: error.localizedDescription)
         }
         reload()
     }
@@ -625,10 +668,14 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             guard let self,
                   let urlString = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   let url = URL(string: urlString), url.host != nil else { return }
-            var updated = lecture
+            guard var updated = LibraryStore.shared.lecture(id: lecture.id, in: self.course) else { return }
             updated.sourceURL = url
-            LibraryStore.shared.updateLecture(updated, in: self.course)
-            self.reload()
+            do {
+                try LibraryStore.shared.updateLecture(updated, in: self.course).get()
+                self.reload()
+            } catch {
+                self.presentInfo(title: String(localized: "保存失败"), message: error.localizedDescription)
+            }
         })
         present(alert, animated: true)
     }
@@ -641,10 +688,12 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             guard let self,
                   let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   !name.isEmpty else { return }
-            var renamed = lecture
-            renamed.name = name
-            LibraryStore.shared.updateLecture(renamed, in: self.course)
-            self.reload()
+            do {
+                try LibraryStore.shared.renameLecture(lecture, to: name, in: self.course)
+                self.reload()
+            } catch {
+                self.presentInfo(title: String(localized: "重命名失败"), message: error.localizedDescription)
+            }
         })
         present(alert, animated: true)
     }
@@ -655,7 +704,9 @@ extension LectureListViewController: UIDocumentPickerDelegate {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         if let target = pendingAppendLecture {
             pendingAppendLecture = nil
-            appendFiles(urls, to: target)
+            if let lecture = LibraryStore.shared.lecture(id: target, in: course) {
+                appendFiles(urls, to: lecture)
+            }
             return
         }
         if let first = urls.first, first.pathExtension.lowercased() == "pdf" {
@@ -693,6 +744,7 @@ extension LectureListViewController: UIDocumentPickerDelegate {
         let store = LibraryStore.shared
         let name = url.deletingPathExtension().lastPathComponent
         var lecture = store.addLecture(named: name, url: nil, to: course)
+        guard store.lecture(id: lecture.id, in: course) != nil else { return }
         do {
             try FileManager.default.copyItem(at: url, to: store.mediaURL(lecture, in: course))
             lecture.phase = .downloaded
@@ -711,6 +763,7 @@ extension LectureListViewController: UIDocumentPickerDelegate {
         let parts = sorted.map { _ in MediaPart(id: UUID(), sourceURL: nil, duration: nil) }
         let name = sorted[0].deletingPathExtension().lastPathComponent
         var lecture = store.addLecture(named: name, url: nil, parts: parts, to: course)
+        guard store.lecture(id: lecture.id, in: course) != nil else { return }
         do {
             for (index, source) in sorted.enumerated() {
                 try FileManager.default.copyItem(at: source, to: store.partMediaURL(parts[index], in: course))
@@ -960,23 +1013,31 @@ extension LectureListViewController: UIDropInteractionDelegate {
 
     func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
         var urls: [URL] = []
+        let urlsLock = NSLock()
         let group = DispatchGroup()
         for item in session.items {
             group.enter()
             item.itemProvider.loadFileRepresentation(forTypeIdentifier: UTType.audiovisualContent.identifier) { url, _ in
                 // The provider's URL dies with the callback — copy it out first
                 if let url {
-                    let dest = FileManager.default.temporaryDirectory
-                        .appendingPathComponent(UUID().uuidString + "-" + url.lastPathComponent)
-                    if (try? FileManager.default.copyItem(at: url, to: dest)) != nil {
-                        urls.append(dest)
+                    let directory = FileManager.default.temporaryDirectory
+                        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+                    let dest = directory.appendingPathComponent(url.lastPathComponent)
+                    do {
+                        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                        try FileManager.default.copyItem(at: url, to: dest)
+                        urlsLock.withLock { urls.append(dest) }
+                    } catch {
+                        try? FileManager.default.removeItem(at: directory)
                     }
                 }
                 group.leave()
             }
         }
         group.notify(queue: .main) { [weak self] in
-            self?.handleIncomingFiles(urls.sorted { $0.lastPathComponent < $1.lastPathComponent })
+            self?.handleIncomingFiles(urls.sorted {
+                $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
+            })
         }
     }
 }

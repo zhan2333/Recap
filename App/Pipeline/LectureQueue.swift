@@ -45,6 +45,8 @@ final class LectureQueue {
 
     func enqueue(_ lecture: Lecture, in course: Course) {
         let store = LibraryStore.shared
+        guard let course = store.course(id: course.id),
+              let lecture = store.lecture(id: lecture.id, in: course) else { return }
         let parts = store.mediaParts(of: lecture, in: course)
         // Parts already on disk are never re-downloaded (their token may have expired)
         let pending = parts.filter {
@@ -53,7 +55,9 @@ final class LectureQueue {
         let onDisk = parts.contains { FileManager.default.fileExists(atPath: $0.url.path) }
         guard !pending.isEmpty || onDisk else { return }
 
+        let storageToken = store.beginUsingStorage(in: course)
         Task {
+            defer { store.endUsingStorage(storageToken) }
             do {
                 if !pending.isEmpty {
                     setActivity(.downloading(0), for: lecture.id)
@@ -101,6 +105,8 @@ final class LectureQueue {
     // reused, so merging and resuming cost nothing; freshPass throws that away and runs whisper again.
     func retranscribe(_ lecture: Lecture, in course: Course, freshPass: Bool = false) {
         let store = LibraryStore.shared
+        guard let course = store.course(id: course.id),
+              let lecture = store.lecture(id: lecture.id, in: course) else { return }
         let parts = store.mediaParts(of: lecture, in: course)
         guard parts.contains(where: { FileManager.default.fileExists(atPath: $0.url.path) }) else { return }
         if freshPass {
@@ -109,7 +115,11 @@ final class LectureQueue {
             }
         }
         setActivity(.waitingToTranscribe, for: lecture.id)
-        Task { await chainTranscription(of: lecture, in: course, reuseParts: !freshPass) }
+        let storageToken = store.beginUsingStorage(in: course)
+        Task {
+            defer { store.endUsingStorage(storageToken) }
+            await chainTranscription(of: lecture, in: course, reuseParts: !freshPass)
+        }
     }
 
     private func chainTranscription(of lecture: Lecture, in course: Course, reuseParts: Bool = true) async {
@@ -125,6 +135,11 @@ final class LectureQueue {
     // Transcribes every part in order and concatenates onto one global timeline
     private func runTranscription(of lecture: Lecture, in course: Course, reuseParts: Bool = true) async {
         let store = LibraryStore.shared
+        guard let course = store.course(id: course.id),
+              let lecture = store.lecture(id: lecture.id, in: course) else {
+            setActivity(nil, for: lecture.id)
+            return
+        }
         let token = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .idleSystemSleepDisabled,
                       .automaticTerminationDisabled, .suddenTerminationDisabled],
@@ -211,6 +226,10 @@ final class LectureQueue {
     private func autoExtract(of lecture: Lecture, in course: Course) async {
         guard let config = Settings.chatConfig else { return }
         let store = LibraryStore.shared
+        guard let course = store.course(id: course.id),
+              let lecture = store.lecture(id: lecture.id, in: course) else { return }
+        let storageToken = store.beginUsingStorage(in: course)
+        defer { store.endUsingStorage(storageToken) }
         let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
         let segmentsURL = store.productURL(lecture, in: course, ext: "segments.json")
         // Re-extract when the transcript is newer than the analysis (e.g. after appending a part)

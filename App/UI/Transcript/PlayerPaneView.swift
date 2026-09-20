@@ -42,6 +42,9 @@ final class PlayerPaneView: UIView {
     private var currentPartIndex = 0
     private var partKeyPointIndices: [Int] = []
     private var captionRows: [(start: TimeInterval, end: TimeInterval, text: String)] = []
+    private var course: Course?
+    private var configurationID = UUID()
+    private var frameRequestID = UUID()
     private let captionLabel = PaddedCaptionLabel()
 
     private let rail = FocusRailView()
@@ -258,6 +261,7 @@ final class PlayerPaneView: UIView {
     }
 
     deinit {
+        frameGenerators.forEach { $0.cancelAllCGImageGeneration() }
         if let observer = timeObserver { player?.removeTimeObserver(observer) }
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
     }
@@ -267,8 +271,18 @@ final class PlayerPaneView: UIView {
     func configure(
         parts: [(url: URL, duration: TimeInterval?, waveformCacheURL: URL?)],
         rows: [EvidenceReviewView.DisplayRow],
-        evidences: [EvidenceReviewView.Evidence]
+        evidences: [EvidenceReviewView.Evidence],
+        course: Course,
+        preservingPlayback: Bool = false
     ) {
+        let currentTime = player?.currentTime().seconds ?? 0
+        let previousGlobalTime = (playableParts.indices.contains(currentPartIndex)
+            ? playableParts[currentPartIndex].globalStart : 0) + (currentTime.isFinite ? currentTime : 0)
+        let wasPlaying = player?.rate != 0 && player != nil
+        let previousSelection = selectedIndex
+        self.course = course
+        configurationID = UUID()
+        frameGenerators.forEach { $0.cancelAllCGImageGeneration() }
         captionRows = rows.map { ($0.start, $0.end, $0.text) }
         // LLM signal order is arbitrary — the rail must be chronological.
         keyPoints = evidences.enumerated().compactMap { index, evidence -> KeyPoint? in
@@ -315,12 +329,27 @@ final class PlayerPaneView: UIView {
                 self?.tick(time.seconds)
             }
             observePartEnd()
-        } else if currentPartIndex >= playableParts.count
-            || (player?.currentItem?.asset as? AVURLAsset)?.url != playableParts[currentPartIndex].url {
-            // Reconfigured with a different part list — restart from the first part
-            currentPartIndex = 0
-            player?.replaceCurrentItem(with: AVPlayerItem(url: playableParts[0].url))
-            observePartEnd()
+        } else {
+            let targetIndex = preservingPlayback
+                ? partAndLocalTime(for: previousGlobalTime)?.index ?? 0
+                : (playableParts.indices.contains(currentPartIndex) ? currentPartIndex : 0)
+            if currentPartIndex != targetIndex
+                || (player?.currentItem?.asset as? AVURLAsset)?.url != playableParts[targetIndex].url {
+                currentPartIndex = preservingPlayback ? targetIndex : 0
+                player?.replaceCurrentItem(with: AVPlayerItem(url: playableParts[currentPartIndex].url))
+                observePartEnd()
+                if preservingPlayback {
+                    let local = max(0, min(playableParts[currentPartIndex].duration,
+                                           previousGlobalTime - playableParts[currentPartIndex].globalStart))
+                    let currentConfiguration = configurationID
+                    player?.seek(to: CMTime(seconds: local, preferredTimescale: 600)) { [weak self] finished in
+                        Task { @MainActor in
+                            guard let self, finished, self.configurationID == currentConfiguration else { return }
+                            if wasPlaying { self.player?.play() }
+                        }
+                    }
+                }
+            }
         }
 
         frameGenerators = playableParts.map { part in
@@ -334,7 +363,8 @@ final class PlayerPaneView: UIView {
         inspector.update(keyPoints: keyPoints)
         rebuildPartPicker()
         applyPart()
-        select(keyPoints.isEmpty ? nil : 0, seek: false, play: false)
+        let selection = preservingPlayback ? previousSelection.flatMap { keyPoints.indices.contains($0) ? $0 : nil } : nil
+        select(selection ?? (keyPoints.isEmpty ? nil : 0), seek: false, play: false)
     }
 
     // Maps a global timeline instant onto its part and local offset
@@ -346,6 +376,8 @@ final class PlayerPaneView: UIView {
 
     private func updateFrameStrip(for point: KeyPoint?) {
         frameGenerators.forEach { $0.cancelAllCGImageGeneration() }
+        let requestID = UUID()
+        frameRequestID = requestID
         guard let point else {
             frameStrip.isHidden = true
             return
@@ -355,12 +387,17 @@ final class PlayerPaneView: UIView {
         frameStrip.beginLoading(times: times)
         for (slot, global) in times.enumerated() {
             guard let target = partAndLocalTime(for: global),
-                  frameGenerators.indices.contains(target.index) else { continue }
+                  frameGenerators.indices.contains(target.index), let course else { continue }
             let time = CMTime(seconds: target.local, preferredTimescale: 600)
+            let store = LibraryStore.shared
+            let storageToken = store.beginUsingStorage(in: course)
             frameGenerators[target.index].generateCGImagesAsynchronously(forTimes: [NSValue(time: time)]) { [weak self] _, image, _, _, _ in
-                guard let image else { return }
-                let frame = UIImage(cgImage: image)
-                DispatchQueue.main.async { self?.frameStrip.setImage(frame, at: slot) }
+                let frame = image.map { UIImage(cgImage: $0) }
+                Task { @MainActor in
+                    defer { store.endUsingStorage(storageToken) }
+                    guard let self, self.frameRequestID == requestID, let frame else { return }
+                    self.frameStrip.setImage(frame, at: slot)
+                }
             }
         }
     }
@@ -384,12 +421,16 @@ final class PlayerPaneView: UIView {
         stylePartPicker()
 
         rail.waveform = []
-        guard let cacheURL = part.waveformCacheURL else { return }
+        guard let cacheURL = part.waveformCacheURL, let course else { return }
         let url = part.url
         let index = currentPartIndex
+        let currentConfiguration = configurationID
+        let store = LibraryStore.shared
+        let storageToken = store.beginUsingStorage(in: course)
         Task { [weak self] in
+            defer { store.endUsingStorage(storageToken) }
             if let buckets = try? await WaveformGenerator.waveform(for: url, cacheURL: cacheURL),
-               self?.currentPartIndex == index {
+               self?.currentPartIndex == index, self?.configurationID == currentConfiguration {
                 self?.rail.waveform = buckets
             }
         }

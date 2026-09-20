@@ -191,10 +191,15 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
         alert.addAction(UIAlertAction(title: String(localized: "确定"), style: .default) { [weak self, weak alert] _ in
             guard let name = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   !name.isEmpty else { return }
-            var renamed = course
-            renamed.name = name
-            LibraryStore.shared.updateCourse(renamed)
-            self?.reload()
+            do {
+                try LibraryStore.shared.renameCourse(course, to: name)
+                self?.reload()
+            } catch {
+                let failure = UIAlertController(title: String(localized: "重命名失败"),
+                                                message: error.localizedDescription, preferredStyle: .alert)
+                failure.addAction(UIAlertAction(title: String(localized: "好"), style: .default))
+                self?.present(failure, animated: true)
+            }
         })
         present(alert, animated: true)
     }

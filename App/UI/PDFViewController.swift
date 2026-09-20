@@ -9,18 +9,30 @@ import UIKit
 import PDFKit
 
 // Displays a compiled handout PDF with export and reveal actions.
-final class PDFViewController: UIViewController {
+final class PDFViewController: UIViewController, UIDocumentPickerDelegate {
 
-    private let fileURL: URL
+    private var fileURL: URL
+    private let courseID: UUID?
+    private let resolveFile: (() -> (url: URL, title: String)?)?
+    private var exportStorageToken: UUID?
     private let pdfView = PDFView()
 
-    init(fileURL: URL, title: String) {
+    init(fileURL: URL, title: String, courseID: UUID? = nil,
+         resolveFile: (() -> (url: URL, title: String)?)? = nil) {
         self.fileURL = fileURL
+        self.courseID = courseID
+        self.resolveFile = resolveFile
         super.init(nibName: nil, bundle: nil)
         self.title = title
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    deinit {
+        if let token = exportStorageToken {
+            Task { @MainActor in LibraryStore.shared.endUsingStorage(token) }
+        }
+    }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -44,6 +56,9 @@ final class PDFViewController: UIViewController {
         pdfView.displayMode = .singlePageContinuous
         pdfView.pageBreakMargins = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
         pdfView.document = PDFDocument(url: fileURL)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(pathsDidChange(_:)), name: LibraryStore.pathsDidChange, object: nil
+        )
         pdfView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(pdfView)
         NSLayoutConstraint.activate([
@@ -94,8 +109,43 @@ final class PDFViewController: UIViewController {
         }
     }
 
+    @objc private func pathsDidChange(_ note: Notification) {
+        guard let courseID, note.userInfo?["courseID"] as? UUID == courseID else { return }
+        refreshFile()
+    }
+
+    private func refreshFile() {
+        guard let file = resolveFile?() else { return }
+        title = file.title
+        guard file.url != fileURL, let document = PDFDocument(url: file.url) else { return }
+        let destination = pdfView.currentDestination
+        let pageIndex = destination?.page.flatMap { pdfView.document?.index(for: $0) }
+        let scale = pdfView.scaleFactor
+        fileURL = file.url
+        pdfView.document = document
+        if let pageIndex, pageIndex < document.pageCount, let page = document.page(at: pageIndex) {
+            pdfView.go(to: PDFDestination(page: page, at: destination?.point ?? .zero))
+        }
+        if !pdfView.autoScales { pdfView.scaleFactor = scale }
+    }
+
     private func exportPDF() {
+        refreshFile()
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
+        if let courseID, let course = LibraryStore.shared.course(id: courseID) {
+            exportStorageToken = LibraryStore.shared.beginUsingStorage(in: course)
+        }
         let picker = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true)
+        picker.delegate = self
         present(picker, animated: true)
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { endExport() }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { endExport() }
+
+    private func endExport() {
+        if let token = exportStorageToken { LibraryStore.shared.endUsingStorage(token) }
+        exportStorageToken = nil
     }
 }

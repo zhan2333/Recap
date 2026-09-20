@@ -26,6 +26,8 @@ enum TranscriptChunkWriter {
     @discardableResult
     static func writeIfNeeded(lecture: Lecture, in course: Course,
                               segments: [TranscriptSegment], maxTokens: Int = 12_000) -> URL? {
+        guard LibraryStore.shared.canWriteFiles(in: course),
+              let lecture = LibraryStore.shared.lecture(id: lecture.id, in: course) else { return nil }
         let lines = segments.map { TranscriptLine(start: $0.start, end: $0.end, text: $0.text) }
         let chunks = TranscriptChunker.chunks(from: lines, maxTokens: maxTokens)
         guard chunks.count > 1 else { return nil }

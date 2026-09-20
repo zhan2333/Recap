@@ -33,6 +33,7 @@ let package = Package(
         ),
         .target(name: "PipelineKit"),
         .target(name: "AnalysisKit"),
+        .testTarget(name: "PipelineKitTests", dependencies: ["PipelineKit"]),
         .executableTarget(
             name: "RecapCLI",
             dependencies: ["TranscriptionKit", "PipelineKit", "AnalysisKit"]

@@ -110,8 +110,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     private func connectStudioWindow(_ windowScene: UIWindowScene, activity: NSUserActivity) {
         guard let idString = activity.userInfo?["lectureID"] as? String,
               let id = UUID(uuidString: idString),
-              let found = LibraryStore.shared.locate(lectureID: id) else { return }
+              let found = LibraryStore.shared.locate(lectureID: id) else {
+            TerminalStudioViewController.releaseStorage(for: activity)
+            return
+        }
         let prompt = (activity.userInfo?["prompt"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let storageToken = (activity.userInfo?["storageToken"] as? String).flatMap(UUID.init(uuidString:))
         windowScene.session.userInfo = [Self.studioSessionKey: idString]
 
         #if targetEnvironment(macCatalyst)
@@ -122,7 +126,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = TerminalStudioViewController(
-            lecture: found.lecture, course: found.course, initialPrompt: prompt)
+            lecture: found.lecture, course: found.course, initialPrompt: prompt, startupStorageToken: storageToken)
         window.makeKeyAndVisible()
         self.window = window
     }

@@ -8,17 +8,22 @@
 import UIKit
 import WebKit
 import UniformTypeIdentifiers
+import PipelineKit
 
 // Renders a Markdown document and exports it as a paginated PDF
 final class MarkdownViewController: UIViewController {
 
     private let markdown: String
-    private let documentTitle: String
+    private var documentTitle: String
+    private let documentID: UUID
+    private let resolveTitle: (() -> String?)?
     private let webView = WKWebView()
 
-    init(markdown: String, title: String) {
+    init(markdown: String, title: String, documentID: UUID, resolveTitle: (() -> String?)? = nil) {
         self.markdown = markdown
         self.documentTitle = title
+        self.documentID = documentID
+        self.resolveTitle = resolveTitle
         super.init(nibName: nil, bundle: nil)
         self.title = title
     }
@@ -33,6 +38,9 @@ final class MarkdownViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(refreshTitle), name: LibraryStore.didChange, object: nil
+        )
 
         webView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(webView)
@@ -59,7 +67,14 @@ final class MarkdownViewController: UIViewController {
 
     // MARK: - PDF export
 
+    @objc private func refreshTitle() {
+        guard let current = resolveTitle?() else { return }
+        documentTitle = current
+        title = current
+    }
+
     private func exportPDF() {
+        refreshTitle()
         let renderer = UIPrintPageRenderer()
         renderer.addPrintFormatter(webView.viewPrintFormatter(), startingAtPageAt: 0)
 
@@ -76,8 +91,8 @@ final class MarkdownViewController: UIViewController {
         }
         UIGraphicsEndPDFContext()
 
-        let fileURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(documentTitle).pdf")
+        let fileName = LibraryFileNaming.uniqueStem(documentTitle, fallback: "Review", id: documentID, occupied: [])
+        let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(fileName).pdf")
         do {
             try data.write(to: fileURL, options: .atomic)
         } catch {

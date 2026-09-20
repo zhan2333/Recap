@@ -13,13 +13,14 @@ import AnalysisKit
 final class TranscriptViewController: UIViewController {
 
     private var lecture: Lecture
-    private let course: Course
+    private var course: Course
 
     private var segments: [TranscriptSegment] = []
     private var plainText: String = ""
     private var analysis: LectureAnalysis?
     private var isAnalyzing = false
     private var isLoading = false
+    private var contentLoadID = UUID()
 
     private let header = DetailHeaderView()
     private let metaBar = TranscriptMetaBar()
@@ -52,6 +53,9 @@ final class TranscriptViewController: UIViewController {
         header.subtitleLabel.text = course.name
         NotificationCenter.default.addObserver(
             self, selector: #selector(libraryDidChange), name: LibraryStore.didChange, object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(pathsDidChange(_:)), name: LibraryStore.pathsDidChange, object: nil
         )
         header.modeTabs.onSelect = { [weak self] _ in self?.applyMode() }
         header.analyzeButton.addAction(UIAction { [weak self] _ in self?.primaryAction() }, for: .touchUpInside)
@@ -126,19 +130,27 @@ final class TranscriptViewController: UIViewController {
     // MARK: - Content
 
     // File IO, JSON decoding, row merging and quote matching are heavy for a real 1.5h lecture — all off the main thread
-    private func loadContent() {
+    private func loadContent(preservingPlayback: Bool = false) {
         isLoading = true
         applyMode()
         let store = LibraryStore.shared
-        if let fresh = store.lecture(id: lecture.id, in: course) { lecture = fresh }
+        guard let currentCourse = store.course(id: course.id),
+              let currentLecture = store.lecture(id: lecture.id, in: currentCourse) else {
+            isLoading = false
+            return
+        }
+        course = currentCourse
+        lecture = currentLecture
+        let storageToken = store.beginUsingStorage(in: course)
+        let loadID = UUID()
+        contentLoadID = loadID
         let segmentsURL = store.productURL(lecture, in: course, ext: "segments.json")
         let txtURL = store.productURL(lecture, in: course, ext: "txt")
         let analysisURL = store.productURL(lecture, in: course, ext: "analysis.json")
         let matchCacheURL = store.productURL(lecture, in: course, ext: "matches.json")
-        let courseDirectory = store.courseDirectory(course)
         let mediaParts = store.mediaParts(of: lecture, in: course)
             .map { (url: $0.url, duration: $0.part.duration,
-                    waveformCacheURL: Optional(courseDirectory.appendingPathComponent("\($0.part.id.uuidString).waveform.json"))) }
+                    waveformCacheURL: Optional(store.partWaveformURL($0.part, in: course))) }
         let lectureName = lecture.name
         let courseName = course.name
 
@@ -188,13 +200,15 @@ final class TranscriptViewController: UIViewController {
             let quoteRows = Set(evidences.compactMap(\.rowIndex))
 
             await MainActor.run { [weak self] in
-                guard let self else { return }
+                defer { store.endUsingStorage(storageToken) }
+                guard let self, self.contentLoadID == loadID else { return }
                 self.segments = segments
                 self.plainText = plainText
                 self.analysis = analysis
                 self.reviewView.update(rows: rows, evidences: evidences)
                 self.readingView.update(title: lectureName, subtitle: courseName, rows: rows, quoteRows: quoteRows)
-                self.playerPane.configure(parts: mediaParts, rows: rows, evidences: evidences)
+                self.playerPane.configure(parts: mediaParts, rows: rows, evidences: evidences,
+                                          course: currentCourse, preservingPlayback: preservingPlayback)
                 self.signalsView.update(analysis: analysis)
                 self.metaBar.update(segments: segments, characterCount: plainText.count)
                 self.isLoading = false
@@ -326,6 +340,9 @@ final class TranscriptViewController: UIViewController {
             presentConfigureAlert()
             return false
         }
+        let store = LibraryStore.shared
+        let storageToken = store.beginUsingStorage(in: course)
+        defer { store.endUsingStorage(storageToken) }
         isAnalyzing = true
         refreshChrome()
         header.modeTabs.select(3)
@@ -355,7 +372,7 @@ final class TranscriptViewController: UIViewController {
             if let analyzeError = error as? LectureAnalyzer.AnalyzeError {
                 let rawURL = LibraryStore.shared.productURL(lecture, in: course, ext: "analysis-raw.txt")
                 try? analyzeError.rawResponse.write(to: rawURL, atomically: true, encoding: .utf8)
-                message += String(localized: "\n完整响应已保存到课程目录 analysis-raw.txt。")
+                message += String(localized: "\n完整响应已保存到课程目录 \(rawURL.lastPathComponent)。")
             }
             presentInfo(title: String(localized: "提取失败"), message: message)
         }
@@ -394,11 +411,21 @@ final class TranscriptViewController: UIViewController {
 
     // The record can be renamed or gain parts while its detail page is open
     @objc private func libraryDidChange() {
-        guard let current = LibraryStore.shared.lecture(id: lecture.id, in: course) else { return }
+        let store = LibraryStore.shared
+        guard let currentCourse = store.course(id: course.id),
+              let current = store.lecture(id: lecture.id, in: currentCourse) else { return }
+        course = currentCourse
         lecture = current
-        guard title != current.name else { return }
         title = current.name
         header.titleLabel.text = current.name
+        header.subtitleLabel.text = currentCourse.name
+        readingView.updateHeading(title: current.name, subtitle: currentCourse.name)
+    }
+
+    @objc private func pathsDidChange(_ note: Notification) {
+        guard note.userInfo?["courseID"] as? UUID == course.id else { return }
+        libraryDidChange()
+        loadContent(preservingPlayback: true)
     }
 
     // Key points the parts carried before they were merged into this lecture
@@ -429,11 +456,12 @@ final class TranscriptViewController: UIViewController {
         default:
             prompt = String(localized: "为「\(name)」生成讲义")
         }
-        if index != nil {
-            prompt += String(localized: "。文稿较长，已经按时间切分，先读 \(lecture.id.uuidString).文稿索引.md 再按需读分段文件")
+        if let index {
+            prompt += String(localized: "。文稿较长，已经按时间切分，先读 \(index.lastPathComponent) 再按需读分段文件")
         }
         if !LibraryStore.shared.priorAnalyses(of: lecture, in: course).isEmpty {
-            prompt += String(localized: "。这一讲由多讲合并而来，\(lecture.id.uuidString).合并前重点.json 是合并前各段提取过的重点，作参考用")
+            let priorFile = LibraryStore.shared.productURL(lecture, in: course, ext: "合并前重点.json").lastPathComponent
+            prompt += String(localized: "。这一讲由多讲合并而来，\(priorFile) 是合并前各段提取过的重点，作参考用")
         }
         return prompt
     }
@@ -450,8 +478,12 @@ final class TranscriptViewController: UIViewController {
         let title = lecture.name
         let transcript = plainText
         let texURL = LibraryStore.shared.productURL(lecture, in: course, ext: "handout.tex")
+        let pdfURL = LibraryStore.shared.productURL(lecture, in: course, ext: "handout.pdf")
         let courseDir = LibraryStore.shared.courseDirectory(course)
+        let store = LibraryStore.shared
+        let storageToken = store.beginUsingStorage(in: course)
         Task {
+            defer { store.endUsingStorage(storageToken) }
             do {
                 guard let skillURL = Bundle.main.url(forResource: "recap-review-skill", withExtension: "md"),
                       let skill = try? String(contentsOf: skillURL, encoding: .utf8) else {
@@ -464,7 +496,7 @@ final class TranscriptViewController: UIViewController {
                     client: ChatClient(config: config)
                 )
                 try tex.write(to: texURL, atomically: true, encoding: .utf8)
-                try await LaTeXCompiler.compile(texURL: texURL, in: courseDir)
+                try await LaTeXCompiler.compile(texURL: texURL, pdfURL: pdfURL, in: courseDir)
                 isAnalyzing = false
                 refreshChrome()
                 showHandout()
@@ -481,6 +513,7 @@ final class TranscriptViewController: UIViewController {
         let activity = TerminalStudioViewController.sceneActivity(lecture: lecture, prompt: prompt)
         let request = UISceneSessionActivationRequest(userActivity: activity)
         UIApplication.shared.activateSceneSession(for: request) { error in
+            TerminalStudioViewController.releaseStorage(for: activity)
             NSLog("Terminal Studio window failed: %@", error.localizedDescription)
         }
     }
@@ -497,9 +530,18 @@ final class TranscriptViewController: UIViewController {
 
     private func showHandout() {
         guard hasHandout else { return }
+        let courseID = course.id
+        let lectureID = lecture.id
+        let resolve: () -> (url: URL, title: String)? = {
+            let store = LibraryStore.shared
+            guard let course = store.course(id: courseID),
+                  let lecture = store.lecture(id: lectureID, in: course) else { return nil }
+            return (store.productURL(lecture, in: course, ext: "handout.pdf"), String(localized: "\(lecture.name) 讲义"))
+        }
         navigationController?.navigationBar.isHidden = false
         navigationController?.pushViewController(
-            PDFViewController(fileURL: handoutURL, title: String(localized: "\(lecture.name) 讲义")),
+            PDFViewController(fileURL: handoutURL, title: String(localized: "\(lecture.name) 讲义"),
+                              courseID: courseID, resolveFile: resolve),
             animated: true
         )
     }
@@ -624,6 +666,13 @@ final class ReadingPageView: UIView, UITableViewDataSource {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func updateHeading(title: String, subtitle: String) {
+        guard rows.count >= 2 else { return }
+        rows[0] = .eyebrow(String(localized: "\(subtitle) · 完整文稿"))
+        rows[1] = .title(title)
+        tableView.reloadRows(at: [IndexPath(row: 0, section: 0), IndexPath(row: 1, section: 0)], with: .none)
+    }
 
     func update(title: String, subtitle: String, rows displayRows: [EvidenceReviewView.DisplayRow], quoteRows: Set<Int>) {
         rows = [.eyebrow(String(localized: "\(subtitle) · 完整文稿")), .title(title)]

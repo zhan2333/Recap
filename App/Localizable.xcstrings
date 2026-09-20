@@ -71,12 +71,12 @@
         }
       }
     },
-    "\n完整响应已保存到课程目录 analysis-raw.txt。": {
+    "\n完整响应已保存到课程目录 %@。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "\nThe full response was saved to analysis-raw.txt in the course folder."
+            "value": "\nThe complete response was saved to %@ in the course folder."
           }
         }
       }
@@ -371,12 +371,12 @@
         }
       }
     },
-    "。文稿较长，已经按时间切分，先读 %@.文稿索引.md 再按需读分段文件": {
+    "。文稿较长，已经按时间切分，先读 %@ 再按需读分段文件": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": ". The transcript is long and has been split by time: read %@.文稿索引.md first, then the pieces you need"
+            "value": ". The long transcript has been split by time. Read %@ first, then open the needed chunks"
           }
         }
       }
@@ -3391,12 +3391,12 @@
         }
       }
     },
-    "课程文件夹 · …/%@…": {
+    "课程文件夹 · %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Course folder · …/%@…"
+            "value": "Course folder · %@"
           }
         }
       }
@@ -4077,6 +4077,76 @@
           "stringUnit": {
             "state": "translated",
             "value": " (working, wait for it to finish)"
+          }
+        }
+      }
+    },
+    "课程正在处理文件或运行终端会话，请在任务结束或关闭终端后重命名。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This course is processing files or running a terminal session. Rename it after the task finishes or the terminal closes."
+          }
+        }
+      }
+    },
+    "课程或讲次已不存在。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The course or lecture no longer exists."
+          }
+        }
+      }
+    },
+    "上次文件改名尚未恢复，请重新打开 Recap 后再试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The previous file rename has not been recovered. Reopen Recap and try again."
+          }
+        }
+      }
+    },
+    "课程记录无法读取，原文件已保留，暂时不能修改此课程。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The course records could not be read. The original files have been preserved; this course cannot be changed yet."
+          }
+        }
+      }
+    },
+    "重命名失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Rename"
+          }
+        }
+      }
+    },
+    "。这一讲由多讲合并而来，%@ 是合并前各段提取过的重点，作参考用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ". This lecture combines several lectures; %@ contains their earlier key points for reference"
+          }
+        }
+      }
+    },
+    "保存失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Save"
           }
         }
       }

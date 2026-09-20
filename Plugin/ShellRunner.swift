@@ -103,8 +103,8 @@ public final class ShellRunner: NSObject, ShellRunning {
                 return
             }
             guard let shell = shells[pid] else { return }
-            shells[pid] = nil
-            shell.exitSource.cancel()
+            guard terminatingShells.insert(pid).inserted else { return }
+            // Keep the exit observer alive so owners release their storage lease only after exit.
             shell.master.readabilityHandler = nil
             try? shell.master.close()
             kill(pid, SIGHUP)
@@ -114,6 +114,7 @@ public final class ShellRunner: NSObject, ShellRunning {
     // Interactive login shells: forkpty makes the child a session leader owning the PTY,
     // so SIGWINCH and Ctrl-C signals reach it the way a real terminal delivers them
     private static var shells: [Int32: (master: FileHandle, exitSource: DispatchSourceProcess)] = [:]
+    private static var terminatingShells: Set<Int32> = []
 
     @discardableResult
     @objc public static func startShell(
@@ -182,6 +183,7 @@ public final class ShellRunner: NSObject, ShellRunning {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 masterHandle.readabilityHandler = nil
                 shells[pid] = nil
+                terminatingShells.remove(pid)
                 let signalNumber = status & 0x7f
                 onExit(signalNumber != 0 ? 128 + signalNumber : (status >> 8) & 0xff)
             }
@@ -193,14 +195,14 @@ public final class ShellRunner: NSObject, ShellRunning {
 
     @objc public static func write(_ pid: Int32, data: Data) {
         DispatchQueue.main.async {
-            guard let shell = shells[pid] else { return }
+            guard !terminatingShells.contains(pid), let shell = shells[pid] else { return }
             try? shell.master.write(contentsOf: data)
         }
     }
 
     @objc public static func resize(_ pid: Int32, cols: Int32, rows: Int32) {
         DispatchQueue.main.async {
-            guard let shell = shells[pid] else { return }
+            guard !terminatingShells.contains(pid), let shell = shells[pid] else { return }
             var size = winsize(ws_row: UInt16(rows), ws_col: UInt16(cols), ws_xpixel: 0, ws_ypixel: 0)
             _ = ioctl(shell.master.fileDescriptor, TIOCSWINSZ, &size)
         }

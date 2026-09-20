@@ -8,10 +8,14 @@
 import Foundation
 import AnalysisKit
 import TranscriptionKit
+import PipelineKit
 
 struct Course: Codable, Hashable, Identifiable {
     let id: UUID
     var name: String
+    var directoryName: String?
+    var reviewFileStem: String?
+    var fileStem: String?
 }
 
 // One media file of a lecture
@@ -19,6 +23,7 @@ struct MediaPart: Codable, Hashable, Identifiable {
     let id: UUID
     var sourceURL: URL?
     var duration: TimeInterval?   // known after transcription; offsets the next part
+    var fileStem: String?
 }
 
 struct Lecture: Codable, Hashable, Identifiable {
@@ -28,6 +33,8 @@ struct Lecture: Codable, Hashable, Identifiable {
     var phase: Phase
     var errorMessage: String?
     var parts: [MediaPart]?       // nil = legacy single-media lecture
+    var handoutFileStem: String?
+    var fileStem: String?
 
     enum Phase: String, Codable {
         case pending        // queued, nothing on disk yet
@@ -37,7 +44,7 @@ struct Lecture: Codable, Hashable, Identifiable {
     }
 }
 
-// Owns the on-disk library: Application Support/Recap/ ├─ courses.json └─ <courseID>/ ├─ lectures.json └─ <lectureID>.{mp4,srt,txt,segments.json}
+// Owns the course records; file mappings and rename transactions live in the storage extensions below
 @MainActor
 final class LibraryStore {
 
@@ -48,15 +55,22 @@ final class LibraryStore {
 
     private(set) var courses: [Course] = []
     private var lecturesByCourse: [UUID: [Lecture]] = [:]
+    private var storageUsers: [UUID: UUID] = [:]
+    private var storageRecoveryError: Error?
+    static let pathsDidChange = Notification.Name("LibraryStorePathsDidChange")
 
     // Fired after any mutation
     var onChange: (() -> Void)?
 
     let root: URL
 
-    private init() {
+    private convenience init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        root = support.appendingPathComponent("Recap", isDirectory: true)
+        self.init(root: support.appendingPathComponent("Recap", isDirectory: true))
+    }
+
+    init(root: URL) {
+        self.root = root
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         load()
     }
@@ -69,15 +83,6 @@ final class LibraryStore {
 
     func lecture(id: UUID, in course: Course) -> Lecture? {
         lectures(in: course).first { $0.id == id }
-    }
-
-    func courseDirectory(_ course: Course) -> URL {
-        let dir = root.appendingPathComponent(course.id.uuidString, isDirectory: true)
-        if !FileManager.default.fileExists(atPath: dir.path) {
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        }
-        installSkillIfNeeded(in: dir)
-        return dir
     }
 
     // One skill, every discovery convention: .claude/skills (claude, grok), .agents/skills (the neutral
@@ -121,80 +126,62 @@ final class LibraryStore {
         return nil
     }
 
-    func mediaURL(_ lecture: Lecture, in course: Course) -> URL {
-        courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).mp4")
-    }
-
-    func partMediaURL(_ part: MediaPart, in course: Course) -> URL {
-        courseDirectory(course).appendingPathComponent("\(part.id.uuidString).mp4")
-    }
-
-    // A part's own transcript on its own timeline, so merging and resuming never re-run whisper on it
-    func partTranscriptURL(_ part: MediaPart, in course: Course) -> URL {
-        courseDirectory(course).appendingPathComponent("\(part.id.uuidString).part.json")
-    }
-
-    // Holds the pieces a long transcript is cut into for the CLI channel
-    func chunkDirectory(_ lecture: Lecture, in course: Course) -> URL {
-        courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).文稿分段", isDirectory: true)
-    }
-
-    // Uniform media view: multi-part lectures list their parts
-    func mediaParts(of lecture: Lecture, in course: Course) -> [(part: MediaPart, url: URL)] {
-        if let parts = lecture.parts, !parts.isEmpty {
-            return parts.map { ($0, partMediaURL($0, in: course)) }
-        }
-        let implicit = MediaPart(id: lecture.id, sourceURL: lecture.sourceURL, duration: nil)
-        return [(implicit, mediaURL(lecture, in: course))]
-    }
-
-    func productURL(_ lecture: Lecture, in course: Course, ext: String) -> URL {
-        courseDirectory(course).appendingPathComponent("\(lecture.id.uuidString).\(ext)")
-    }
-
-    // Course-level files (textbook.txt, review.md).
-    func courseFileURL(_ course: Course, name: String) -> URL {
-        courseDirectory(course).appendingPathComponent(name)
-    }
-
     // MARK: - Mutations
 
     func addCourse(named name: String) -> Course {
         let course = Course(id: UUID(), name: name)
-        courses.append(course)
-        persistCourses()
-        notify()
-        return course
+        do {
+            try checkStorageRecovery()
+            let updated = namedCourse(course)
+            courses.append(updated)
+            lecturesByCourse[updated.id] = []
+            guard persistCourses() else {
+                courses.removeAll { $0.id == updated.id }
+                lecturesByCourse[updated.id] = nil
+                return course
+            }
+            _ = courseDirectory(updated)
+            notify()
+            return updated
+        } catch {
+            NSLog("Recap could not create a course: %@", error.localizedDescription)
+            return course
+        }
     }
 
-    func updateCourse(_ course: Course) {
-        guard let index = courses.firstIndex(where: { $0.id == course.id }) else { return }
-        courses[index] = course
-        persistCourses()
-        notify()
+    @discardableResult
+    func updateCourse(_ course: Course) -> Result<Void, Error> {
+        Result { try renameCourse(course, to: course.name) }
     }
 
     func deleteCourse(_ course: Course) {
+        guard (try? requireIdleStorage(in: course)) != nil,
+              let current = self.course(id: course.id) else { return }
+        let directory = current.directoryURL(in: root)
         courses.removeAll { $0.id == course.id }
         lecturesByCourse[course.id] = nil
-        try? FileManager.default.removeItem(at: root.appendingPathComponent(course.id.uuidString))
+        try? FileManager.default.removeItem(at: directory)
         persistCourses()
         notify()
     }
 
     func addLecture(named name: String, url: URL?, parts: [MediaPart]? = nil, to course: Course) -> Lecture {
         let lecture = Lecture(id: UUID(), name: name, sourceURL: url, phase: .pending, errorMessage: nil, parts: parts)
-        lecturesByCourse[course.id, default: []].append(lecture)
-        persistLectures(of: course)
-        notify()
-        return lecture
+        guard let current = self.course(id: course.id) else { return lecture }
+        do {
+            try synchronizeStorage(for: current, lectures: lectures(in: current) + [lecture])
+            notify()
+            return self.lecture(id: lecture.id, in: current) ?? lecture
+        } catch {
+            NSLog("Recap could not create a lecture: %@", error.localizedDescription)
+            return lecture
+        }
     }
 
-    // Folds several lectures into the first one as its parts. A lecture without parts has an
-    // implicit part carrying its own id, and part media is named after the part, so the files
-    // already sit where the merged lecture will look for them — nothing moves on disk.
+    // Merging preserves part identities and caches while their filenames adopt the retained lecture title.
     @discardableResult
     func mergeLectures(_ ids: [UUID], in course: Course) -> Lecture? {
+        guard (try? requireIdleStorage(in: course)) != nil else { return nil }
         let list = lectures(in: course)
         let sources = ids.compactMap { id in list.first { $0.id == id } }
         guard sources.count > 1, var merged = sources.first else { return nil }
@@ -208,8 +195,7 @@ final class LibraryStore {
         var updated = list.filter { !absorbed.contains($0.id) }
         guard let index = updated.firstIndex(where: { $0.id == merged.id }) else { return nil }
         updated[index] = merged
-        lecturesByCourse[course.id] = updated
-
+        var staleProducts: [(Lecture, String)] = []
         var priors: [PriorAnalysis] = []
         for lecture in sources {
             keepTranscriptAsPartCache(of: lecture, in: course)
@@ -217,19 +203,31 @@ final class LibraryStore {
             // Every product describes the pre-merge lecture: its timeline is gone, its findings are kept above
             for ext in ["srt", "txt", "segments.json", "analysis.json", "analysis-raw.txt",
                         "handout.pdf", "handout.tex", "handout.md", "matches.json"] {
-                try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
+                staleProducts.append((lecture, ext))
             }
+        }
+        do {
+            try synchronizeStorage(for: storedCourse(course), lectures: updated)
+        } catch {
+            NSLog("Recap could not merge lecture storage: %@", error.localizedDescription)
+            return nil
+        }
+        let directory = courseDirectory(course)
+        for (source, kind) in staleProducts {
+            let url = self.lecture(id: source.id, in: course).map { productURL($0, in: course, ext: kind) }
+                ?? directory.appendingPathComponent(source.fileName(kind, in: directory))
+            try? FileManager.default.removeItem(at: url)
         }
         if let data = try? JSONEncoder().encode(priors), !priors.isEmpty {
             try? data.write(to: productURL(merged, in: course, ext: "合并前重点.json"), options: .atomic)
         }
-        persistLectures(of: course)
         notify()
-        return merged
+        return self.lecture(id: merged.id, in: course)
     }
 
     // A single-media lecture's transcript already sits on its part's own timeline
     private func keepTranscriptAsPartCache(of lecture: Lecture, in course: Course) {
+        guard (try? checkStorageRecovery()) != nil else { return }
         let parts = mediaParts(of: lecture, in: course)
         guard parts.count == 1 else { return }
         let cache = partTranscriptURL(parts[0].part, in: course)
@@ -242,6 +240,7 @@ final class LibraryStore {
     // A lecture transcribed before part caches existed still knows where each part sits, so the
     // finished transcript can be cut back into per-part pieces instead of being heard again
     func backfillPartCaches(of lecture: Lecture, in course: Course) {
+        guard (try? checkStorageRecovery()) != nil else { return }
         let parts = mediaParts(of: lecture, in: course)
         let transcriptURL = productURL(lecture, in: course, ext: "segments.json")
         guard lecture.phase == .transcribed,
@@ -292,6 +291,7 @@ final class LibraryStore {
 
     // Transcription is what learns where each part sits, so it stamps the ranges back in
     func stampPriorSpans(_ spans: [UUID: ClosedRange<TimeInterval>], of lecture: Lecture, in course: Course) {
+        guard (try? checkStorageRecovery()) != nil else { return }
         var priors = priorAnalyses(of: lecture, in: course)
         guard !priors.isEmpty else { return }
         for index in priors.indices {
@@ -304,60 +304,402 @@ final class LibraryStore {
         try? data.write(to: productURL(lecture, in: course, ext: "合并前重点.json"), options: .atomic)
     }
 
-    func updateLecture(_ lecture: Lecture, in course: Course) {
-        guard var list = lecturesByCourse[course.id],
-              let index = list.firstIndex(where: { $0.id == lecture.id }) else { return }
-        list[index] = lecture
-        lecturesByCourse[course.id] = list
-        persistLectures(of: course)
-        notify()
+    // State callbacks keep the current title; explicit rename APIs own title and path changes.
+    @discardableResult
+    func updateLecture(_ lecture: Lecture, in course: Course) -> Result<Void, Error> {
+        Result {
+            guard let current = self.course(id: course.id),
+                  var list = lecturesByCourse[course.id],
+                  let index = list.firstIndex(where: { $0.id == lecture.id }) else { throw StorageError.missingRecord }
+            var updated = lecture
+            updated.name = list[index].name
+            updated.fileStem = list[index].fileStem
+            updated.handoutFileStem = list[index].handoutFileStem
+            list[index] = updated
+            try synchronizeStorage(for: current, lectures: list)
+            notify()
+        }
     }
 
     func deleteLecture(_ lecture: Lecture, in course: Course) {
+        guard (try? requireIdleStorage(in: course)) != nil else { return }
+        let lecture = storedLecture(lecture, in: course)
         lecturesByCourse[course.id]?.removeAll { $0.id == lecture.id }
-        for ext in ["mp4", "srt", "txt", "segments.json", "analysis.json", "analysis-raw.txt",
-                    "handout.pdf", "handout.tex", "handout.md", "waveform.json", "matches.json",
-                    "part.json", "合并前重点.json", "文稿索引.md"] {
+        for ext in Lecture.fileKinds {
             try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
         }
-        try? FileManager.default.removeItem(at: chunkDirectory(lecture, in: course))
-        for (part, url) in mediaParts(of: lecture, in: course) {
-            try? FileManager.default.removeItem(at: url)
-            try? FileManager.default.removeItem(at: partTranscriptURL(part, in: course))
+        for part in lecture.mediaParts {
+            for ext in MediaPart.fileKinds {
+                try? FileManager.default.removeItem(at: courseDirectory(course).appendingPathComponent(part.fileName(ext)))
+            }
         }
         persistLectures(of: course)
         notify()
-    }
-
-    // MARK: - Persistence
-
-    private func load() {
-        let coursesFile = root.appendingPathComponent("courses.json")
-        if let data = try? Data(contentsOf: coursesFile),
-           let decoded = try? JSONDecoder().decode([Course].self, from: data) {
-            courses = decoded
-        }
-        for course in courses {
-            let file = courseDirectory(course).appendingPathComponent("lectures.json")
-            if let data = try? Data(contentsOf: file),
-               let decoded = try? JSONDecoder().decode([Lecture].self, from: data) {
-                lecturesByCourse[course.id] = decoded
-            }
-        }
-    }
-
-    private func persistCourses() {
-        let file = root.appendingPathComponent("courses.json")
-        try? JSONEncoder().encode(courses).write(to: file, options: .atomic)
-    }
-
-    private func persistLectures(of course: Course) {
-        let file = courseDirectory(course).appendingPathComponent("lectures.json")
-        try? JSONEncoder().encode(lectures(in: course)).write(to: file, options: .atomic)
     }
 
     private func notify() {
         onChange?()
         NotificationCenter.default.post(name: LibraryStore.didChange, object: nil)
+    }
+}
+
+// MARK: - Storage paths and operations
+
+extension LibraryStore {
+    enum StorageError: LocalizedError {
+        case busy, missingRecord, recoveryRequired, unreadableMetadata
+
+        var errorDescription: String? {
+            switch self {
+            case .busy:
+                return String(localized: "课程正在处理文件或运行终端会话，请在任务结束或关闭终端后重命名。")
+            case .missingRecord:
+                return String(localized: "课程或讲次已不存在。")
+            case .recoveryRequired:
+                return String(localized: "上次文件改名尚未恢复，请重新打开 Recap 后再试。")
+            case .unreadableMetadata:
+                return String(localized: "课程记录无法读取，原文件已保留，暂时不能修改此课程。")
+            }
+        }
+    }
+
+    func course(id: UUID) -> Course? { courses.first { $0.id == id } }
+
+    func canWriteFiles(in course: Course) -> Bool {
+        (try? checkStorageRecovery()) != nil && self.course(id: course.id) != nil && lecturesByCourse[course.id] != nil
+    }
+
+    func beginUsingStorage(in course: Course) -> UUID {
+        let token = UUID()
+        storageUsers[token] = course.id
+        return token
+    }
+
+    func endUsingStorage(_ token: UUID) { storageUsers[token] = nil }
+
+    func renameCourse(_ course: Course, to name: String) throws {
+        guard var current = self.course(id: course.id) else { throw StorageError.missingRecord }
+        guard current.name != name else { return }
+        try requireIdleStorage(in: current)
+        current.name = name
+        try synchronizeStorage(for: current, lectures: lectures(in: current))
+        notify()
+    }
+
+    func renameLecture(_ lecture: Lecture, to name: String, in course: Course) throws {
+        guard let current = self.course(id: course.id),
+              var list = lecturesByCourse[course.id],
+              let index = list.firstIndex(where: { $0.id == lecture.id }) else { throw StorageError.missingRecord }
+        guard list[index].name != name else { return }
+        try requireIdleStorage(in: current)
+        list[index].name = name
+        try synchronizeStorage(for: current, lectures: list)
+        notify()
+    }
+
+    func courseDirectory(_ course: Course) -> URL {
+        let current = storedCourse(course)
+        let directory = current.directoryURL(in: root)
+        // Deleted snapshots may still be displayed, but must never recreate their course.
+        guard self.course(id: current.id) != nil, storageRecoveryError == nil,
+              !FileManager.default.fileExists(atPath: renameJournalURL.path) else { return directory }
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        installSkillIfNeeded(in: directory)
+        let manifestURL = directory.appendingPathComponent(".recap-files.json")
+        if let list = lecturesByCourse[current.id], !FileManager.default.fileExists(atPath: manifestURL.path) {
+            try? manifestData(course: current, lectures: list, directory: directory).write(to: manifestURL, options: .atomic)
+        }
+        return directory
+    }
+
+    func productURL(_ lecture: Lecture, in course: Course, ext: String) -> URL {
+        let directory = courseDirectory(course)
+        return directory.appendingPathComponent(storedLecture(lecture, in: course).fileName(ext, in: directory))
+    }
+
+    func courseFileURL(_ course: Course, name: String) -> URL {
+        let directory = courseDirectory(course)
+        return directory.appendingPathComponent(storedCourse(course).fileName(name, in: directory))
+    }
+
+    func mediaURL(_ lecture: Lecture, in course: Course) -> URL {
+        productURL(lecture, in: course, ext: "mp4")
+    }
+
+    func partMediaURL(_ part: MediaPart, in course: Course) -> URL {
+        courseDirectory(course).appendingPathComponent(storedPart(part, in: course).fileName("mp4"))
+    }
+
+    func partTranscriptURL(_ part: MediaPart, in course: Course) -> URL {
+        courseDirectory(course).appendingPathComponent(storedPart(part, in: course).fileName("part.json"))
+    }
+
+    func partWaveformURL(_ part: MediaPart, in course: Course) -> URL {
+        courseDirectory(course).appendingPathComponent(storedPart(part, in: course).fileName("waveform.json"))
+    }
+
+    func chunkDirectory(_ lecture: Lecture, in course: Course) -> URL {
+        productURL(lecture, in: course, ext: "文稿分段")
+    }
+
+    func mediaParts(of lecture: Lecture, in course: Course) -> [(part: MediaPart, url: URL)] {
+        storedLecture(lecture, in: course).mediaParts.map { ($0, partMediaURL($0, in: course)) }
+    }
+}
+
+private extension LibraryStore {
+    var renameJournalURL: URL { root.appendingPathComponent(".recap-rename.json") }
+
+    func storedCourse(_ course: Course) -> Course { self.course(id: course.id) ?? course }
+    func storedLecture(_ lecture: Lecture, in course: Course) -> Lecture {
+        self.lecture(id: lecture.id, in: course) ?? lecture
+    }
+    func storedPart(_ part: MediaPart, in course: Course) -> MediaPart {
+        lectures(in: course).flatMap(\.mediaParts).first { $0.id == part.id } ?? part
+    }
+
+    func checkStorageRecovery() throws {
+        guard storageRecoveryError == nil,
+              !FileManager.default.fileExists(atPath: renameJournalURL.path) else { throw StorageError.recoveryRequired }
+    }
+
+    func requireIdleStorage(in course: Course) throws {
+        try checkStorageRecovery()
+        guard !storageUsers.values.contains(course.id) else { throw StorageError.busy }
+    }
+
+    func directoryEntries(_ directory: URL) -> [String] {
+        (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+    }
+
+    func namedStem(_ name: String, fallback: String, id: UUID, current: String?, occupied: [String]) -> String {
+        let base = LibraryFileNaming.uniqueStem(name, fallback: fallback, id: id, occupied: [])
+        let key: (String) -> String = { $0.precomposedStringWithCanonicalMapping.lowercased() }
+        let available = current.map { value in !occupied.contains { key($0) == key(value) } } ?? false
+        if let current, available, current == base { return current }
+        if let current, available, current.hasPrefix(base + " - "),
+           Int(current.dropFirst((base + " - ").count)) != nil { return current }
+        return LibraryFileNaming.uniqueStem(name, fallback: fallback, id: id, occupied: occupied)
+    }
+
+    func namedCourse(_ course: Course) -> Course {
+        var result = course
+        let old = self.course(id: course.id) ?? course
+        let oldName = old.directoryURL(in: root).lastPathComponent
+        let occupied = directoryEntries(root).filter { $0 != oldName }
+            + courses.filter { $0.id != course.id }.compactMap(\.directoryName)
+        result.directoryName = namedStem(course.name, fallback: "Course", id: course.id,
+                                         current: course.fileStem == nil ? nil : course.directoryName, occupied: occupied)
+        result.fileStem = result.directoryName
+        result.reviewFileStem = nil
+        return result
+    }
+
+    // The keys express ownership, allowing parts to keep their identity when lectures are merged.
+    func fileMap(course: Course, lectures: [Lecture], directory: URL) -> [String: URL] {
+        var files: [String: URL] = [:]
+        let texSidecars = ["aux", "log", "out", "toc", "synctex.gz", "fls", "fdb_latexmk"]
+        for kind in Course.fileKinds + texSidecars.map({ "review.\($0)" }) {
+            let fileName: String
+            if kind.hasPrefix("review."), !Course.fileKinds.contains(kind) {
+                fileName = String(course.fileName("review.tex", in: directory).dropLast(3)) + kind.dropFirst(7)
+            } else { fileName = course.fileName(kind, in: directory) }
+            files["course:\(kind)"] = directory.appendingPathComponent(fileName)
+        }
+        for lecture in lectures {
+            for kind in Lecture.fileKinds + texSidecars.map({ "handout.\($0)" }) {
+                let fileName: String
+                if kind.hasPrefix("handout."), !Lecture.fileKinds.contains(kind) {
+                    fileName = String(lecture.fileName("handout.tex", in: directory).dropLast(3)) + kind.dropFirst(8)
+                } else { fileName = lecture.fileName(kind, in: directory) }
+                files["lecture:\(lecture.id):\(kind)"] = directory.appendingPathComponent(fileName)
+            }
+            for part in lecture.mediaParts {
+                for kind in MediaPart.fileKinds {
+                    files["part:\(part.id):\(kind)"] = directory.appendingPathComponent(part.fileName(kind))
+                }
+            }
+        }
+        return files
+    }
+
+    func namedLectures(_ list: [Lecture], old: [Lecture], course: Course, directory: URL) -> [Lecture] {
+        let owned = Set(fileMap(course: course, lectures: old, directory: directory).values.map(\.lastPathComponent))
+        let kinds = Array(Set(Lecture.fileKinds + MediaPart.fileKinds)).sorted { $0.count > $1.count }
+        let unrelated = directoryEntries(directory).filter { !owned.contains($0) }.compactMap { file -> String? in
+            guard let kind = kinds.first(where: { file.hasSuffix("." + $0) }) else { return nil }
+            return String(file.dropLast(kind.count + 1))
+        }
+        var assigned: [UUID: String] = [:]
+        for lecture in list {
+            if let stem = lecture.fileStem { assigned[lecture.id] = stem }
+            for part in lecture.mediaParts {
+                if let stem = part.fileStem { assigned[part.id] = stem }
+            }
+        }
+        func occupied(excluding id: UUID) -> [String] { unrelated + assigned.filter { $0.key != id }.map(\.value) }
+        return list.map { lecture in
+            var result = lecture
+            let stem = namedStem(lecture.name, fallback: "Lecture", id: lecture.id,
+                                 current: lecture.fileStem, occupied: occupied(excluding: lecture.id))
+            result.fileStem = stem
+            result.handoutFileStem = nil
+            assigned[lecture.id] = stem
+            if let parts = lecture.parts {
+                result.parts = parts.map { part in
+                    var updated = part
+                    updated.fileStem = part.id == lecture.id ? stem : namedStem(
+                        lecture.name, fallback: "Lecture", id: part.id,
+                        current: part.fileStem, occupied: occupied(excluding: part.id))
+                    assigned[part.id] = updated.fileStem
+                    return updated
+                }
+            }
+            return result
+        }
+    }
+
+    func synchronizeStorage(for candidate: Course, lectures candidates: [Lecture]) throws {
+        try checkStorageRecovery()
+        guard let oldCourse = course(id: candidate.id) else { throw StorageError.missingRecord }
+        guard let oldLectures = lecturesByCourse[oldCourse.id] else { throw StorageError.unreadableMetadata }
+        let oldDirectory = oldCourse.directoryURL(in: root)
+        try FileManager.default.createDirectory(at: oldDirectory, withIntermediateDirectories: true)
+        let updatedCourse = namedCourse(candidate)
+        let updatedLectures = namedLectures(candidates, old: oldLectures, course: oldCourse, directory: oldDirectory)
+        let newDirectory = updatedCourse.directoryURL(in: root)
+        let oldMap = fileMap(course: oldCourse, lectures: oldLectures, directory: oldDirectory)
+        let newMap = fileMap(course: updatedCourse, lectures: updatedLectures, directory: newDirectory)
+        var moves: [LibraryFileTransaction.Move] = []
+        if oldDirectory != newDirectory { moves.append(.init(source: oldDirectory, destination: newDirectory)) }
+        var movedSources = Set<URL>()
+        for key in newMap.keys.sorted() {
+            guard let target = newMap[key] else { continue }
+            // Newly appended media can have been copied under its UUID before it joins the record.
+            let source = oldMap[key] ?? legacySource(for: key, in: oldDirectory)
+            guard let source, FileManager.default.fileExists(atPath: source.path), movedSources.insert(source).inserted else { continue }
+            let relocatedSource = newDirectory.appendingPathComponent(source.lastPathComponent)
+            if relocatedSource != target { moves.append(.init(source: relocatedSource, destination: target)) }
+        }
+        var updatedCourses = courses
+        if let index = updatedCourses.firstIndex(where: { $0.id == updatedCourse.id }) { updatedCourses[index] = updatedCourse }
+        var writes: [LibraryFileTransaction.Write] = [
+            .init(url: root.appendingPathComponent("courses.json"), data: try JSONEncoder().encode(updatedCourses)),
+            .init(url: newDirectory.appendingPathComponent("lectures.json"), data: try JSONEncoder().encode(updatedLectures),
+                  originalURL: oldDirectory.appendingPathComponent("lectures.json")),
+            .init(url: newDirectory.appendingPathComponent(".recap-files.json"),
+                  data: try manifestData(course: updatedCourse, lectures: updatedLectures, directory: newDirectory),
+                  originalURL: oldDirectory.appendingPathComponent(".recap-files.json"))
+        ]
+        for lecture in oldLectures {
+            guard let updated = updatedLectures.first(where: { $0.id == lecture.id }),
+                  let oldIndex = oldMap["lecture:\(lecture.id):文稿索引.md"],
+                  let newIndex = newMap["lecture:\(lecture.id):文稿索引.md"],
+                  var text = try? String(contentsOf: oldIndex, encoding: .utf8) else { continue }
+            let oldChunk = lecture.fileName("文稿分段", in: oldDirectory)
+            let newChunk = updated.fileName("文稿分段", in: newDirectory)
+            if oldChunk != newChunk { text = text.replacingOccurrences(of: oldChunk + "/", with: newChunk + "/") }
+            if lecture.name != updated.name {
+                text = text.replacingOccurrences(of: "# \(lecture.name) · 文稿分段\n", with: "# \(updated.name) · 文稿分段\n")
+            }
+            if text != (try? String(contentsOf: oldIndex, encoding: .utf8)) {
+                writes.append(.init(url: newIndex, data: Data(text.utf8), originalURL: oldIndex))
+            }
+        }
+        let oldTextbookIndex = oldDirectory.appendingPathComponent(oldCourse.fileName("教材目录.md", in: oldDirectory))
+        if let text = try? String(contentsOf: oldTextbookIndex, encoding: .utf8) {
+            let rewritten = text.replacingOccurrences(of: oldCourse.fileName("教材分章", in: oldDirectory) + "/",
+                                                      with: updatedCourse.fileName("教材分章", in: newDirectory) + "/")
+            if rewritten != text {
+                writes.append(.init(url: newDirectory.appendingPathComponent(updatedCourse.fileName("教材目录.md", in: newDirectory)),
+                                    data: Data(rewritten.utf8), originalURL: oldTextbookIndex))
+            }
+        }
+        do {
+            try LibraryFileTransaction.commit(moves: moves, writes: writes, journalURL: renameJournalURL)
+        } catch {
+            if FileManager.default.fileExists(atPath: renameJournalURL.path) { storageRecoveryError = error }
+            throw error
+        }
+        courses = updatedCourses
+        lecturesByCourse[candidate.id] = updatedLectures
+        installSkillIfNeeded(in: newDirectory)
+        if !moves.isEmpty || oldCourse.name != updatedCourse.name || zip(oldLectures, updatedLectures).contains(where: { $0.0.name != $0.1.name }) {
+            NotificationCenter.default.post(name: Self.pathsDidChange, object: self, userInfo: ["courseID": candidate.id])
+        }
+    }
+
+    func legacySource(for key: String, in directory: URL) -> URL? {
+        let parts = key.split(separator: ":", maxSplits: 2).map(String.init)
+        guard parts.count == 3, UUID(uuidString: parts[1]) != nil else { return nil }
+        return directory.appendingPathComponent("\(parts[1]).\(parts[2])")
+    }
+
+    func manifestData(course: Course, lectures: [Lecture], directory: URL) throws -> Data {
+        let courseFiles = Dictionary(uniqueKeysWithValues: Course.fileKinds.map { ($0, course.fileName($0, in: directory)) })
+        let records: [[String: Any]] = lectures.map { lecture in
+            let files = Dictionary(uniqueKeysWithValues: Lecture.fileKinds.map { ($0, lecture.fileName($0, in: directory)) })
+            let parts: [[String: Any]] = lecture.mediaParts.map { part in
+                ["id": part.id.uuidString,
+                 "files": Dictionary(uniqueKeysWithValues: MediaPart.fileKinds.map { ($0, part.fileName($0)) })]
+            }
+            return ["id": lecture.id.uuidString, "name": lecture.name, "files": files, "parts": parts]
+        }
+        return try JSONSerialization.data(withJSONObject: [
+            "version": 1, "course": ["id": course.id.uuidString, "name": course.name, "files": courseFiles], "lectures": records
+        ], options: [.prettyPrinted, .sortedKeys])
+    }
+
+    func load() {
+        do { try LibraryFileTransaction.recover(journalURL: renameJournalURL) }
+        catch {
+            storageRecoveryError = error
+            NSLog("Recap preserved an unfinished rename: %@", error.localizedDescription)
+            return
+        }
+        let coursesURL = root.appendingPathComponent("courses.json")
+        if FileManager.default.fileExists(atPath: coursesURL.path) {
+            do { courses = try JSONDecoder().decode([Course].self, from: Data(contentsOf: coursesURL)) }
+            catch {
+                storageRecoveryError = error
+                NSLog("Recap preserved unreadable course metadata: %@", error.localizedDescription)
+                return
+            }
+        }
+        for course in courses {
+            guard storageRecoveryError == nil else { break }
+            let file = course.directoryURL(in: root).appendingPathComponent("lectures.json")
+            do {
+                let decoded = FileManager.default.fileExists(atPath: file.path)
+                    ? try JSONDecoder().decode([Lecture].self, from: Data(contentsOf: file)) : []
+                lecturesByCourse[course.id] = decoded
+                try synchronizeStorage(for: course, lectures: decoded)
+            } catch {
+                NSLog("Recap kept the existing course storage at %@: %@", file.path, error.localizedDescription)
+            }
+        }
+    }
+
+    @discardableResult
+    func persistCourses() -> Bool {
+        guard (try? checkStorageRecovery()) != nil else { return false }
+        do {
+            try JSONEncoder().encode(courses).write(to: root.appendingPathComponent("courses.json"), options: .atomic)
+            return true
+        } catch {
+            NSLog("Recap could not save course metadata: %@", error.localizedDescription)
+            return false
+        }
+    }
+
+    @discardableResult
+    func persistLectures(of course: Course) -> Bool {
+        do {
+            try synchronizeStorage(for: storedCourse(course), lectures: lectures(in: course))
+            return true
+        } catch {
+            NSLog("Recap could not save lecture metadata: %@", error.localizedDescription)
+            return false
+        }
     }
 }
