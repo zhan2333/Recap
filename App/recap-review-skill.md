@@ -1,163 +1,213 @@
 ---
 name: recap-review
-description: 在 Recap 课程目录里做课堂复习资料：提取老师强调的重点、分章处理教材、生成讲义与考试重点。当用户要求提取重点、处理教材、生成讲义/考试重点/复习资料时使用。
+description: 在 Recap 课程目录里提取课堂考点、分章核对教材、生成可导航的 LaTeX/PDF 讲义与课程考试重点。用于提取重点、处理教材、生成或修订复习资料；保持 Recap 的文件名和 JSON 契约。
 ---
 
 # Recap 课程复习工作法
 
-你在一个 Recap.app 的课程目录里工作。这套方法在 100+ 节课的复习资料生产中验证过，按它执行。产物会被 Recap.app 直接读取，**文件名与 JSON 字段必须严格遵守本文约定**。
+把课堂原话、教材依据和复习组织分开处理：转写决定老师讲了什么、强调什么；教材用于核对术语和补充说明；讲义负责解释、组织和回查。先提取，再按实际章节整合，最后独立核验内容与 PDF。
+
+## 执行环境与任务边界
+
+- **CLI 文件环境**：先读当前课程的 `lectures.json`，建立 UUID → 讲次名映射，再清点本次所需的转写、重点、教材和已有讲义。按下面流程读写文件、编译和验收。
+- **API 文本环境**：若调用方明确说明不能读写文件，只使用本次传入材料。执行对应任务的内容与排版规范，直接返回调用方要求的 JSON 或完整 `.tex`，不执行文件/子代理/编译步骤。未收到教材、时间戳或全部讲次时，在正文中简明注明资料范围；不得声称读过本地文件、核过教材、编译成功或完成页面检查。不要在 `.tex` 外附汇报文字。
+- 只处理用户指定的讲次和范围。课程文件名、课表顺序、已有分析都只是线索，实际章节与考试口径回到来源核实。
+- 保留原始媒体、转写、分段缓存、教材和已交付成果；不替 App 合并/删除讲次、不重转写，也不照搬旧脚本的媒体清理步骤。修订先备份旧的 `.tex`/PDF/分析到独立工作目录，候选成果验证后再替换对应文件。
+- 长任务在独立工作目录按讲次/章节保存中间稿和完成记录，记录输入版本、已读块、对应教材章、输出和待核项；汇报该目录以便续作。可用子代理时按独立单元分工、分批汇总；没有子代理则逐章执行。共享主模板和最终文件由一个执行者组装，避免并发覆盖。
 
 ## 课程语言 / Course language
 
-课程语言以转写稿（`<讲次UUID>.txt`）的语言为准，所有产物跟随它：
+语言跟随转写稿或用户明确指定的目标语言，引用保留来源原话：
 
-- **中文课程**：产物全部用中文，讲义用下文的 ctexart 模板。
-- **英文课程（English courses）**：analysis.json 的 quote/topic/各清单、讲义、考试重点、review.md 全部用英文。`strength` 用 `must-know|key|likely` 代替 `必考|重点|可能考`。讲义 LaTeX 把文档类换成 `\documentclass[11pt]{article}`，去掉 ctex/xeCJK 相关设置，其余配色与 framed 环境规范不变，环境标题用 Key Point / Memorize / Distinguish / In Class，编译命令仍是 xelatex 两遍。文件名约定不变。
+- **中文课程**：中文正文，下文 `ctexart` 模板。
+- **英文课程**：英文正文、目录、图表标题、各类提示框及缺口说明；使用 `article`，不加载 ctex/xeCJK。框标题依次为 Key Point / Memorize / Distinguish / Answer Steps，`strength` 使用 `must-know|key|likely`。确需引用其他语言原文时选用覆盖该文字的字体，不把译文称为逐字引用。
+- 混合语言保留专业名词，不把翻译后的句子冒充老师原话或教材逐字引用。文件名和 JSON 字段名不随语言改变。
 
-## 目录布局（当前目录 = 一门课程）
+## 课程目录契约
 
-```
-./lectures.json                讲次清单：[{id, name, phase, ...}]，id 是 UUID
-./<讲次UUID>.txt               转写稿全文（每段一行）
-./<讲次UUID>.segments.json     分段：[{start, end, text}]，秒为单位
-./<讲次UUID>.srt               字幕（回溯"老师第几分钟说的"）
-./<讲次UUID>.analysis.json     重点提取结果（本 skill 的产物之一）
-./<讲次UUID>.handout.md        本讲讲义（产物）
-./<讲次UUID>.文稿索引.md       文稿分段索引（文稿很长时才有）
-./<讲次UUID>.文稿分段/partNN.txt  按时间切好的文稿分段
-./<讲次UUID>.合并前重点.json   合并前各段已提取过的重点（只有合并来的讲次才有）
-./textbook.txt                 教材全文，含【第N页】页码标记（可能不存在）
-./教材目录.md                  教材目录（产物，分章的依据）
-./教材分章/chNN.txt            教材分章原文（产物）
-./review.md                    课程考试重点总表（产物）
-../courses.json                上级目录的课程清单（一般不用动）
-```
+~~~text
+./lectures.json                  讲次清单：[{id, name, phase, parts?, ...}]
+./<UUID>.txt                     转写全文，每段一行
+./<UUID>.segments.json           [{start, end, text}]，本讲时间轴上的秒数
+./<UUID>.srt                     字幕与时间戳
+./<UUID>.analysis.json           六字段重点提取结果
+./<UUID>.handout.tex             可独立编译的本讲讲义源码
+./<UUID>.handout.pdf             App 主阅读器读取的讲义
+./<UUID>.handout.md              无法编译时的降级稿，不替代 PDF
+./<UUID>.文稿索引.md             长文稿各块的路径和时间范围
+./<UUID>.文稿分段/partNN.txt     文稿块，只有正文，不等于视频分段
+./<UUID>.合并前重点.json         合并前分析参考，可能不存在
+./textbook.txt                   教材提取文本，可能不存在
+./教材目录.md                    教材章/节和页码对应
+./教材分章/chNN.txt              保留页码标记的教材分章文本
+./review.tex                    课程考试重点源码
+./review.pdf                    课程考试重点，App 优先读取
+./review.md                     课程总表的降级稿/明确要求的 Markdown
+../courses.json                 课程清单，通常只读
+~~~
 
-**开工第一步永远是读 `lectures.json`**，建立 UUID → 讲次名的映射；讲次相关产物一律用 UUID 命名写回，Recap.app 才能识别。
+`<UUID>` 必须取自 `lectures.json`，不得按讲次名另造主产物文件名。讲义最终 `.tex` 应自足：分章草稿可在工作目录用 `\input` 组装，交付前合成正文，避免留下对临时目录的依赖。工作记录不扩展 App 的 JSON Schema，也不修改 `lectures.json`。
 
-## 转写稿的已知缺陷（处理任何 .txt/.segments.json 前先记住）
+当前 App 只为单讲 `.handout.pdf` 提供主阅读器入口；`.handout.md` 仅是可在终端产物区或文件管理器打开的降级文件。课程入口在没有 `review.pdf` 时才回退到 `review.md`，不能把仍存在的旧 PDF 当成此次新成果。
 
-- 来自 whisper 语音识别，**专业术语常有同音错字**（如"土力学→图的学"、"固结→固解"、"有效应力原理→有效应力原你"），按上下文和专业知识纠正后再使用；引用老师原话时可在原话后注明校正。
-- 静音段会出现"请点赞订阅""优优独播剧场"等幻觉文本，直接忽略。
-- 课前等待、点名、学生汇报、闲聊段落不提取、不采用。
+## 来源、范围与转写纠错
+
+- 只把老师本人讲授、确认的内容作为课堂证据；排除点名、闲聊、学生汇报和静音幻觉（如“请点赞订阅”/“Thanks for watching”）。不把学生观点归给老师。
+- 专业术语同音错字据上下文和教材核对。仅修明确的识别错误；数字、公式、否定词或版本差异不确定时保留疑点，不能靠猜补齐。不改写原始转写文件。
+- 提取考试形式、题型、范围、允许携带的资料，以及“不考、只需了解、自学、公式会提供”等边界。一般强调不等于必考，教材补充不等于老师划重点。
+- 课堂与教材冲突、前后课堂口径不同，记录来源和时间；只有明确更正证据才采用新口径，不因位置靠后就自动覆盖。缺少考核说明时不要假设开卷、闭卷或分值。
+- 内容标明属于“老师讲授”“教材补充”还是“整理说明/推导”。教材原文与其释义分开；教师原话与转述分开。
+- 精确回听位置从 `.segments.json` / `.srt` 核实。索引中的块时间范围不能充当某句话的时间戳；同名 `partNN.txt` 也不能直接当作第 N 个视频。多段视频用 `lectures.json` 的 parts/duration 核对偏移；资料不足就只标已知讲次或文稿范围，不造时间。
 
 ## 任务一：提取本讲重点 → `<UUID>.analysis.json`
 
-通读该讲转写稿，输出**严格符合以下结构**的 JSON（字段名一字不差，Recap.app 按此解码）：
+1. 通读目标讲次。存在文稿索引时逐块读、逐块提取，保留覆盖清单；完整任务必须覆盖全部块，不能只搜“考试”关键词。没有索引的长文稿按可管理范围分批读，保留跨块句子上下文。
+2. 核实实际讲授章节和每章重点，纳入跨讲收尾、补讲和案例；在工作记录中建立“章/节 → 讲次/文稿范围 → 教材范围”的映射，不假设一讲一章或同日文件必为连堂。
+3. 有 `<UUID>.合并前重点.json` 时，将 `[{name, part_ids, start?, end?, analysis}]` 当参考，回原文校正、补漏、去重。时间范围可能尚未填写；旧分析不能替代全量阅读。
+4. 输出严格的六字段 JSON。相同原话可去重；同一主题的不同条件、不同考试口径和不同例子不要合成一句不存在的原话。
 
-**存在 `<UUID>.文稿索引.md` 时**：说明这一讲的文稿很长，已经按时间切成 `<UUID>.文稿分段/partNN.txt`。先读索引拿到分段清单，再**逐段读、逐段提取**，最后合并成一份 `analysis.json`——不要一次把整份 `<UUID>.txt` 读进来。合并时同一条 `quote` 只保留一次。
-
-**存在 `<UUID>.合并前重点.json` 时**：这一讲是多个讲次合并来的，文件里是合并前每段各自提取过的重点，格式为 `[{name, part_ids, start, end, analysis}]`，`start`/`end` 是该段在本讲时间轴上的秒数，`analysis` 与本任务的输出结构相同。**当作参考读，不当作结论用**：先据它知道每段讲了什么、哪些原话被认过，再回转写稿核对；错的（同音错字、断章取义）改掉，漏的补上，重复的只留一条。最终仍以转写稿为准输出一份完整的 `analysis.json`。
-
-```json
+~~~json
 {
-  "exam_signals": [{"quote": "老师原话", "strength": "必考|重点|可能考", "qtype": "题型(可选)", "topic": "知识点(可选)"}],
-  "must_memorize": ["需逐字背诵的规范表述"],
-  "answer_approaches": ["老师讲的答题套路，分步骤、含踩点术语"],
-  "confusable_points": ["易混易错辨析"],
-  "key_concepts": ["核心概念及一句话讲解"],
-  "assignments": ["布置的作业/思考题"]
+  "exam_signals": [{"quote": "老师原话", "strength": "重点", "qtype": "计算题", "topic": "知识点"}],
+  "must_memorize": ["老师要求记忆的表述"],
+  "answer_approaches": ["题型：步骤、踩点术语；相关老师原话（有则保留）"],
+  "confusable_points": ["易混概念与区分条件"],
+  "key_concepts": ["概念及讲解；相关课堂案例与它说明的原理"],
+  "assignments": ["作业、思考题或阅读要求"]
 }
-```
+~~~
 
-- `quote` 必须贴近老师原话（纠正错字后的版本），不改写成书面语——Recap.app 靠它把重点匹配回转写稿的时间轴。
-- 没有内容的字段给空数组，不要省略字段。
+- 六个顶层字段都必须是数组，无内容填 `[]`。`exam_signals` 元素是对象，其余五个数组的元素只能是字符串；不要恢复旧工作流的嵌套对象结构。
+- `quote` 是连续、贴近口语的原话，供 App 匹配文稿。不要放入时间戳、页码、纠错说明、教材引文或省略拼接出来的句子；说明另写工作记录/讲义。
+- `strength` 只用 `必考|重点|可能考`（英文 `must-know|key|likely`）；“必考”必须有明确考试承诺，“可能考”也须有课堂依据。一般教学内容放 `key_concepts`，不要为填满数组推断考试概率。`qtype`/`topic` 不明确时可省略或为 `null`，不猜题型。
+- 考试排除项和条件保留在 `key_concepts` 的“考试范围与条件”条目中，英文用 “Exam scope and conditions”，方便后续讲义/总表保留边界。不要把“不考”硬编码为正向考试信号。
+- `must_memorize` 先保留老师要求；任务三再据教材核对规范表述。不要把所有教材定义自动标成必背。
+- 保留答题方法的题型、步骤、条件及原话依据；课堂案例应说明“案例是什么、用来说明什么”，放入相关 `key_concepts`/`answer_approaches` 字符串。作业题号或截止要求不清楚时注明，不编造。
+- 保存前检查 JSON 可解析、数组/元素类型正确、无多余说明文字，再替换正式文件。没有有效教学内容时允许六个空数组，并如实说明原因。
 
-## 任务二：教材处理（存在 textbook.txt 时）
+## 任务二：教材处理与章节映射
 
-**绝不把整本教材塞进一次阅读。** 流程：
+1. 有 `textbook.txt` 时先查看书名、版本、目录和正文起始处，写 `教材目录.md`（章/节、起止页、来源版本）；目录找不到时从正文标题建立暂定结构并注明依据。复用现有分章前核对教材版本和边界。
+2. App 的 `【第N页】` 是原 PDF 的第 N 个物理页面，**不是书印页码**。只有实查建立映射后才能同时引用二者；不得沿用别的教材的固定页差。
+3. 分章保留页码和章首/章尾；同页跨章保留清楚的分界，不能截断公式、表格或句子。核对覆盖与接缝。之后只读取当前章相关内容，不一次载入全书。
+4. 将实际讲授映射回教材；同一章可对应多讲，一讲也可跨章。课件/教材的优先级依老师说明或用户指定，没有依据时不自行定主次。
+5. App 通常只保存提取文本，原 PDF 未必在课程目录。OCR 中的公式、上下标、数字和图表不能视为可靠原稿；有明确可用的原 PDF 才回查对应页，无原页则保留待核项，不能声称看过原图。
 
-1. 通读教材开头部分，提取完整目录写到 `教材目录.md`（章节标题 + 起始页码【第N页】）。
-2. 按目录把 `textbook.txt` 切分成 `教材分章/ch00.txt、ch01.txt…`（保留页码标记）。用脚本或分段读写完成，核对每章首尾不丢段落。
-3. 之后任何需要教材的任务，**只读对应章的分章文件**。
+## 任务三：生成本讲讲义 → `<UUID>.handout.tex` + `.handout.pdf`
 
-## 任务三：生成本讲讲义（LaTeX → PDF）→ `<UUID>.handout.pdf`
+### 组织与覆盖
 
-输入：该讲 `analysis.json` + 转写稿 + （有教材时）对应章节的分章原文。产物是 **LaTeX 编译的 PDF**，Recap.app 直接展示 `<UUID>.handout.pdf`；同时保留 `<UUID>.handout.tex` 源。
+- 输入是该讲分析、完整转写及相关教材分章；分析缺失/过期则先在授权范围内提取，缺少教材时按课堂生成并注明。不得捏造教材原文或页码。
+- 开头给出讲次标题、来源与覆盖范围、简短阅读说明、考试边界（有证据才写）。短讲义用紧凑标题区；跨章/长讲义再增加使用说明和速查结构，不固定字数或章节数。
+- 先据章节映射列生成单元，明确每单元的课堂输入、教材范围、重点和缺口。长文稿逐章生成并保存草稿，核对所有输入均已归属；分工时只给当前单元所需材料。
+- 正文使用带编号的 `\section` / `\subsection`。每章先 `\dw{定位}` 和 `suvlan` 要点速览，再解释主题；保留考点、必背、辨析、答题思路。编号层级随材料规模调整。
+- 老师薄讲的内容可用相关教材帮助理解，并标“教材补充”；明确排除的内容不扩充成考试重点。用户要求完整教材讲义时可单列拓展，保持考试边界。
+- 需逐字背诵的定义、法条或规范表述采用可核实的教材/指定来源原文，标明来源和版本，解释另写；原文缺失或 OCR 不清时标待核，不能把自己改写的句子当成原文。
+- 理工科按“概念/物理意义 → 公式与符号、单位、成立条件 → 使用步骤/课堂例题 → 易错与关联”展开。法条、规范、常数和定义核对版本；课堂案例和已有例题优先，自拟练习明确标注。纯文字学科不强塞公式和图。
+- 长讲义按需要加入必背、辨析、题型/答题思路、回听来源索引。索引链接到正文已有条目，避免大段重复；不给短讲义强加固定四附录。
 
-### 结构（对齐验证过的开卷资料风格）
+### PDF 导航与排版
 
-1. `\section{讲次名}` 开头，紧接 `\dw{一句话定位：本讲在课程体系中的位置 + 最核心命题}`
-2. `suvlan` 环境：要点速览（enumerate 骨架，复习时可秒定位）
-3. 按主题分 `\subsection`，正文讲解帮理解；关键术语 `\tj{加粗}`、核心词 `\kw{标红}`
-4. `kaodian` 环境：★老师强调的考点，**保留老师原话**（`\textit{原话}`）并标注题型——这是资料的灵魂，把 exam_signals 的高强度项做足
-5. `bibei` 环境：■必背（有教材时逐字取自课本原文，不得杜撰；OCR 错字按规范用语修正）
-6. `bianxi` 环境：◆易混易错辨析
-7. `ketang` 环境：►答题思路（分步骤、踩点术语，来自 answer_approaches）
+- 默认生成**可点击目录和章节书签**，标题及目录页码均可跳转。使用 `hyperref`、`linktoc=all`、`\tableofcontents`，保留带编号书签；用户明确要求不显示目录时仍保留章节书签。
+- 正文交叉引用用唯一 `\label` + `\ref` / `\eqref` / `\hyperref`，不要手写目标页码。图表 `\label` 放在 `\caption` 后；无编号标题入目录时用 `\phantomsection` + `\addcontentsline`。
+- 书签用可读纯文本；标题含公式时写 `\texorpdfstring{$...$}{纯文本}`，避免格式命令或缺字污染书签。设准确 PDF 标题；作者信息仅用用户提供的值。
+- 页眉提供当前章节，页脚保留页码；长标题用短标题，防止页眉重叠。沿用 Recap 配色，不硬套旧资料的学校、作者、开卷说明和课程专属颜色。
+- 数学使用 LaTeX 数学命令（`\neq`、`\times` 等）；表格优先 `booktabs`/`tabularx`，跨页长表按需 `longtable`，检查列宽和表头续页。大框、图表和标题要检查分页，不把整章塞进不可分页环境。
+- 正文中的 `%`、`&`、`#`、`_`、`$`、`{`、`}` 等 LaTeX 特殊字符须按文本语境转义；数学模式保留运算、下标与分组语义，不对整份源码盲目替换。URL 用 `\url{...}`，原话中的百分数不能因 `%` 注释而丢失。
 
-硬规则：讲解基于转写稿实际讲过的内容；老师讲得薄或跳过的小节从教材对应章补齐并注明"（老师未展开，据教材补充）"；语言平实直接，不灌水、不杜撰。
+### 自足模板
 
-### 自足模板（每份讲义一个独立 .tex，用此 preamble）
+下面是中文基线，替换文档标题和正文；英文课程按前述规则换文档类及所有显示文字。按内容可删掉未使用的数学/表格包，但保留导航配置。
 
-```latex
+~~~latex
 \documentclass[11pt]{ctexart}
 \usepackage[a4paper,margin=2.2cm]{geometry}
 \usepackage{xcolor}
 \usepackage{framed}
 \usepackage{enumitem}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,array,tabularx,longtable}
+\usepackage{fancyhdr}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \setlist{nosep,leftmargin=2em}
+\renewcommand{\arraystretch}{1.15}
 \definecolor{signal}{HTML}{D97757}
 \definecolor{signaltext}{HTML}{9A452F}
 \definecolor{completec}{HTML}{63715F}
 \definecolor{errorc}{HTML}{B84B43}
 \definecolor{timec}{HTML}{6B655C}
+\newcommand{\reviewtitle}{课程复习讲义}
 \newcommand{\kw}[1]{\textcolor{signaltext}{\textbf{#1}}}
 \newcommand{\tj}[1]{\textbf{#1}}
-\newcommand{\dw}[1]{{\small\color{timec}▸ #1}\par\medskip}
+\newcommand{\dw}[1]{{\small\color{timec}定位：#1}\par\medskip}
 \newenvironment{reviewbox}[2]{%
   \def\FrameCommand{{\color{#1}\vrule width 2.5pt}\hspace{8pt}}%
   \MakeFramed{\advance\hsize-\width\FrameRestore}%
   \noindent{\small\color{#1}\textbf{#2}}\par\smallskip}%
   {\endMakeFramed\medskip}
-\newenvironment{kaodian}{\begin{reviewbox}{signal}{★ 考点（老师原话）}}{\end{reviewbox}}
-\newenvironment{bibei}{\begin{reviewbox}{completec}{■ 必背}}{\end{reviewbox}}
-\newenvironment{bianxi}{\begin{reviewbox}{errorc}{◆ 易混辨析}}{\end{reviewbox}}
-\newenvironment{ketang}{\begin{reviewbox}{timec}{► 答题思路}}{\end{reviewbox}}
+\newenvironment{kaodian}{\begin{reviewbox}{signal}{【考点】老师原话}}{\end{reviewbox}}
+\newenvironment{bibei}{\begin{reviewbox}{completec}{【必背】规范表述与来源}}{\end{reviewbox}}
+\newenvironment{bianxi}{\begin{reviewbox}{errorc}{【辨析】易混易错}}{\end{reviewbox}}
+\newenvironment{ketang}{\begin{reviewbox}{timec}{【答题】思路与步骤}}{\end{reviewbox}}
 \newenvironment{suvlan}{\par\noindent{\small\color{timec}\textbf{要点速览}}\par\begin{enumerate}}{\end{enumerate}\medskip}
+\setlength{\emergencystretch}{2em}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{timec}\nouppercase{\leftmark}}
+\fancyfoot[C]{\small\thepage}
+\setlength{\headheight}{15pt}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+\usepackage[unicode,bookmarksnumbered=true,bookmarksopen=true,linktoc=all]{hyperref}
+\hypersetup{colorlinks=true,linkcolor=signaltext,urlcolor=signaltext,citecolor=signaltext,pdftitle={\reviewtitle}}
+\pdfstringdefDisableCommands{\def\kw#1{#1}\def\tj#1{#1}}
+\setcounter{tocdepth}{2}
 \begin{document}
-% 正文
+\pdfbookmark[0]{\reviewtitle}{recap-title}
+\section*{\reviewtitle}
+% 来源、覆盖范围、考试边界与阅读说明
+\dw{本讲在课程体系中的位置}
+\pdfbookmark[0]{\contentsname}{recap-contents}
+\tableofcontents
+\clearpage
+% 正文：\section{主题}\label{sec:topic}，依次补齐章/节
 \end{document}
-```
+~~~
 
-### 示意图（TikZ，本机已装 tikz + pgfplots）
+如需“计算题步骤”等自定义框标题，可直接用 `\begin{reviewbox}{timec}{标题}`，不另造未定义命令。模板用文字标签避免装饰符号缺字；英文版须同时翻译这些标签、`\reviewtitle`、`\dw` 和 `suvlan`。
 
-**老师明确说"要会画"的图必须画进讲义**——这类图本身就是考点（作图题）。核心概念有标准示意图的（应力-应变曲线、受力/计算简图、破坏形态、流程关系）也优先配图。规范：
+### 示意图
 
-- 简洁线条图：坐标轴 + 曲线 + 特征点，不加装饰。特征点用字母标注（A、B、C…），图下用一两行说明每个点的含义——这正是考试要写的内容。
-- 关键曲线/特征点用 `signal` 色标出，其余用黑与 `timec` 灰；坐标轴一律带物理量与符号标注。
-- 放 `\begin{center}\begin{tikzpicture}[...]` 中，宽度控制在版面内（约 10–12cm）。
-- 考试要求会画的图，在图注前加 ★ 并写明"考试要求会画"。
-- TikZ 语法错误是编译失败高发点：一图一图加、先简后繁；某张图连续两次编译失败就简化为更朴素的版本（直线段近似曲线也可接受），不死磕。
-- 需要函数曲线时可 `\usepackage{pgfplots}\pgfplotsset{compat=1.18}`（本机已装）；简单示意优先手绘 `\draw` 坐标点连线。
+- 老师明确要求会画的图必须覆盖；标准受力图、流程图、应力应变曲线等按教学需要补充。自行重画标“整理示意”，不能称课堂截图。
+- 有明确考试依据的作图题标“考试要求会画”，说明特征点、曲线/受力关系及作答要点；关键部分用 `signal` 色，其余以黑色和 `timec` 灰为主。
+- TikZ 图一图一验；线条、坐标、变量与单位清楚，配图解释特征点和适用条件。图宽不超正文区；含坐标轴的函数图可按需加载 `pgfplots`，引用外部图片才加载 `graphicx`。
+- API 只返回单个 `.tex`，不能引用未提供的外部图片、章节子文件或临时路径。图用内联 TikZ，无法可靠绘制时说明缺口。
+- 连续两次编译失败可简化绘图实现，不能改变受力关系或曲线含义；无法可靠画出的图保留缺口。图片文件交付时与源码一并保留，使用相对路径。
 
-### 编译与注意（本机 BasicTeX 已验证的配方）
+### 编译与验收（CLI）
 
-- 编译：`/Library/TeX/texbin/xelatex -interaction=nonstopmode <file>.tex` 跑两遍；找不到 xelatex 时试 `which xelatex`，仍没有则告知用户需安装 BasicTeX，改出 `<UUID>.handout.md` 降级产物。
-- **BasicTeX 没有 tcolorbox/mdframed/titlesec**——只用上面模板里的包，不要 `\usepackage` 其他包。
-- 特殊字符转义：`% → \%`、`& → \&`、`# → \#`、`_ → \_`；引号用中文""''；`$` 慎用。
-- ★■◆► 等符号若编译警告缺字形，换成【考点】【必背】等文字标签。
-- 编译失败时读 log 定位（通常是转义漏了），修正 .tex 重编，不超过 3 轮。
-- 成功后把 PDF 命名为 `<UUID>.handout.pdf` 放课程目录，辅助文件（.aux/.log）删除。
+1. 先确认 `xelatex`（找不到再查 `/Library/TeX/texbin/xelatex`）及实际用到的包：`kpsewhich hyperref.sty` 等。不要把某台电脑的 BasicTeX 包清单当通用事实。轻量 `framed` 为默认；额外包按需检查，不无条件禁止，也不未经授权全局安装依赖。
+2. 在工作目录生成候选 `.tex`/PDF，执行 `xelatex -interaction=nonstopmode -halt-on-error <file>.tex` 至少两遍。只有目录/引用仍要求重跑才继续；报错读 log 定位，最多三轮修复，不用旧 PDF 冒充编译成功。
+3. **内容核验**：对照输入覆盖表，逐章复核强考试信号、原话、教材原文、数字/公式/定义、适用条件、同音错字、版本差异、跨章重复/矛盾与排除范围。有条件由独立审阅者执行；记录具体位置、依据和修正，未解决项明确保留。
+4. **文档核验**：检查页数、文本提取、目录/页码、字体缺字和未解析的 `??`；检查所有链接目标有效、书签名称可读、章节齐全。可用 PDF 工具（如 pypdf/PDFKit）检查链接注释、书签和目标页；仅看到目录文字不算通过。
+5. **页面核验**：渲染最终 PDF 检查全部页面，可先总览再放大目录、公式、表格、图和跨页处；解决截断、重叠、缺字、空白异常及影响阅读的溢出。没有渲染/交互工具时明确报告未做的检查，不宣称视觉验收或实点跳转通过。
+6. 验证通过才以正确文件名交付 PDF 和可编辑源码；保留原始输入、旧版备份、必要图像和待续工作记录。辅助文件仅清理本次工作目录中的已知 `.aux/.log/.toc/.out` 等，失败时保留 log 便于恢复，不通配删除课程文件。
 
-## 任务四：课程考试重点总表 → `review.md`
+无法编译时保留 `.tex`、失败信息和 Markdown 降级稿，报告缺少的工具/包；不要覆盖仍可用的旧 PDF，不把“已写源码”报告成“已生成讲义 PDF”。API 只输出源码，以上落盘/编译/验收是否执行由宿主程序决定。
 
-输入：全部讲次的 `analysis.json`（+ 讲次名映射）。结构固定：
+## 任务四：课程考试重点 → `review.tex` + `review.pdf`
 
-```markdown
-# <课程名>考试重点
-## 必考清单        （strength=必考，按知识点归并，注明出自哪一讲）
-## 重点清单        （strength=重点）
-## 必背汇总
-## 答题套路汇总
-## 易混辨析汇总
-## 各讲要点索引    （每讲一行：讲次名 — 一句话核心内容）
-```
+CLI 先按 `lectures.json` 清点各讲分析，明确缺失、过期、无法解析的讲次；不能静默跳过后声称覆盖全课程。API 仅汇总实际提供的讲次，并明确覆盖数量/范围。
 
-- 跨讲重复提到的同一知识点合并成一条，标注「多次强调」。
-- 保留老师原话的关键表述。
+默认交付与任务三相同的可导航 LaTeX/PDF；用户明确要 Markdown 或无法编译时写 `review.md`。内容按课程语言组织：
 
-## 汇报口径
+1. 来源与覆盖范围、已确认的考试形式/题型/排除项。
+2. 必考清单（仅明确承诺的项目）；重点清单与有依据的可能考内容。
+3. 必背汇总、答题步骤与题型、易混辨析。
+4. 各讲/章节索引，必要时加入回听定位和作业复习线索。
 
-每完成一个任务，向用户简报：写了哪个文件、覆盖情况、有什么缺口（如"第九章老师只讲前两节，第三节全部据教材补齐"）。缺口如实说明，不掩饰。
+跨讲同一知识点可归并并标“多次强调”，保留来源讲次和各自条件；强度不能仅由出现次数升级。重讲、补讲和后来更正要合并核对，不能拼接成虚构引文。按章组织长总表，索引指向已有正文；资料范围外的教材补充明确分开，不把总表扩写成未经请求的整本教材。
+
+## 汇报与续作
+
+说明交付路径、实际覆盖的讲次/章节/文稿块、教材使用情况、纠错或来源冲突、缺失材料及待核项。分别报告“源码已写、编译通过、内容核验、链接结构检查、页面检查、交互点击验证”的实际完成情况。中断时提供工作目录、已完成单元和下一步；保留可用旧成果，不用部分草稿冒充全量交付。
