@@ -108,12 +108,12 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
         view.addSubview(navigationBar)
         NSLayoutConstraint.activate([
             pdfView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            pdfView.bottomAnchor.constraint(equalTo: navigationBar.topAnchor),
+            pdfView.bottomAnchor.constraint(equalTo: navigationBar.topAnchor, constant: -12),
             pdfView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             pdfView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             navigationBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             navigationBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            navigationBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            navigationBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
             navigationBar.heightAnchor.constraint(equalToConstant: 44),
         ])
         navigationItem.rightBarButtonItems = [exportButton, invertButton]
