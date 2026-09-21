@@ -26,6 +26,7 @@ targets:
           - Models/PDFNavigation.swift
           - UI/PDFViewController.swift
           - UI/PDFLinkView.swift
+          - UI/BrandToolbarDelegate.swift
           - UI/PDFOutlineViewController.swift
           - UI/PDFFindViewController.swift
           - UI/RecapTheme.swift

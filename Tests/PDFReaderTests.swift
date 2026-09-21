@@ -8,6 +8,9 @@
 #if canImport(UIKit)
 import UIKit
 import PDFKit
+#if targetEnvironment(macCatalyst)
+import AppKit
+#endif
 import XCTest
 @testable import RecapPDFTestHost
 
@@ -357,6 +360,102 @@ final class PDFReaderTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: fixture.url.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: renamedURL.path))
     }
+
+    #if targetEnvironment(macCatalyst)
+    func testWindowSidebarButtonHidesBothColumnsAndShowsBothWithoutReloadingPDF() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        for mode in [UISplitViewController.DisplayMode.twoBesideSecondary, .oneBesideSecondary] {
+            let controller = PDFViewController(fileURL: fixture.url, title: "Reader")
+            let (split, navigation, pdfView, toolbarDelegate, button) = try await loadSplitReader(controller, mode: mode)
+            defer { withExtendedLifetime(toolbarDelegate) {} }
+            let document = try XCTUnwrap(pdfView.document)
+            let last = try XCTUnwrap(document.page(at: 2))
+            pdfView.go(to: last)
+            let originalWidth = pdfView.bounds.width
+            let couldGoBack = pdfView.canGoBack
+
+            try triggerSidebarButton(button)
+            let focused = await eventually { split.displayMode == .secondaryOnly && pdfView.bounds.width > originalWidth }
+            XCTAssertTrue(focused)
+            XCTAssertEqual(navigation.view.bounds.width, split.view.bounds.width, accuracy: 1)
+            XCTAssertTrue(pdfView.document === document)
+            XCTAssertTrue(pdfView.currentPage === last)
+            XCTAssertEqual(pdfView.canGoBack, couldGoBack)
+
+            try triggerSidebarButton(button)
+            let restored = await eventually { split.displayMode == .twoBesideSecondary }
+            XCTAssertTrue(restored)
+            XCTAssertTrue(pdfView.document === document)
+            XCTAssertTrue(pdfView.currentPage === last)
+        }
+    }
+
+    func testWindowSidebarButtonStillWorksAfterLeavingPushedAndRootPDFReaders() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        for pushed in [true, false] {
+            let controller = PDFViewController(fileURL: fixture.url, title: "Reader")
+            let (split, navigation, _, toolbarDelegate, button) = try await loadSplitReader(controller, pushed: pushed)
+            defer { withExtendedLifetime(toolbarDelegate) {} }
+            try triggerSidebarButton(button)
+            let focused = await eventually { split.displayMode == .secondaryOnly }
+            XCTAssertTrue(focused)
+
+            if pushed {
+                navigation.popViewController(animated: false)
+            } else {
+                split.setViewController(UINavigationController(rootViewController: UIViewController()), for: .secondary)
+            }
+
+            XCTAssertEqual(split.displayMode, .secondaryOnly)
+            try triggerSidebarButton(button)
+            let restored = await eventually { split.displayMode == .twoBesideSecondary }
+            XCTAssertTrue(restored)
+        }
+    }
+
+    private func loadSplitReader(_ controller: PDFViewController,
+                                 mode: UISplitViewController.DisplayMode = .twoBesideSecondary,
+                                 pushed: Bool = false) async throws -> (UISplitViewController, UINavigationController, PDFView, BrandToolbarDelegate, NSToolbarItem) {
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = try XCTUnwrap(scene.windows.first)
+        let split = UISplitViewController(style: .tripleColumn)
+        split.preferredSplitBehavior = .tile
+        split.preferredDisplayMode = mode
+        split.minimumPrimaryColumnWidth = 160
+        split.preferredPrimaryColumnWidth = 180
+        split.minimumSupplementaryColumnWidth = 180
+        split.preferredSupplementaryColumnWidth = 200
+        split.setViewController(UINavigationController(rootViewController: UIViewController()), for: .primary)
+        split.setViewController(UINavigationController(rootViewController: UIViewController()), for: .supplementary)
+        let navigation = UINavigationController(rootViewController: pushed ? UIViewController() : controller)
+        split.setViewController(navigation, for: .secondary)
+        window.rootViewController = split
+        window.makeKeyAndVisible()
+        if pushed { navigation.pushViewController(controller, animated: false) }
+        let ready = await eventually { split.displayMode == mode && controller.view.window != nil }
+        XCTAssertTrue(ready)
+        split.view.layoutIfNeeded()
+        controller.view.layoutIfNeeded()
+        let pdfView = try XCTUnwrap(controller.view.subviews.compactMap { $0 as? PDFView }.first)
+        pdfView.layoutDocumentView()
+        let toolbarDelegate = BrandToolbarDelegate()
+        toolbarDelegate.splitViewController = split
+        let toolbar = NSToolbar(identifier: "ReaderTest")
+        XCTAssertEqual(toolbarDelegate.toolbarDefaultItemIdentifiers(toolbar).first, BrandToolbarDelegate.sidebarsID)
+        let button = try XCTUnwrap(toolbarDelegate.toolbar(toolbar, itemForItemIdentifier: BrandToolbarDelegate.sidebarsID,
+                                                         willBeInsertedIntoToolbar: true))
+        return (split, navigation, pdfView, toolbarDelegate, button)
+    }
+
+    private func triggerSidebarButton(_ item: NSToolbarItem) throws {
+        let target = try XCTUnwrap(item.target as? NSObject)
+        let action = try XCTUnwrap(item.action)
+        XCTAssertTrue(target.responds(to: action))
+        target.perform(action)
+    }
+    #endif
 
     private func load(_ controller: PDFViewController) async throws -> (PDFView, UIToolbar) {
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)

@@ -4360,6 +4360,16 @@
           }
         }
       }
+    },
+    "切换课程与讲次边栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle Course and Lecture Sidebars"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
