@@ -168,7 +168,7 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         SWIFT_VERSION: "5.9"
-        MARKETING_VERSION: "2.5.1"
+        MARKETING_VERSION: "2.5.2"
         SWIFT_EMIT_LOC_STRINGS: true
 
 schemes:
