@@ -33,11 +33,25 @@ final class LectureQueue {
     var onActivity: ((UUID) -> Void)?
 
     private var transcribeTail: Task<Void, Never>?
-    private lazy var engine: Result<WhisperCppEngine, Error> = {
-        Result { try WhisperCppEngine(modelPath: Settings.modelPath) }
-    }()
+    private var cachedEngine: Result<WhisperCppEngine, Error>?
 
     private init() {}
+
+    // Release Metal resources before process-wide whisper destructors run during quit.
+    @discardableResult
+    func releaseIdleEngine() -> Bool {
+        guard activities.isEmpty else { return false }
+        transcribeTail = nil
+        cachedEngine = nil
+        return true
+    }
+
+    private func transcriptionEngine() throws -> WhisperCppEngine {
+        if cachedEngine == nil {
+            cachedEngine = Result { try WhisperCppEngine(modelPath: Settings.modelPath) }
+        }
+        return try cachedEngine!.get()
+    }
 
     func activity(for lectureID: UUID) -> Activity? {
         activities[lectureID]
@@ -169,7 +183,7 @@ final class LectureQueue {
                     setActivity(.transcribing(Double(index + 1) / Double(partCount)), for: lectureID)
                 } else {
                     // The model is only needed for parts that still have to be heard
-                    let engine = try self.engine.get()
+                    let engine = try self.transcriptionEngine()
                     let samples = try await AudioExtractor.pcm16kMono(from: entry.url)
                     transcript = try await Self.transcribeOffMain(engine: engine, samples: samples) { [weak self] progress in
                         Task { @MainActor in

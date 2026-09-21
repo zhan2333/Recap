@@ -27,6 +27,7 @@ targets:
           - UI/PDFViewController.swift
           - UI/PDFLinkView.swift
           - UI/BrandToolbarDelegate.swift
+          - UI/AboutViewController.swift
           - UI/PDFOutlineViewController.swift
           - UI/PDFFindViewController.swift
           - UI/RecapTheme.swift
@@ -59,6 +60,7 @@ targets:
       - path: Tests
         includes:
           - PDFReaderTests.swift
+          - AboutViewTests.swift
     dependencies:
       - target: RecapPDFTestHost
     settings:
@@ -82,12 +84,14 @@ targets:
         excludes:
           - PDFReaderHost
           - PDFReaderTests.swift
+          - AboutViewTests.swift
       - path: App
         includes:
           - Models/Library.swift
           - Models/Library+Files.swift
           - Models/PriorAnalysis.swift
           - Models/PDFNavigation.swift
+          - Models/UpdateInstaller.swift
       - path: Plugin
         includes:
           - ShellRunner.swift

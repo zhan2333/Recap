@@ -118,7 +118,11 @@ public final class StatusItemHost: NSObject, StatusItemHosting {
 
     // UIKit has no way to quit, so the menu's Quit goes through AppKit
     @objc public static func terminate() {
-        DispatchQueue.main.async { NSApp.terminate(nil) }
+        if Thread.isMainThread {
+            NSApp.terminate(nil)
+        } else {
+            DispatchQueue.main.async { NSApp.terminate(nil) }
+        }
     }
 
     // Kept aside so a left click can open the app instead of dropping the menu

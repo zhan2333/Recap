@@ -56,6 +56,7 @@ final class LibraryStore {
     private(set) var courses: [Course] = []
     private var lecturesByCourse: [UUID: [Lecture]] = [:]
     private var storageUsers: [UUID: UUID] = [:]
+    var hasActiveStorageUsers: Bool { !storageUsers.isEmpty }
     private var storageRecoveryError: Error?
     static let pathsDidChange = Notification.Name("LibraryStorePathsDidChange")
 

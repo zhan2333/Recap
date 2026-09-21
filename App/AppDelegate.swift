@@ -25,12 +25,32 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         UISceneConfiguration(name: "Default", sessionRole: connectingSceneSession.role)
     }
 
+    func applicationWillTerminate(_ application: UIApplication) {
+        LectureQueue.shared.releaseIdleEngine()
+    }
+
+    private func showAbout() {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let window = scenes.filter { $0.activationState == .foregroundActive }
+            .flatMap(\.windows).first(where: \.isKeyWindow)
+            ?? scenes.flatMap(\.windows).first { $0.rootViewController is MainSplitViewController }
+        guard var presenter = window?.rootViewController else { return }
+        while let presented = presenter.presentedViewController { presenter = presented }
+        guard !(presenter is AboutViewController), !presenter.isBeingDismissed else { return }
+        presenter.present(AboutViewController(version: UpdateChecker.currentVersion,
+            checkForUpdates: { try await UpdateChecker.checkManually() },
+            installUpdate: { UpdateChecker.installAvailableUpdate() }), animated: true)
+    }
+
     // MARK: - Main menu
 
     override func buildMenu(with builder: UIMenuBuilder) {
         super.buildMenu(with: builder)
         guard builder.system == .main else { return }
 
+        builder.replace(menu: .about, with: UIMenu(identifier: .about, options: .displayInline, children: [
+            UIAction(title: String(localized: "关于 Recap")) { [weak self] _ in self?.showAbout() },
+        ]))
         builder.remove(menu: .newScene)
         builder.insertChild(UIMenu(options: .displayInline, children: [
             UIKeyCommand(title: String(localized: "新建课程"), action: #selector(MainSplitViewController.menuNewCourse), input: "n", modifierFlags: .command),
