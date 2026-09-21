@@ -20,7 +20,7 @@ description: 在 Recap 课程目录里提取课堂考点、分章核对教材、
 语言跟随转写稿或用户明确指定的目标语言，引用保留来源原话：
 
 - **中文课程**：中文正文，下文 `ctexart` 模板。
-- **英文课程**：英文正文、目录、图表标题、各类提示框及缺口说明；使用 `article`，不加载 ctex/xeCJK。框标题依次为 Key Point / Memorize / Distinguish / Answer Steps，`strength` 使用 `must-know|key|likely`。确需引用其他语言原文时选用覆盖该文字的字体，不把译文称为逐字引用。
+- **英文课程**：英文正文、目录、图表标题、各类提示框及缺口说明；使用 `article`，不加载 ctex/xeCJK。框标题依次为 Key Point / Memorize / Distinguish / Answer Steps，“标记说明”用 Marking Guide；使用与中文相同的命名色和 `\reviewtag`，不生成只有文字、没有实际色彩的英文图例。`strength` 使用 `must-know|key|likely`。确需引用其他语言原文时选用覆盖该文字的字体，不把译文称为逐字引用。
 - 混合语言保留专业名词，不把翻译后的句子冒充老师原话或教材逐字引用。文件名遵循 App 的路径清单，文件类型后缀和 JSON 字段名不随语言改变。
 
 ## 课程目录契约
@@ -139,6 +139,20 @@ description: 在 Recap 课程目录里提取课堂考点、分章核对教材、
 - 数学使用 LaTeX 数学命令（`\neq`、`\times` 等）；表格优先 `booktabs`/`tabularx`，跨页长表按需 `longtable`，检查列宽和表头续页。大框、图表和标题要检查分页，不把整章塞进不可分页环境。
 - 正文中的 `%`、`&`、`#`、`_`、`$`、`{`、`}` 等 LaTeX 特殊字符须按文本语境转义；数学模式保留运算、下标与分组语义，不对整份源码盲目替换。URL 用 `\url{...}`，原话中的百分数不能因 `%` 注释而丢失。
 
+### 标记说明与复习工具
+
+- 使用彩色提示框或强调标记时，在开头加入紧凑的“标记说明 / Marking Guide”，**每个标签直接显示正文对应的实际颜色**。复用同一命名色，不另写相近的 RGB 值，不只写“橙色表示考点”。下面的 `\reviewtag{命名色}{文字标签}` 同时提供彩色字与浅底色；颜色之外保留“考点 / 必背 / 辨析 / 答题”等文字，灰度打印也能区分。只列本讲实际使用的类型。
+- `signaltext` 用于考点、关键词与链接的深暖色文字，`signal` 用于图示强调；`completec` 对应必背，`errorc` 对应辨析，`timec` 对应答题步骤和来源。正文大段保持黑色；标记说明里的颜色含义与正文一致，不把“辨析”的颜色同时用于“正确答案”。
+- 标记表达内容用途，不自动赋予考试强度。“考点”仍需课堂依据，“必背”仍需老师要求；明确写出“不考”“只需了解”“公式会提供”等条件，不能靠颜色代替这些边界。
+- 长讲义可提供一页公式/概念速查表，列“公式或概念、条件、单位或易错处、正文引用”，用 `\eqref` / `\hyperref` 指向推导，避免把推导复制一遍。成组易混点用同维度对照表；例题按“已知与目标 → 适用条件 → 分步推导 → 单位/边界检查”组织。自测题仅在内容需要时加入，答案用链接回查，不凭空增加考试预测。
+
+### 公式、表格与分页技巧
+
+- 连等推导用 `align` / `align*`，一条长公式用 `equation` 内的 `aligned` 或 `split`，分段定义用 `cases`；在等号/运算关系处换行，不把整条公式缩成小字。只给正文会引用的公式编号，`\label` 放在相应公式环境内；用 `\text{...}` 表示数学中的说明、`\mathrm{...}` 表示单位，例如 `\sigma=F/A\quad[\mathrm{MPa}]`，并在邻近正文定义符号和成立条件。
+- 对照表优先 `tabularx` 的 `X` 列自动换行，可用 `>{\raggedright\arraybackslash}X` 避免窄列英文过度拉伸；用 `\linewidth` 而非固定页宽，让表格适应当前正文区。文本行用 `booktabs` 分隔，不依赖密集竖线。长表用 `longtable` 的 `\endfirsthead` / `\endhead` 重复表头，置于正文，不放入 `table` 浮动体或提示框；宽表先拆分列/主题，不用整体缩放掩盖不可读字号。
+- 提示框保持可跨页的 `framed` 实现，框内不要放浮动体；图表与来源说明尽量相邻。不要用 `minipage` / `samepage` 包住长段落，也不靠大量 `\\`、负间距或每小节 `\newpage` 修补版面。标题或短答题步骤确需与下文同页时，可在确认可用后按需加载 `needspace` 并用 `\Needspace{5\baselineskip}`；不要对整章强制保留空间。
+- 需要引用的图保留 `\caption` 和其后的 `\label`。外部图片按需加载 `graphicx`，用 `width=\linewidth`、合理的高度上限和 `keepaspectratio` 保持比例；TikZ 优先调整节点间距、文字换行和图结构，不把所有标注整体缩得过小。将 `Overfull \hbox`、缺字、未定义引用和重复目标警告定位到实际页面修正，不用全局 `\sloppy` 或关闭警告掩盖问题。
+
 ### 自足模板
 
 下面是中文基线，替换文档标题和正文；英文课程按前述规则换文档类及所有显示文字。按内容可删掉未使用的数学/表格包，但保留导航配置。
@@ -163,6 +177,10 @@ description: 在 Recap 课程目录里提取课堂考点、分章核对教材、
 \definecolor{timec}{HTML}{6B655C}
 \newcommand{\reviewtitle}{课程复习讲义}
 \newcommand{\kw}[1]{\textcolor{signaltext}{\textbf{#1}}}
+\newcommand{\reviewtag}[2]{\begingroup
+  \setlength{\fboxsep}{3pt}%
+  \colorbox{#1!10!white}{\textcolor{#1}{\strut\textbf{#2}}}%
+  \endgroup}
 \newcommand{\tj}[1]{\textbf{#1}}
 \newcommand{\dw}[1]{{\small\color{timec}定位：#1}\par\medskip}
 \newenvironment{reviewbox}[2]{%
@@ -170,7 +188,7 @@ description: 在 Recap 课程目录里提取课堂考点、分章核对教材、
   \MakeFramed{\advance\hsize-\width\FrameRestore}%
   \noindent{\small\color{#1}\textbf{#2}}\par\smallskip}%
   {\endMakeFramed\medskip}
-\newenvironment{kaodian}{\begin{reviewbox}{signal}{【考点】老师原话}}{\end{reviewbox}}
+\newenvironment{kaodian}{\begin{reviewbox}{signaltext}{【考点】老师原话}}{\end{reviewbox}}
 \newenvironment{bibei}{\begin{reviewbox}{completec}{【必背】规范表述与来源}}{\end{reviewbox}}
 \newenvironment{bianxi}{\begin{reviewbox}{errorc}{【辨析】易混易错}}{\end{reviewbox}}
 \newenvironment{ketang}{\begin{reviewbox}{timec}{【答题】思路与步骤}}{\end{reviewbox}}
@@ -190,6 +208,13 @@ description: 在 Recap 课程目录里提取课堂考点、分章核对教材、
 \pdfbookmark[0]{\reviewtitle}{recap-title}
 \section*{\reviewtitle}
 % 来源、覆盖范围、考试边界与阅读说明
+\subsection*{标记说明}
+\begin{description}[style=nextline,leftmargin=0pt,labelwidth=0pt,labelsep=0pt,font=\normalfont]
+  \item[\reviewtag{signaltext}{考点}] 有课堂依据的重点；强度和考试条件见正文。
+  \item[\reviewtag{completec}{必背}] 老师要求记忆的表述；规范原文附来源。
+  \item[\reviewtag{errorc}{辨析}] 易混概念、适用边界与常见错误。
+  \item[\reviewtag{timec}{答题}] 解题顺序、踩点术语与检查方法。
+\end{description}
 \dw{本讲在课程体系中的位置}
 \pdfbookmark[0]{\contentsname}{recap-contents}
 \tableofcontents
@@ -198,7 +223,37 @@ description: 在 Recap 课程目录里提取课堂考点、分章核对教材、
 \end{document}
 ~~~
 
-如需“计算题步骤”等自定义框标题，可直接用 `\begin{reviewbox}{timec}{标题}`，不另造未定义命令。模板用文字标签避免装饰符号缺字；英文版须同时翻译这些标签、`\reviewtitle`、`\dw` 和 `suvlan`。
+如需“计算题步骤”等自定义框标题，可直接用 `\begin{reviewbox}{timec}{标题}`，不另造未定义命令。模板用文字标签避免装饰符号缺字；英文版须同时翻译这些标签、`\reviewtitle`、`\dw` 和 `suvlan`。英文标记说明替换为以下段落，沿用模板的 `\reviewtag`，并删除未使用的类型：
+
+~~~latex
+\subsection*{Marking Guide}
+\begin{description}[style=nextline,leftmargin=0pt,labelwidth=0pt,labelsep=0pt,font=\normalfont]
+  \item[\reviewtag{signaltext}{Key Point}] Grounded in the lecture; see the text for exam scope and conditions.
+  \item[\reviewtag{completec}{Memorize}] Wording the instructor asks you to retain; exact source text is cited.
+  \item[\reviewtag{errorc}{Distinguish}] Confusable concepts, limits of applicability, and common mistakes.
+  \item[\reviewtag{timec}{Answer Steps}] Solution order, required terms, and checks.
+\end{description}
+~~~
+
+以下两个片段仅示范排版，用真实课程内容替换；英文课程同时翻译表头和正文。它们只使用基线已加载的宏包，不需要另加一组宏包：
+
+~~~latex
+% 一式多行：解释为何成立，并在公式之后定义符号、单位和条件。
+\begin{equation}\label{eq:stress}
+  \begin{aligned}
+    \sigma &= \frac{F}{A}, & A &= b h,\\
+    \sigma &= \frac{F}{b h}.
+  \end{aligned}
+\end{equation}
+% 正文用 \eqref{eq:stress} 回查；此处不是未经来源核实的课程结论。
+\begin{tabularx}{\linewidth}{@{}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+  \toprule
+  条目 & 适用条件 & 易错与回查 \\
+  \midrule
+  正应力 & 轴向载荷、截面平均值 & 统一力与面积单位，见式~\eqref{eq:stress}。\\
+  \bottomrule
+\end{tabularx}
+~~~
 
 ### 示意图
 
@@ -213,8 +268,8 @@ description: 在 Recap 课程目录里提取课堂考点、分章核对教材、
 1. 先确认 `xelatex`（找不到再查 `/Library/TeX/texbin/xelatex`）及实际用到的包：`kpsewhich hyperref.sty` 等。不要把某台电脑的 BasicTeX 包清单当通用事实。轻量 `framed` 为默认；额外包按需检查，不无条件禁止，也不未经授权全局安装依赖。
 2. 在工作目录生成候选 `.tex`/PDF，执行 `xelatex -interaction=nonstopmode -halt-on-error -jobname=<目标PDF去掉.pdf的文件名> <讲义源码文件>` 至少两遍。源码和目标 PDF 分别按清单的对应键取路径；部分迁移时两者可能是不同名称，不能由 `.tex` 名推导 PDF 名。把完整 `-jobname=...` 安全引用为单个参数，源码文件名也安全引用并加 `./` 防止前导短横线被当作选项；目录和文件名可能含空格、中文或单引号，不把未转义名称直接拼进 shell 命令。只有目录/引用仍要求重跑才继续；报错读 log 定位，最多三轮修复，不用旧 PDF 冒充编译成功。
 3. **内容核验**：对照输入覆盖表，逐章复核强考试信号、原话、教材原文、数字/公式/定义、适用条件、同音错字、版本差异、跨章重复/矛盾与排除范围。有条件由独立审阅者执行；记录具体位置、依据和修正，未解决项明确保留。
-4. **文档核验**：检查页数、文本提取、目录/页码、字体缺字和未解析的 `??`；检查所有链接目标有效、书签名称可读、章节齐全。可用 PDF 工具（如 pypdf/PDFKit）检查链接注释、书签和目标页；仅看到目录文字不算通过。
-5. **页面核验**：渲染最终 PDF 检查全部页面，可先总览再放大目录、公式、表格、图和跨页处；解决截断、重叠、缺字、空白异常及影响阅读的溢出。没有渲染/交互工具时明确报告未做的检查，不宣称视觉验收或实点跳转通过。
+4. **文档核验**：检查页数、文本提取、目录/页码、字体缺字和未解析的 `??`；检查所有链接目标有效、书签名称可读、章节齐全。可用 PDF 工具（如 pypdf/PDFKit）检查链接注释、书签和目标页；仅看到目录文字不算通过。确认“标记说明”与正文复用同名颜色、标签含义一致，英文课程没有遗留中文提示框或表头。
+5. **页面核验**：渲染最终 PDF 检查全部页面，可先总览再放大目录、标记说明、公式、表格、图和跨页处；解决截断、重叠、缺字、空白异常及影响阅读的溢出。确认颜色标签实际着色、浅底与文字清晰，灰度下仍可凭标签理解；检查长表续页表头和公式编号位置。没有渲染/交互工具时明确报告未做的检查，不宣称视觉验收或实点跳转通过。
 6. 验证通过才以正确文件名交付 PDF 和可编辑源码；保留原始输入、旧版备份、必要图像和待续工作记录。辅助文件仅清理本次工作目录中的已知 `.aux/.log/.toc/.out` 等，失败时保留 log 便于恢复，不通配删除课程文件。
 
 无法编译时保留 `.tex`、失败信息和 Markdown 降级稿，报告缺少的工具/包；不要覆盖仍可用的旧 PDF，不把“已写源码”报告成“已生成讲义 PDF”。API 只输出源码，以上落盘/编译/验收是否执行由宿主程序决定。
