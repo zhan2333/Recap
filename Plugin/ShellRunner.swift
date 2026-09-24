@@ -130,8 +130,14 @@ public final class ShellRunner: NSObject, ShellRunning {
         if environment["LANG"]?.uppercased().contains("UTF-8") != true {
             environment["LANG"] = "en_US.UTF-8"
         }
-        // Strip inherited Claude Code session marks so a CLI in here is a clean top-level session
-        for key in environment.keys where key == "CLAUDECODE" || key.hasPrefix("CLAUDE_CODE_") {
+        // Detach from the parent Claude Code session while preserving the user's
+        // authentication, provider selection, and other CLAUDE_CODE_* configuration.
+        for key in [
+            "CLAUDECODE",
+            "CLAUDE_CODE_SESSION_ID",
+            "CLAUDE_CODE_CHILD_SESSION",
+            "CLAUDE_CODE_SESSION_ATTENDED",
+        ] {
             environment.removeValue(forKey: key)
         }
         // Claim our own terminal identity: an inherited Apple_Terminal mark makes zsh run
