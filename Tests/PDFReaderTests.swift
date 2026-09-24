@@ -438,9 +438,11 @@ final class PDFReaderTests: XCTestCase {
         window.layoutIfNeeded()
         let button = try XCTUnwrap(reader.navigationItem.rightBarButtonItems?.last)
         let label = try XCTUnwrap(button.accessibilityLabel)
+        let image = try XCTUnwrap(button.image)
         let visible = await eventually {
             window.layoutIfNeeded()
-            return self.hasVisibleAppearanceControl(label: label, in: window, toolbar: toolbar)
+            return self.hasVisibleAppearanceControl(label: label, image: image, in: window,
+                                                    navigationBar: navigation.navigationBar, toolbar: toolbar)
         }
         recordAppearanceDiagnostics(reader: reader, navigation: navigation, window: window,
                                     toolbar: toolbar, name: pushed ? "Pushed PDF" : "Root PDF")
@@ -450,9 +452,26 @@ final class PDFReaderTests: XCTestCase {
         XCTAssertNotNil(button.image)
         XCTAssertFalse(button.isHidden)
         XCTAssertTrue(button.isEnabled)
+
+        // The visibility check must stop finding the actual control when its item is hidden.
+        button.isHidden = true
+        let hidden = await eventually {
+            window.layoutIfNeeded()
+            return !self.hasVisibleAppearanceControl(label: label, image: image, in: window,
+                                                     navigationBar: navigation.navigationBar, toolbar: toolbar)
+        }
+        XCTAssertTrue(hidden)
+        button.isHidden = false
+        let restored = await eventually {
+            window.layoutIfNeeded()
+            return self.hasVisibleAppearanceControl(label: label, image: image, in: window,
+                                                    navigationBar: navigation.navigationBar, toolbar: toolbar)
+        }
+        XCTAssertTrue(restored)
     }
 
-    private func hasVisibleAppearanceControl(label: String, in window: UIWindow, toolbar: NSToolbar) -> Bool {
+    private func hasVisibleAppearanceControl(label: String, image: UIImage, in window: UIWindow,
+                                             navigationBar: UINavigationBar, toolbar: NSToolbar) -> Bool {
         func visible(_ view: UIView) -> Bool {
             guard view.window === window, !view.bounds.isEmpty else { return false }
             var ancestor: UIView? = view
@@ -462,11 +481,33 @@ final class PDFReaderTests: XCTestCase {
             }
             return window.bounds.intersects(view.convert(view.bounds, to: window))
         }
+        func matches(_ candidate: UIImage?) -> Bool {
+            guard let candidate else { return false }
+            let expected = candidate.configuration.map { image.withConfiguration($0) } ?? image
+            return candidate.isEqual(expected)
+        }
+        func hasHittableControl(for view: UIView) -> Bool {
+            guard visible(view) else { return false }
+            let frame = view.convert(view.bounds, to: window).intersection(window.bounds)
+            let point = CGPoint(x: frame.midX, y: frame.midY)
+            guard let hit = window.hitTest(point, with: nil) else { return false }
+            var ancestor: UIView? = view
+            while let current = ancestor, current !== navigationBar {
+                if let control = current as? UIControl,
+                   control.isEnabled, control.isUserInteractionEnabled, visible(control),
+                   hit === control || hit.isDescendant(of: control) { return true }
+                ancestor = current.superview
+            }
+            return false
+        }
+        // Catalyst need not copy a bar item's accessibility label onto its UIKit control.
+        // Match the rendered symbol, then require a visible control that receives hit tests.
         func containsControl(_ view: UIView) -> Bool {
-            if view is UIControl, view.accessibilityLabel == label, visible(view) { return true }
+            let displayedImage = (view as? UIButton)?.currentImage ?? (view as? UIImageView)?.image
+            if matches(displayedImage), hasHittableControl(for: view) { return true }
             return view.subviews.contains(where: containsControl)
         }
-        if containsControl(window) { return true }
+        if containsControl(navigationBar) { return true }
         return (toolbar.visibleItems ?? []).contains { item in
             let candidates = (item as? NSToolbarItemGroup)?.subitems ?? [item]
             return candidates.contains {
