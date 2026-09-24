@@ -362,6 +362,159 @@ final class PDFReaderTests: XCTestCase {
     }
 
     #if targetEnvironment(macCatalyst)
+    func testRootPDFShowsAppearanceButtonWithCustomWindowToolbar() async throws {
+        try await assertAppearanceButtonWithWindowToolbar(pushed: false)
+    }
+
+    func testPushedPDFShowsAppearanceButtonWithCustomWindowToolbar() async throws {
+        try await assertAppearanceButtonWithWindowToolbar(pushed: true)
+    }
+
+    private func assertAppearanceButtonWithWindowToolbar(pushed: Bool) async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = try XCTUnwrap(scene.windows.first)
+        guard let titlebar = scene.titlebar else {
+            XCTFail("The Catalyst window must have a titlebar")
+            return
+        }
+        let originalToolbar = titlebar.toolbar
+        let originalToolbarStyle = titlebar.toolbarStyle
+        let originalTitleVisibility = titlebar.titleVisibility
+        let originalRoot = window.rootViewController
+        let originalStyle = window.overrideUserInterfaceStyle
+        let defaults = UserDefaults.standard
+        let originalPreference = defaults.object(forKey: "pdfDarkAppearance")
+        let originalLegacyPreference = defaults.object(forKey: "pdfInvertsInDark")
+        defer {
+            window.rootViewController = originalRoot
+            window.overrideUserInterfaceStyle = originalStyle
+            titlebar.toolbar = originalToolbar
+            titlebar.toolbarStyle = originalToolbarStyle
+            titlebar.titleVisibility = originalTitleVisibility
+            defaults.set(originalPreference, forKey: "pdfDarkAppearance")
+            defaults.set(originalLegacyPreference, forKey: "pdfInvertsInDark")
+        }
+        defaults.set(false, forKey: "pdfDarkAppearance")
+        window.overrideUserInterfaceStyle = .light
+
+        let split = UISplitViewController(style: .tripleColumn)
+        split.preferredSplitBehavior = .tile
+        split.preferredDisplayMode = .twoBesideSecondary
+        split.minimumPrimaryColumnWidth = 200
+        split.maximumPrimaryColumnWidth = 240
+        split.preferredPrimaryColumnWidth = 210
+        split.minimumSupplementaryColumnWidth = 280
+        split.maximumSupplementaryColumnWidth = 340
+        split.preferredSupplementaryColumnWidth = 300
+        for column in [UISplitViewController.Column.primary, .supplementary] {
+            let navigation = UINavigationController(rootViewController: UIViewController())
+            navigation.setNavigationBarHidden(true, animated: false)
+            split.setViewController(navigation, for: column)
+        }
+        let reader = PDFViewController(fileURL: fixture.url, title: "土木工程结构 - 期末复习讲义")
+        let navigation = UINavigationController(rootViewController: pushed ? UIViewController() : reader)
+        if pushed { navigation.setNavigationBarHidden(true, animated: false) }
+        split.setViewController(navigation, for: .secondary)
+
+        // Match SceneDelegate: install the native toolbar before attaching the split view.
+        let toolbarDelegate = BrandToolbarDelegate()
+        toolbarDelegate.splitViewController = split
+        let toolbar = NSToolbar(identifier: "PDFReaderAppearanceTest-\(UUID().uuidString)")
+        toolbar.delegate = toolbarDelegate
+        toolbar.displayMode = .iconOnly
+        toolbar.allowsUserCustomization = false
+        titlebar.toolbar = toolbar
+        titlebar.toolbarStyle = .unified
+        titlebar.titleVisibility = .visible
+        defer { withExtendedLifetime(toolbarDelegate) {} }
+        window.rootViewController = split
+        window.makeKeyAndVisible()
+        if pushed { navigation.pushViewController(reader, animated: false) }
+
+        let ready = await eventually { reader.viewIfLoaded?.window === window && navigation.topViewController === reader }
+        XCTAssertTrue(ready)
+        window.layoutIfNeeded()
+        let button = try XCTUnwrap(reader.navigationItem.rightBarButtonItems?.last)
+        let label = try XCTUnwrap(button.accessibilityLabel)
+        let visible = await eventually {
+            window.layoutIfNeeded()
+            return self.hasVisibleAppearanceControl(label: label, in: window, toolbar: toolbar)
+        }
+        recordAppearanceDiagnostics(reader: reader, navigation: navigation, window: window,
+                                    toolbar: toolbar, name: pushed ? "Pushed PDF" : "Root PDF")
+        XCTAssertFalse(navigation.isNavigationBarHidden)
+        XCTAssertGreaterThan(navigation.navigationBar.bounds.height, 0)
+        XCTAssertTrue(visible, "The appearance action must have a visible control, not only a navigationItem entry")
+        XCTAssertNotNil(button.image)
+        XCTAssertFalse(button.isHidden)
+        XCTAssertTrue(button.isEnabled)
+    }
+
+    private func hasVisibleAppearanceControl(label: String, in window: UIWindow, toolbar: NSToolbar) -> Bool {
+        func visible(_ view: UIView) -> Bool {
+            guard view.window === window, !view.bounds.isEmpty else { return false }
+            var ancestor: UIView? = view
+            while let current = ancestor {
+                guard !current.isHidden, current.alpha > 0.01 else { return false }
+                ancestor = current.superview
+            }
+            return window.bounds.intersects(view.convert(view.bounds, to: window))
+        }
+        func containsControl(_ view: UIView) -> Bool {
+            if view is UIControl, view.accessibilityLabel == label, visible(view) { return true }
+            return view.subviews.contains(where: containsControl)
+        }
+        if containsControl(window) { return true }
+        return (toolbar.visibleItems ?? []).contains { item in
+            let candidates = (item as? NSToolbarItemGroup)?.subitems ?? [item]
+            return candidates.contains {
+                ($0.label == label || $0.title == label || $0.toolTip == label)
+                    && $0.isEnabled && $0.image != nil
+            }
+        }
+    }
+
+    private func recordAppearanceDiagnostics(reader: PDFViewController, navigation: UINavigationController,
+                                             window: UIWindow, toolbar: NSToolbar, name: String) {
+        var lines = [
+            "\(name): window=\(window.bounds)",
+            "navigationBar hidden=\(navigation.isNavigationBarHidden) viewHidden=\(navigation.navigationBar.isHidden) frame=\(navigation.navigationBar.frame)",
+            "behavioralStyle=\(navigation.navigationBar.behavioralStyle) section=\(navigation.navigationBar.currentNSToolbarSection)"
+        ]
+        for item in reader.navigationItem.rightBarButtonItems ?? [] {
+            lines.append("barButton title=\(item.title ?? "nil") label=\(item.accessibilityLabel ?? "nil") image=\(String(describing: item.image)) hidden=\(item.isHidden)")
+        }
+        let visibleIDs = Set((toolbar.visibleItems ?? []).map(\.itemIdentifier))
+        for item in toolbar.items {
+            lines.append("toolbar id=\(item.itemIdentifier.rawValue) title=\(item.title) label=\(item.label) image=\(String(describing: item.image)) visible=\(visibleIDs.contains(item.itemIdentifier))")
+            for child in (item as? NSToolbarItemGroup)?.subitems ?? [] {
+                lines.append("  subitem id=\(child.itemIdentifier.rawValue) title=\(child.title) label=\(child.label) image=\(String(describing: child.image))")
+            }
+        }
+        func describeControls(_ view: UIView) {
+            if view is UIControl {
+                lines.append("control \(type(of: view)) label=\(view.accessibilityLabel ?? "nil") frame=\(view.convert(view.bounds, to: window)) hidden=\(view.isHidden) alpha=\(view.alpha)")
+            }
+            view.subviews.forEach(describeControls)
+        }
+        describeControls(window)
+        let text = lines.joined(separator: "\n")
+        print(text)
+        let diagnostics = XCTAttachment(string: text)
+        diagnostics.name = "\(name) toolbar diagnostics"
+        diagnostics.lifetime = .keepAlways
+        add(diagnostics)
+        let screenshot = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        let attachment = XCTAttachment(image: screenshot)
+        attachment.name = "\(name) rendered window content"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testWindowSidebarButtonHidesBothColumnsAndShowsBothWithoutReloadingPDF() async throws {
         let fixture = try makeFixture()
         defer { try? FileManager.default.removeItem(at: fixture.directory) }

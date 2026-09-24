@@ -21,6 +21,9 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
     private var detectedPages = Set<ObjectIdentifier>()
     private weak var outlineController: PDFOutlineViewController?
     private weak var findController: PDFFindViewController?
+    #if targetEnvironment(macCatalyst)
+    private var previousNavigationBarStyle: UIBehavioralStyle?
+    #endif
 
     private lazy var backButton = UIBarButtonItem(image: UIImage(systemName: "chevron.left"),
         primaryAction: UIAction(title: String(localized: "返回跳转前的位置")) { [weak self] _ in self?.pdfView.goBack(nil) })
@@ -33,8 +36,8 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
         primaryAction: UIAction(title: String(localized: "在 PDF 中查找")) { [weak self] _ in self?.showFind() })
     private lazy var exportButton = UIBarButtonItem(image: UIImage(systemName: "square.and.arrow.up"),
         primaryAction: UIAction(title: String(localized: "导出 PDF")) { [weak self] _ in self?.exportPDF() })
-    private lazy var invertButton = UIBarButtonItem(image: UIImage(systemName: "circle.lefthalf.filled"),
-        primaryAction: UIAction(title: String(localized: "反转 PDF 明暗")) { [weak self] _ in self?.invertsInDark.toggle() })
+    private lazy var appearanceButton = UIBarButtonItem(image: UIImage(systemName: "moon"),
+        primaryAction: UIAction { [weak self] _ in self?.togglePDFAppearance() })
 
     init(fileURL: URL, title: String, courseID: UUID? = nil,
          resolveFile: (() -> (url: URL, title: String)?)? = nil,
@@ -59,7 +62,25 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        #if targetEnvironment(macCatalyst)
+        if let bar = navigationController?.navigationBar {
+            if previousNavigationBarStyle == nil { previousNavigationBarStyle = bar.preferredBehavioralStyle }
+            // The custom window toolbar does not host this reader's navigation items.
+            bar.preferredBehavioralStyle = .pad
+        }
+        #endif
         navigationController?.setNavigationBarHidden(false, animated: false)
+        applyAppearance()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        #if targetEnvironment(macCatalyst)
+        if let previousNavigationBarStyle {
+            navigationController?.navigationBar.preferredBehavioralStyle = previousNavigationBarStyle
+            self.previousNavigationBarStyle = nil
+        }
+        #endif
     }
 
     override func viewDidLayoutSubviews() {
@@ -68,12 +89,16 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
         updateNavigation()
     }
 
-    // Invert luminance and rotate hues so colored emphasis stays recognizable on dark paper.
-    private var invertsInDark = UserDefaults.standard.object(forKey: "pdfInvertsInDark") as? Bool ?? true {
-        didSet {
-            UserDefaults.standard.set(invertsInDark, forKey: "pdfInvertsInDark")
-            applyAppearance()
-        }
+    private var usesDarkAppearance: Bool {
+        if let preference = UserDefaults.standard.object(forKey: "pdfDarkAppearance") as? Bool { return preference }
+        // Preserve the previous system-based behavior until the reader's appearance is chosen explicitly.
+        let invertsInDark = UserDefaults.standard.object(forKey: "pdfInvertsInDark") as? Bool ?? true
+        return traitCollection.userInterfaceStyle == .dark && invertsInDark
+    }
+
+    private func togglePDFAppearance() {
+        UserDefaults.standard.set(!usesDarkAppearance, forKey: "pdfDarkAppearance")
+        applyAppearance()
     }
 
     override func viewDidLoad() {
@@ -116,7 +141,7 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
             navigationBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
             navigationBar.heightAnchor.constraint(equalToConstant: 44),
         ])
-        navigationItem.rightBarButtonItems = [exportButton, invertButton]
+        navigationItem.rightBarButtonItems = [exportButton, appearanceButton]
         updateNavigation()
         applyAppearance()
     }
@@ -127,18 +152,21 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
     }
 
     private func applyAppearance() {
-        let isDark = traitCollection.userInterfaceStyle == .dark
-        invertButton.isHidden = !isDark
-        if isDark && invertsInDark,
+        let isDark = usesDarkAppearance
+        let actionTitle = isDark ? String(localized: "切换 PDF 为明亮模式") : String(localized: "切换 PDF 为暗黑模式")
+        appearanceButton.image = UIImage(systemName: isDark ? "sun.max" : "moon")
+        appearanceButton.primaryAction?.title = actionTitle
+        appearanceButton.accessibilityLabel = actionTitle
+        appearanceButton.tintColor = RecapTheme.ink
+        // Invert luminance and rotate hues so colored emphasis stays recognizable on dark paper.
+        if isDark,
            let invert = CIFilter(name: "CIColorInvert"), let hue = CIFilter(name: "CIHueAdjust") {
             hue.setValue(CGFloat.pi, forKey: kCIInputAngleKey)
             pdfView.layer.filters = [invert, hue]
             pdfView.backgroundColor = UIColor(red: 0.878, green: 0.886, blue: 0.898, alpha: 1)
-            invertButton.tintColor = RecapTheme.ink
         } else {
             pdfView.layer.filters = nil
-            pdfView.backgroundColor = RecapTheme.canvas
-            invertButton.tintColor = RecapTheme.quiet
+            pdfView.backgroundColor = RecapTheme.canvas.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
         }
     }
 
