@@ -16,6 +16,12 @@ protocol ShellRunning {
         onOutput: @escaping (String) -> Void,
         onExit: @escaping (Int32) -> Void
     ) -> Int32
+    @discardableResult
+    static func detectTools(
+        _ workingDirectory: String,
+        onTool: @escaping (String, String) -> Void,
+        onExit: @escaping (Int32) -> Void
+    ) -> Int32
     static func terminate(_ pid: Int32)
     @discardableResult
     static func startShell(
@@ -60,6 +66,19 @@ enum ShellBridge {
 
     static func terminate(_ pid: Int32) {
         runner?.terminate(pid)
+    }
+
+    @discardableResult
+    static func detectTools(
+        workingDirectory: String,
+        onTool: @escaping (String, String) -> Void,
+        onExit: @escaping (Int32) -> Void
+    ) -> Int32 {
+        guard let runner else {
+            onExit(-1)
+            return -1
+        }
+        return runner.detectTools(workingDirectory, onTool: onTool, onExit: onExit)
     }
 
     @discardableResult

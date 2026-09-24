@@ -18,6 +18,12 @@ public protocol ShellRunning {
         onOutput: @escaping (String) -> Void,
         onExit: @escaping (Int32) -> Void
     ) -> Int32
+    @discardableResult
+    static func detectTools(
+        _ workingDirectory: String,
+        onTool: @escaping (String, String) -> Void,
+        onExit: @escaping (Int32) -> Void
+    ) -> Int32
     static func terminate(_ pid: Int32)
     @discardableResult
     static func startShell(
@@ -36,6 +42,93 @@ public final class ShellRunner: NSObject, ShellRunning {
 
     // All access happens on the main thread (run, terminate, and the plugin's callbacks)
     private static var sessions: [Int32: (process: Process, master: FileHandle)] = [:]
+    private static var detectionCancellations: [Int32: () -> Void] = [:]
+
+    @discardableResult
+    @objc public static func detectTools(
+        _ workingDirectory: String,
+        onTool: @escaping (String, String) -> Void,
+        onExit: @escaping (Int32) -> Void
+    ) -> Int32 {
+        detectTools(workingDirectory, environment: ProcessInfo.processInfo.environment,
+                    timeout: 8, onTool: onTool, onExit: onExit)
+    }
+
+    // Keep installation discovery independent of CLI authentication and version-query success.
+    @discardableResult
+    static func detectTools(
+        _ workingDirectory: String,
+        environment: [String: String],
+        timeout: TimeInterval,
+        onTool: @escaping (String, String) -> Void,
+        onExit: @escaping (Int32) -> Void
+    ) -> Int32 {
+        let marker = "RECAP_" + UUID().uuidString.replacingOccurrences(of: "-", with: "")
+        let command = """
+        builtin unsetopt MONITOR
+        typeset -a recap_tools=()
+        for recap_tool in claude codex gemini grok kimi; do
+            if command -v "$recap_tool" >/dev/null 2>&1; then
+                recap_tools+=("$recap_tool")
+                builtin printf '\\n\(marker)|found|%s\\n' "$recap_tool"
+            fi
+        done
+        builtin printf '\\n\(marker)|ready\\n'
+        for recap_tool in "${recap_tools[@]}"; do
+            (
+                recap_version=$("$recap_tool" --version </dev/null 2>/dev/null | /usr/bin/head -n 1)
+                builtin printf '\\n\(marker)|version|%s|%.200s\\n' "$recap_tool" "$recap_version"
+            ) &
+        done
+        builtin wait
+        """
+        var parser = ToolDetectionParser(marker: marker)
+        var watchdog: DispatchWorkItem?
+        var completed = false
+        let finish: (Int32) -> Void = { status in
+            guard !completed else { return }
+            completed = true
+            watchdog?.cancel()
+            watchdog = nil
+            onExit(status)
+        }
+        var pid: Int32 = -1
+        pid = launchShell(workingDirectory, cols: 100, rows: 24,
+                          arguments: ["-il", "+m", "-c", command], environment: environment,
+                          onData: { data in
+            guard !completed else { return }
+            for (tool, version) in parser.append(data) { onTool(tool, version) }
+        }, onExit: { status in
+            detectionCancellations[pid] = nil
+            // A profile that exits before our script runs is a detection failure, not "not installed".
+            finish(status == 0 && !parser.isReady ? -1 : status)
+        })
+        guard pid > 0 else { return pid }
+        detectionCancellations[pid] = {
+            guard !completed else { return }
+            stopDetection(pid)
+            finish(130)
+        }
+        let timeoutWork = DispatchWorkItem {
+            guard !completed else { return }
+            stopDetection(pid)
+            // Finish promptly even if the kernel takes longer to reap a killed child.
+            finish(124)
+        }
+        watchdog = timeoutWork
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: timeoutWork)
+        return pid
+    }
+
+    private static func stopDetection(_ pid: Int32) {
+        // forkpty owns this process group; job control is disabled for all version probes.
+        kill(-pid, SIGKILL)
+        kill(pid, SIGKILL)
+        if let shell = shells[pid] {
+            shell.master.readabilityHandler = nil
+            try? shell.master.close()
+        }
+    }
 
     @discardableResult
     @objc public static func run(
@@ -95,6 +188,10 @@ public final class ShellRunner: NSObject, ShellRunning {
     // Closing the PTY master hangs up the session (like closing a terminal window); SIGTERM covers the rest
     @objc public static func terminate(_ pid: Int32) {
         DispatchQueue.main.async {
+            if let cancel = detectionCancellations[pid] {
+                cancel()
+                return
+            }
             if let session = sessions[pid] {
                 sessions[pid] = nil
                 session.master.readabilityHandler = nil
@@ -124,7 +221,12 @@ public final class ShellRunner: NSObject, ShellRunning {
         onData: @escaping (Data) -> Void,
         onExit: @escaping (Int32) -> Void
     ) -> Int32 {
-        var environment = ProcessInfo.processInfo.environment
+        launchShell(workingDirectory, cols: cols, rows: rows, arguments: ["-il"],
+                    environment: ProcessInfo.processInfo.environment, onData: onData, onExit: onExit)
+    }
+
+    private static func shellEnvironment(_ inherited: [String: String]) -> [String: String] {
+        var environment = inherited
         environment["TERM"] = "xterm-256color"
         environment["COLORTERM"] = "truecolor"
         if environment["LANG"]?.uppercased().contains("UTF-8") != true {
@@ -145,10 +247,23 @@ public final class ShellRunner: NSObject, ShellRunning {
         environment["TERM_PROGRAM"] = "Recap"
         environment.removeValue(forKey: "TERM_PROGRAM_VERSION")
         environment.removeValue(forKey: "TERM_SESSION_ID")
+        return environment
+    }
+
+    private static func launchShell(
+        _ workingDirectory: String,
+        cols: Int32,
+        rows: Int32,
+        arguments: [String],
+        environment: [String: String],
+        onData: @escaping (Data) -> Void,
+        onExit: @escaping (Int32) -> Void
+    ) -> Int32 {
+        let environment = shellEnvironment(environment)
 
         // Every allocation happens before the fork; the child only calls async-signal-safe functions
         let executable = strdup("/bin/zsh")
-        let argv: [UnsafeMutablePointer<CChar>?] = [strdup("-zsh"), strdup("-il"), nil]
+        let argv: [UnsafeMutablePointer<CChar>?] = (["-zsh"] + arguments).map { strdup($0) } + [nil]
         let envp: [UnsafeMutablePointer<CChar>?] = environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
         let directory = strdup(workingDirectory)
         defer {
@@ -194,8 +309,8 @@ public final class ShellRunner: NSObject, ShellRunning {
                 onExit(signalNumber != 0 ? 128 + signalNumber : (status >> 8) & 0xff)
             }
         }
+        shells[pid] = (masterHandle, exitSource)
         exitSource.resume()
-        DispatchQueue.main.async { shells[pid] = (masterHandle, exitSource) }
         return pid
     }
 
@@ -212,5 +327,44 @@ public final class ShellRunner: NSObject, ShellRunning {
             var size = winsize(ws_row: UInt16(rows), ws_col: UInt16(cols), ws_xpixel: 0, ws_ypixel: 0)
             _ = ioctl(shell.master.fileDescriptor, TIOCSWINSZ, &size)
         }
+    }
+}
+
+// PTY reads can split lines and UTF-8 characters. Only framed, allowlisted records enter the menu.
+struct ToolDetectionParser {
+    let marker: String
+    private var pending = Data()
+    private var found: Set<String> = []
+    private(set) var isReady = false
+    private let tools: Set<String> = ["claude", "codex", "gemini", "grok", "kimi"]
+
+    mutating func append(_ data: Data) -> [(String, String)] {
+        pending.append(data)
+        var updates: [(String, String)] = []
+        while let newline = pending.firstIndex(of: 10) {
+            let line = String(decoding: pending[..<newline], as: UTF8.self)
+                .trimmingCharacters(in: .newlines)
+            pending.removeSubrange(...newline)
+            let fields = line.split(separator: "|", maxSplits: 3, omittingEmptySubsequences: false)
+            guard fields.first == Substring(marker) else { continue }
+            if fields.count == 2, fields[1] == "ready" {
+                isReady = true
+                continue
+            }
+            guard fields.count >= 3, tools.contains(String(fields[2])) else { continue }
+            let tool = String(fields[2])
+            if fields.count == 3, fields[1] == "found", found.insert(tool).inserted {
+                updates.append((tool, ""))
+            } else if fields.count == 4, fields[1] == "version", found.contains(tool) {
+                let version = String(fields[3])
+                    .replacingOccurrences(of: "\u{1b}\\[[0-?]*[ -/]*[@-~]", with: "", options: .regularExpression)
+                    .components(separatedBy: .controlCharacters).joined()
+                    .trimmingCharacters(in: .whitespaces)
+                updates.append((tool, String(version.prefix(200))))
+            }
+        }
+        // Ignore unbounded profile output without retaining it for the lifetime of the window.
+        if pending.count > 4096 { pending.removeAll(keepingCapacity: false) }
+        return updates
     }
 }

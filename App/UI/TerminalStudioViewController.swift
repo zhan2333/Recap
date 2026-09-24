@@ -38,6 +38,8 @@ final class TerminalStudioViewController: UIViewController {
 
     private var detectedTools: [String] = []
     private var toolVersions: [String: String] = [:]
+    private var detectionPID: Int32 = -1
+    private var detectionID: UUID?
     private var shellPID: Int32 = -1
     private var shellSessionID: UUID?
     private var startupStorageToken: UUID?
@@ -85,6 +87,7 @@ final class TerminalStudioViewController: UIViewController {
         artifactScanTimer?.invalidate()
         resizeTimer?.invalidate()
         if shellPID > 0 { ShellBridge.terminate(shellPID) }
+        if detectionPID > 0 { ShellBridge.terminate(detectionPID) }
         for token in [startupStorageToken, previewStorageToken].compactMap({ $0 }) {
             Task { @MainActor in LibraryStore.shared.endUsingStorage(token) }
         }
@@ -428,6 +431,7 @@ final class TerminalStudioViewController: UIViewController {
         promptField.text = initialPrompt
         clearSessionArtifacts()
         refreshArtifacts()
+        detectTools()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.startShell()
         }
@@ -558,19 +562,29 @@ final class TerminalStudioViewController: UIViewController {
     // MARK: - CLI detection
 
     private func detectTools() {
-        guard ShellBridge.isAvailable else { return }
-        var found = ""
-        ShellBridge.run("for t in claude codex gemini grok kimi; do command -v $t >/dev/null 2>&1 && echo \"$t|$($t --version 2>/dev/null | head -1)\"; done") { output in
-            found += output
-        } onExit: { [weak self] _ in
-            guard let self else { return }
-            for line in found.split(whereSeparator: \.isNewline) {
-                let parts = line.split(separator: "|", maxSplits: 1).map(String.init)
-                guard let tool = parts.first, !tool.isEmpty else { continue }
+        let id = UUID()
+        detectionID = id
+        if detectionPID > 0 { ShellBridge.terminate(detectionPID) }
+        detectionPID = -1
+        detectedTools.removeAll()
+        toolVersions.removeAll()
+        toolButton.menu = nil
+        setToolTitle(String(localized: "检测中…"))
+        detectionPID = ShellBridge.detectTools(workingDirectory: courseDir.path) { [weak self] tool, version in
+            guard let self, self.detectionID == id else { return }
+            if !self.detectedTools.contains(tool) {
                 self.detectedTools.append(tool)
-                if parts.count > 1 { self.toolVersions[tool] = parts[1].trimmingCharacters(in: .whitespaces) }
             }
+            self.toolVersions[tool] = version.isEmpty ? nil : version
             self.applyDetection()
+        } onExit: { [weak self] status in
+            guard let self, self.detectionID == id else { return }
+            self.detectionPID = -1
+            if self.detectedTools.isEmpty, status != 0 {
+                self.setToolTitle(status == 124 ? String(localized: "CLI 检测超时") : String(localized: "CLI 检测失败"))
+            } else {
+                self.applyDetection()
+            }
         }
     }
 

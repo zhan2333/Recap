@@ -360,6 +360,26 @@
         }
       }
     },
+    "CLI 检测失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CLI detection failed"
+          }
+        }
+      }
+    },
+    "CLI 检测超时" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CLI detection timed out"
+          }
+        }
+      }
+    },
     "CLI agent" : {
       "localizations" : {
         "en" : {

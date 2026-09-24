@@ -145,7 +145,7 @@
 		5D6B6967C9AD394E5FEDF2B7 /* TranscriptChunkWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptChunkWriter.swift; sourceTree = "<group>"; };
 		5E37ED690FC7C2FF61570139 /* RecapTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapTheme.swift; sourceTree = "<group>"; };
 		5E55382AE0E37B4C94F11ACF /* recap-r-mark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "recap-r-mark.png"; sourceTree = "<group>"; };
-		616F809051DE4C0195CAA00B /* RecapKit */ = {isa = PBXFileReference; lastKnownFileType = folder; path = RecapKit; sourceTree = SOURCE_ROOT; };
+		616F809051DE4C0195CAA00B /* RecapKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RecapKit; path = RecapKit; sourceTree = SOURCE_ROOT; };
 		6203D702A0F320C131192A78 /* PDFReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFReaderTests.swift; sourceTree = "<group>"; };
 		676EC9FC010F8689B3A7E396 /* LectureQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LectureQueue.swift; sourceTree = "<group>"; };
 		6BC0E06F800CA245EDEAB6DC /* RecapShellPlugin.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RecapShellPlugin.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -174,7 +174,7 @@
 		C6FF05B586AE502B8FC116DB /* OnboardingAIStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAIStep.swift; sourceTree = "<group>"; };
 		CC64EB823FB5DCDE97017EBB /* RecapPDFTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RecapPDFTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CF07F81006BA32EFA6020422 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
-		D349115A5C23C711AB33AF33 /* Recap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Recap.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D349115A5C23C711AB33AF33 /* Recap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Recap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D448DA8F8369670DB86D7A47 /* AboutViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewTests.swift; sourceTree = "<group>"; };
 		DA383A26B43313E3F57560D5 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DD63E6E7CC78CED842C066AB /* AboutViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
@@ -701,7 +701,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.5.4;
+				MARKETING_VERSION = 2.5.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rio.Recap;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = YES;
@@ -988,7 +988,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.5.4;
+				MARKETING_VERSION = 2.5.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.rio.Recap;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = YES;
