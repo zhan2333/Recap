@@ -479,13 +479,31 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     private func swipeActions(at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard let lectureID = dataSource.itemIdentifier(for: indexPath),
               let lecture = LibraryStore.shared.lecture(id: lectureID, in: course) else { return nil }
+        // A swipe only asks; the lecture goes once the alert is confirmed
         let delete = UIContextualAction(style: .destructive, title: String(localized: "删除")) { [weak self] _, _, done in
-            guard let self else { return done(false) }
-            LibraryStore.shared.deleteLecture(lecture, in: self.course)
-            self.reload()
-            done(true)
+            self?.confirmDelete(lecture)
+            done(false)
         }
         return UISwipeActionsConfiguration(actions: [delete])
+    }
+
+    private func confirmDelete(_ lecture: Lecture) {
+        let alert = UIAlertController(
+            title: String(localized: "删除「\(lecture.name)」？"),
+            message: String(localized: "该讲次的视频、文稿、重点和讲义会移到废纸篓。"),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "删除"), style: .destructive) { [weak self] _ in
+            guard let self else { return }
+            do {
+                try LibraryStore.shared.deleteLecture(lecture, in: self.course)
+                self.reload()
+            } catch {
+                self.presentInfo(title: String(localized: "删除失败"), message: error.localizedDescription)
+            }
+        })
+        present(alert, animated: true)
     }
 
     // MARK: - UICollectionViewDelegate
@@ -567,9 +585,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
             UIApplication.shared.open(URL(fileURLWithPath: dir.path, isDirectory: true))
         }
         let delete = UIAction(title: String(localized: "删除"), image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in
-            guard let self else { return }
-            LibraryStore.shared.deleteLecture(lecture, in: self.course)
-            self.reload()
+            self?.confirmDelete(lecture)
         }
 
         return UIMenu(children: [

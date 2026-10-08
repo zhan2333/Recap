@@ -325,35 +325,79 @@ final class LibraryStoreTests: XCTestCase {
         let root = try temporaryRoot()
         defer { try? files.removeItem(at: root) }
         let fixture = try makeLegacyLibrary(at: root)
-        let store = LibraryStore(root: root)
+        let trash = root.appendingPathComponent("Trash", isDirectory: true)
+        let store = makeStore(at: root, trash: trash)
         let other = store.addLecture(named: "Keep lecture", url: nil, to: fixture.course)
         let otherURL = store.productURL(other, in: fixture.course, ext: "handout.pdf")
         let otherData = Data("keep this lecture".utf8)
         try otherData.write(to: otherURL)
         try store.renameLecture(fixture.lecture, to: "Delete lecture", in: fixture.course)
         let owned = ownedLectureURLs(fixture.lecture, course: fixture.course, store: store)
+        let discarded = Set(owned.filter { files.fileExists(atPath: $0.path) }.map(\.lastPathComponent))
         let textbook = store.courseFileURL(fixture.course, name: "textbook.txt")
         let textbookData = try Data(contentsOf: textbook)
 
-        store.deleteLecture(fixture.lecture, in: fixture.course)
+        try store.deleteLecture(fixture.lecture, in: fixture.course)
 
         XCTAssertEqual(store.lectures(in: fixture.course).map(\.id), [other.id])
         for url in owned { XCTAssertFalse(files.fileExists(atPath: url.path), url.path) }
+        XCTAssertEqual(Set(try files.contentsOfDirectory(atPath: trash.path)), discarded)
         XCTAssertEqual(try Data(contentsOf: otherURL), otherData)
         XCTAssertEqual(try Data(contentsOf: textbook), textbookData)
         try assertManifest(store, course: fixture.course)
         let otherCourse = store.addCourse(named: "Keep course")
         let directory = store.courseDirectory(fixture.course)
-        store.deleteCourse(fixture.course)
+        try store.deleteCourse(fixture.course)
         XCTAssertFalse(files.fileExists(atPath: directory.path))
+        XCTAssertEqual(try Data(contentsOf: trash.appendingPathComponent(directory.lastPathComponent)
+            .appendingPathComponent(textbook.lastPathComponent)), textbookData)
         XCTAssertEqual(store.courses.map(\.id), [otherCourse.id])
         XCTAssertEqual(LibraryStore(root: root).courses.map(\.id), [otherCourse.id])
+    }
+
+    func testRunningStorageUsersRejectDeletionWithoutAnyDiskMutation() async throws {
+        let root = try temporaryRoot()
+        defer { try? files.removeItem(at: root) }
+        let fixture = try makeLegacyLibrary(at: root)
+        let store = makeStore(at: root, trash: root.appendingPathComponent("Trash", isDirectory: true))
+        let lease = store.beginUsingStorage(in: fixture.course)
+        let before = try snapshot(root)
+
+        XCTAssertThrowsError(try store.deleteLecture(fixture.lecture, in: fixture.course)) {
+            XCTAssertEqual($0 as? LibraryStore.StorageError, .busy)
+        }
+        XCTAssertThrowsError(try store.deleteCourse(fixture.course)) {
+            XCTAssertEqual($0 as? LibraryStore.StorageError, .busy)
+        }
+
+        XCTAssertEqual(try snapshot(root), before)
+        XCTAssertNotNil(store.lecture(id: fixture.lecture.id, in: fixture.course))
+        store.endUsingStorage(lease)
+        try store.deleteLecture(fixture.lecture, in: fixture.course)
+        XCTAssertNil(store.lecture(id: fixture.lecture.id, in: fixture.course))
+    }
+
+    func testCourseStaysListedWhenItsFolderCannotBeTrashed() async throws {
+        let root = try temporaryRoot()
+        defer { try? files.removeItem(at: root) }
+        let store = LibraryStore(root: root) { _ in throw CocoaError(.fileWriteNoPermission) }
+        let course = store.addCourse(named: "Keep course")
+        let lecture = store.addLecture(named: "Keep lecture", url: nil, to: course)
+        let directory = store.courseDirectory(course)
+
+        XCTAssertThrowsError(try store.deleteCourse(course))
+
+        XCTAssertEqual(store.courses.map(\.id), [course.id])
+        XCTAssertEqual(store.lectures(in: course).map(\.id), [lecture.id])
+        XCTAssertTrue(files.fileExists(atPath: directory.path))
+        XCTAssertEqual(LibraryStore(root: root).courses.map(\.id), [course.id])
     }
 
     func testMergePreservesPartMediaAndCachesThenDeletesThemWithMergedLecture() async throws {
         let root = try temporaryRoot()
         defer { try? files.removeItem(at: root) }
-        let store = LibraryStore(root: root)
+        let trash = root.appendingPathComponent("Trash", isDirectory: true)
+        let store = makeStore(at: root, trash: trash)
         let course = store.addCourse(named: "Merge course")
         var first = store.addLecture(named: "First", url: nil, to: course)
         var second = store.addLecture(named: "Second", url: nil, to: course)
@@ -395,8 +439,10 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertFalse(files.fileExists(atPath: store.productURL(merged, in: course, ext: "handout.pdf").path))
         try assertManifest(store, course: course)
         let owned = ownedLectureURLs(merged, course: course, store: store)
-        store.deleteLecture(merged, in: course)
+        let discarded = Set(owned.filter { files.fileExists(atPath: $0.path) }.map(\.lastPathComponent))
+        try store.deleteLecture(merged, in: course)
         for url in owned { XCTAssertFalse(files.fileExists(atPath: url.path), url.path) }
+        XCTAssertEqual(Set(try files.contentsOfDirectory(atPath: trash.path)), discarded)
         XCTAssertEqual(try String(contentsOf: untouchedURL, encoding: .utf8), "untouched")
         XCTAssertEqual(store.lectures(in: course).map(\.id), [untouched.id])
     }
@@ -576,6 +622,14 @@ final class LibraryStoreTests: XCTestCase {
         let root = files.temporaryDirectory.appendingPathComponent("RecapLibraryTests-\(UUID().uuidString)", isDirectory: true)
         try files.createDirectory(at: root, withIntermediateDirectories: true)
         return root
+    }
+
+    // Deleted items move into the test's own folder instead of the user's Trash
+    private func makeStore(at root: URL, trash: URL) -> LibraryStore {
+        LibraryStore(root: root) { url in
+            try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+            try FileManager.default.moveItem(at: url, to: trash.appendingPathComponent(url.lastPathComponent))
+        }
     }
 
     private func write<T: Encodable>(_ value: T, to url: URL) throws {

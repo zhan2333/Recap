@@ -134,9 +134,10 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
     private func deleteActions(at indexPath: IndexPath) -> UISwipeActionsConfiguration? {
         guard let courseID = dataSource.itemIdentifier(for: indexPath),
               let course = LibraryStore.shared.courses.first(where: { $0.id == courseID }) else { return nil }
-        let delete = UIContextualAction(style: .destructive, title: String(localized: "删除")) { _, _, done in
-            LibraryStore.shared.deleteCourse(course)
-            done(true)
+        // A swipe only asks; the course goes once the alert is confirmed
+        let delete = UIContextualAction(style: .destructive, title: String(localized: "删除")) { [weak self] _, _, done in
+            self?.confirmDelete(course)
+            done(false)
         }
         return UISwipeActionsConfiguration(actions: [delete])
     }
@@ -208,12 +209,21 @@ final class CourseListViewController: UIViewController, UICollectionViewDelegate
         let lectureCount = LibraryStore.shared.lectures(in: course).count
         let alert = UIAlertController(
             title: String(localized: "删除「\(course.name)」？"),
-            message: lectureCount > 0 ? String(localized: "该课程的 \(lectureCount) 个讲次及全部文稿、重点、讲义都会一并删除。") : nil,
+            message: lectureCount > 0
+                ? String(localized: "该课程的 \(lectureCount) 个讲次及全部视频、文稿、重点、讲义会移到废纸篓。")
+                : String(localized: "课程文件夹会移到废纸篓。"),
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
-        alert.addAction(UIAlertAction(title: String(localized: "删除"), style: .destructive) { _ in
-            LibraryStore.shared.deleteCourse(course)
+        alert.addAction(UIAlertAction(title: String(localized: "删除"), style: .destructive) { [weak self] _ in
+            do {
+                try LibraryStore.shared.deleteCourse(course)
+            } catch {
+                let failure = UIAlertController(title: String(localized: "删除失败"),
+                                                message: error.localizedDescription, preferredStyle: .alert)
+                failure.addAction(UIAlertAction(title: String(localized: "好"), style: .default))
+                self?.present(failure, animated: true)
+            }
         })
         present(alert, animated: true)
     }

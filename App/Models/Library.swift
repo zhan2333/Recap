@@ -64,14 +64,19 @@ final class LibraryStore {
     var onChange: (() -> Void)?
 
     let root: URL
+    // Deleted courses and lectures go to the Trash, so a mistaken delete stays recoverable
+    private let discardItem: (URL) throws -> Void
 
     private convenience init() {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         self.init(root: support.appendingPathComponent("Recap", isDirectory: true))
     }
 
-    init(root: URL) {
+    init(root: URL, discardItem: @escaping (URL) throws -> Void = {
+        try FileManager.default.trashItem(at: $0, resultingItemURL: nil)
+    }) {
         self.root = root
+        self.discardItem = discardItem
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         load()
     }
@@ -155,13 +160,13 @@ final class LibraryStore {
         Result { try renameCourse(course, to: course.name) }
     }
 
-    func deleteCourse(_ course: Course) {
-        guard (try? requireIdleStorage(in: course)) != nil,
-              let current = self.course(id: course.id) else { return }
-        let directory = current.directoryURL(in: root)
+    func deleteCourse(_ course: Course) throws {
+        try requireIdleStorage(in: course)
+        guard let current = self.course(id: course.id) else { throw StorageError.missingRecord }
+        // The folder leaves first: if the Trash refuses it, the course is still listed and intact
+        try discard(current.directoryURL(in: root))
         courses.removeAll { $0.id == course.id }
         lecturesByCourse[course.id] = nil
-        try? FileManager.default.removeItem(at: directory)
         persistCourses()
         notify()
     }
@@ -322,16 +327,16 @@ final class LibraryStore {
         }
     }
 
-    func deleteLecture(_ lecture: Lecture, in course: Course) {
-        guard (try? requireIdleStorage(in: course)) != nil else { return }
-        let lecture = storedLecture(lecture, in: course)
+    func deleteLecture(_ lecture: Lecture, in course: Course) throws {
+        try requireIdleStorage(in: course)
+        guard let lecture = self.lecture(id: lecture.id, in: course) else { throw StorageError.missingRecord }
         lecturesByCourse[course.id]?.removeAll { $0.id == lecture.id }
         for ext in Lecture.fileKinds {
-            try? FileManager.default.removeItem(at: productURL(lecture, in: course, ext: ext))
+            try? discard(productURL(lecture, in: course, ext: ext))
         }
         for part in lecture.mediaParts {
             for ext in MediaPart.fileKinds {
-                try? FileManager.default.removeItem(at: courseDirectory(course).appendingPathComponent(part.fileName(ext)))
+                try? discard(courseDirectory(course).appendingPathComponent(part.fileName(ext)))
             }
         }
         persistLectures(of: course)
@@ -353,7 +358,7 @@ extension LibraryStore {
         var errorDescription: String? {
             switch self {
             case .busy:
-                return String(localized: "课程正在处理文件或运行终端会话，请在任务结束或关闭终端后重命名。")
+                return String(localized: "课程正在处理文件或运行终端会话，请在任务结束或关闭终端后再试。")
             case .missingRecord:
                 return String(localized: "课程或讲次已不存在。")
             case .recoveryRequired:
@@ -467,6 +472,11 @@ private extension LibraryStore {
     func requireIdleStorage(in course: Course) throws {
         try checkStorageRecovery()
         guard !storageUsers.values.contains(course.id) else { throw StorageError.busy }
+    }
+
+    func discard(_ url: URL) throws {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        try discardItem(url)
     }
 
     func directoryEntries(_ directory: URL) -> [String] {

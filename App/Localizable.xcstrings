@@ -1086,6 +1086,16 @@
         }
       }
     },
+    "删除失败" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could Not Delete"
+          }
+        }
+      }
+    },
     "删除课程" : {
       "localizations" : {
         "en" : {
@@ -3691,12 +3701,33 @@
         }
       }
     },
+    "该讲次的视频、文稿、重点和讲义会移到废纸篓。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This moves the lecture's videos, transcript, key points, and lecture notes to the Trash."
+          }
+        }
+      }
+    },
     "该课程的 %lld 个讲次及全部文稿、重点、讲义都会一并删除。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "This deletes the course's %lld lectures with every transcript, key point, and lecture note."
+          }
+        }
+      }
+    },
+    "该课程的 %lld 个讲次及全部视频、文稿、重点、讲义会移到废纸篓。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This moves the course's %lld lectures, with every video, transcript, key point, and lecture note, to the Trash."
           }
         }
       }
@@ -3822,7 +3853,28 @@
         }
       }
     },
+    "课程文件夹会移到废纸篓。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This moves the course folder to the Trash."
+          }
+        }
+      }
+    },
+    "课程正在处理文件或运行终端会话，请在任务结束或关闭终端后再试。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This course is processing files or running a terminal session. Try again after the task finishes or the terminal closes."
+          }
+        }
+      }
+    },
     "课程正在处理文件或运行终端会话，请在任务结束或关闭终端后重命名。" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
