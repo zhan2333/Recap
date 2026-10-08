@@ -531,11 +531,14 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
     private func contextMenu(for lecture: Lecture) -> UIMenu {
         let store = LibraryStore.shared
         let isBusy = LectureQueue.shared.activity(for: lecture.id) != nil
-        let mediaExists = FileManager.default.fileExists(atPath: store.mediaURL(lecture, in: course).path)
+        // Media lives under each part's name, which is not the lecture's once it has several parts
+        let parts = store.mediaParts(of: lecture, in: course)
+        let partsOnDisk = Set(parts.filter { FileManager.default.fileExists(atPath: $0.url.path) }.map(\.part.id))
+        let linkedParts = parts.filter { $0.part.sourceURL != nil }
 
         var workActions: [UIAction] = []
         if !isBusy {
-            if mediaExists {
+            if !partsOnDisk.isEmpty {
                 let title: String
                 switch lecture.phase {
                 case .transcribed: title = String(localized: "重新转写")
@@ -550,9 +553,10 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                     )
                 })
             }
-            if lecture.sourceURL != nil {
+            if !linkedParts.isEmpty {
+                let missingMedia = linkedParts.contains { !partsOnDisk.contains($0.part.id) }
                 workActions.append(UIAction(
-                    title: mediaExists ? String(localized: "重新下载并转写") : String(localized: "下载并转写"),
+                    title: missingMedia ? String(localized: "下载并转写") : String(localized: "重新下载并转写"),
                     image: UIImage(systemName: "arrow.down.circle")
                 ) { [weak self] _ in
                     guard let self else { return }
@@ -576,8 +580,21 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         let rename = UIAction(title: String(localized: "重命名…"), image: UIImage(systemName: "pencil")) { [weak self] _ in
             self?.promptRename(lecture)
         }
-        let updateLink = UIAction(title: String(localized: "更新直链…"), image: UIImage(systemName: "link.badge.plus")) { [weak self] _ in
-            self?.promptUpdateLink(lecture)
+        // Every part downloads from its own link, so an expired one is replaced on the part that needs it
+        let updateLink: UIMenuElement
+        if parts.count > 1 {
+            let choices = parts.enumerated().map { index, entry in
+                UIAction(title: String(localized: "第 \(index + 1) 段"),
+                         subtitle: partsOnDisk.contains(entry.part.id) ? nil : String(localized: "视频文件不在本机")) { [weak self] _ in
+                    self?.promptUpdateLink(lecture, partID: entry.part.id, partNumber: index + 1)
+                }
+            }
+            updateLink = UIMenu(title: String(localized: "更新直链"), image: UIImage(systemName: "link.badge.plus"),
+                                children: choices)
+        } else {
+            updateLink = UIAction(title: String(localized: "更新直链…"), image: UIImage(systemName: "link.badge.plus")) { [weak self] _ in
+                self?.promptUpdateLink(lecture, partID: parts[0].part.id, partNumber: nil)
+            }
         }
         let reveal = UIAction(title: String(localized: "在访达中显示"), image: UIImage(systemName: "folder")) { [weak self] _ in
             guard let self else { return }
@@ -669,14 +686,15 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
         reload()
     }
 
-    private func promptUpdateLink(_ lecture: Lecture) {
+    // partNumber names the part only when the lecture has several
+    private func promptUpdateLink(_ lecture: Lecture, partID: UUID, partNumber: Int?) {
         let alert = UIAlertController(
-            title: String(localized: "更新直链"),
+            title: partNumber.map { String(localized: "更新第 \($0) 段直链") } ?? String(localized: "更新直链"),
             message: String(localized: "直链 token 过期后，从云课堂重新抓取并粘贴到这里。"),
             preferredStyle: .alert
         )
         alert.addTextField {
-            $0.text = lecture.sourceURL?.absoluteString
+            $0.text = lecture.mediaParts.first { $0.id == partID }?.sourceURL?.absoluteString
             $0.placeholder = "https://look.tongji.edu.cn/...mp4?...."
         }
         alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
@@ -685,7 +703,7 @@ final class LectureListViewController: UIViewController, UICollectionViewDelegat
                   let urlString = alert?.textFields?.first?.text?.trimmingCharacters(in: .whitespaces),
                   let url = URL(string: urlString), url.host != nil else { return }
             guard var updated = LibraryStore.shared.lecture(id: lecture.id, in: self.course) else { return }
-            updated.sourceURL = url
+            updated.setSourceURL(url, forPart: partID)
             do {
                 try LibraryStore.shared.updateLecture(updated, in: self.course).get()
                 self.reload()

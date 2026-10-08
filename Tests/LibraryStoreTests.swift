@@ -393,6 +393,37 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertEqual(LibraryStore(root: root).courses.map(\.id), [course.id])
     }
 
+    func testUpdatedLinksReachThePartsThatDownloadThem() async throws {
+        let root = try temporaryRoot()
+        defer { try? files.removeItem(at: root) }
+        let store = LibraryStore(root: root)
+        let course = store.addCourse(named: "Link course")
+        let expired = try XCTUnwrap(URL(string: "https://example.com/expired.mp4"))
+        let fresh = try XCTUnwrap(URL(string: "https://example.com/fresh.mp4"))
+
+        let single = store.addLecture(named: "Single", url: expired, to: course)
+        var updated = try XCTUnwrap(store.lecture(id: single.id, in: course))
+        updated.setSourceURL(fresh, forPart: single.id)
+        try store.updateLecture(updated, in: course).get()
+        XCTAssertEqual(store.mediaParts(of: single, in: course).map(\.part.sourceURL), [fresh])
+
+        let parts = [MediaPart(id: UUID(), sourceURL: expired, duration: nil),
+                     MediaPart(id: UUID(), sourceURL: expired, duration: nil)]
+        let split = store.addLecture(named: "Split", url: nil, parts: parts, to: course)
+        updated = try XCTUnwrap(store.lecture(id: split.id, in: course))
+        updated.setSourceURL(fresh, forPart: parts[1].id)
+        try store.updateLecture(updated, in: course).get()
+        XCTAssertEqual(store.mediaParts(of: split, in: course).map(\.part.sourceURL), [expired, fresh])
+
+        // An appended lecture's first part shares the lecture's ID
+        var appended = Lecture(id: UUID(), name: "Appended", sourceURL: expired, phase: .failed, errorMessage: nil)
+        appended.parts = [MediaPart(id: appended.id, sourceURL: expired, duration: nil),
+                          MediaPart(id: UUID(), sourceURL: expired, duration: nil)]
+        appended.setSourceURL(fresh, forPart: appended.id)
+        XCTAssertEqual(appended.mediaParts.map(\.sourceURL), [fresh, expired])
+        XCTAssertEqual(appended.sourceURL, fresh)
+    }
+
     func testMergePreservesPartMediaAndCachesThenDeletesThemWithMergedLecture() async throws {
         let root = try temporaryRoot()
         defer { try? files.removeItem(at: root) }

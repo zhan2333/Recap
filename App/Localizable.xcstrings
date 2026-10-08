@@ -2272,6 +2272,16 @@
         }
       }
     },
+    "更新第 %lld 段直链" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update link for part %lld"
+          }
+        }
+      }
+    },
     "有资料时，再从课程里添加音频或视频。" : {
       "localizations" : {
         "en" : {

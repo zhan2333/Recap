@@ -53,6 +53,14 @@ extension Lecture {
         if let parts, !parts.isEmpty { return parts }
         return [MediaPart(id: id, sourceURL: sourceURL, duration: nil, fileStem: fileStem)]
     }
+
+    // Explicit parts download from their own links; the lecture's link only feeds its implicit part
+    mutating func setSourceURL(_ url: URL, forPart partID: UUID) {
+        if let index = parts?.firstIndex(where: { $0.id == partID }) {
+            parts?[index].sourceURL = url
+        }
+        if partID == id { sourceURL = url }
+    }
 }
 
 extension MediaPart {
