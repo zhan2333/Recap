@@ -18,6 +18,7 @@ final class DetailHeaderView: UIView {
     ])
     let overflowButton = UIButton(type: .system)
     let analyzeButton = UIButton(type: .system)
+    let studioButton = UIButton(type: .system)
     private let analyzeSpinner = UIActivityIndicatorView(style: .medium)
     private let localPill = UIView()
 
@@ -75,6 +76,10 @@ final class DetailHeaderView: UIView {
         )
         overflowButton.tintColor = RecapTheme.muted
         overflowButton.showsMenuAsPrimaryAction = true
+        studioButton.setImage(UIImage(systemName: "terminal"), for: .normal)
+        studioButton.tintColor = RecapTheme.ink
+        studioButton.accessibilityLabel = "Terminal Studio"
+        studioButton.toolTip = "Terminal Studio"
 
         var analyzeConfig = UIButton.Configuration.filled()
         analyzeConfig.attributedTitle = AttributedString(
@@ -94,7 +99,7 @@ final class DetailHeaderView: UIView {
         analyzeButton.setContentCompressionResistancePriority(.required, for: .horizontal)
         overflowButton.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        let trailing = UIStackView(arrangedSubviews: [localPill, overflowButton, analyzeButton, analyzeSpinner])
+        let trailing = UIStackView(arrangedSubviews: [localPill, studioButton, overflowButton, analyzeButton, analyzeSpinner])
         trailing.axis = .horizontal
         trailing.alignment = .center
         trailing.spacing = 8

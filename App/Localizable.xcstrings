@@ -4662,6 +4662,306 @@
           }
         }
       }
+    },
+    "中断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interrupt"
+          }
+        }
+      }
+    },
+    "先选择 PDF 文字或播放重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select PDF text or a playback key point first"
+          }
+        }
+      }
+    },
+    "加宽 Studio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widen Studio"
+          }
+        }
+      }
+    },
+    "发送到终端；带引用时填入后按 Return 提交": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send to the terminal; when including references, press Return in the terminal to submit"
+          }
+        }
+      }
+    },
+    "围绕当前内容提问…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask about this content…"
+          }
+        }
+      }
+    },
+    "在 PDF 或播放页面添加引用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a reference from the PDF or playback view"
+          }
+        }
+      }
+    },
+    "在独立窗口打开 Terminal Studio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Terminal Studio in a separate window"
+          }
+        }
+      }
+    },
+    "在阅读区打开讲义": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open lecture notes in the reading pane"
+          }
+        }
+      }
+    },
+    "将结束当前终端进程并清空输出和引用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will end the current terminal process and clear its output and references."
+          }
+        }
+      }
+    },
+    "展开 Studio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand Studio"
+          }
+        }
+      }
+    },
+    "已填入终端 · 按 Return 提交": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inserted into terminal · Press Return to submit"
+          }
+        }
+      }
+    },
+    "已展开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expanded"
+          }
+        }
+      }
+    },
+    "已折叠": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapsed"
+          }
+        }
+      }
+    },
+    "开始新会话？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a new session?"
+          }
+        }
+      }
+    },
+    "引用当前位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference current position"
+          }
+        }
+      }
+    },
+    "引用选区 / 重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference selection / key point"
+          }
+        }
+      }
+    },
+    "当前终端不支持引用粘贴，请先启动 CLI": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This terminal does not support pasting references. Start a CLI first."
+          }
+        }
+      }
+    },
+    "提示词": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prompts"
+          }
+        }
+      }
+    },
+    "播放 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playback · %@"
+          }
+        }
+      }
+    },
+    "播放时间：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playback time: %@"
+          }
+        }
+      }
+    },
+    "收起": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide"
+          }
+        }
+      }
+    },
+    "每次最多引用 4 处内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add up to 4 references per input"
+          }
+        }
+      }
+    },
+    "移除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "缩窄 Studio": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Narrow Studio"
+          }
+        }
+      }
+    },
+    "课程上下文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course context"
+          }
+        }
+      }
+    },
+    "调整 Studio 宽度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resize Studio"
+          }
+        }
+      }
+    },
+    "返回伴随模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to companion mode"
+          }
+        }
+      }
+    },
+    "返回已引用的位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to a referenced position"
+          }
+        }
+      }
+    },
+    "选区": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selection"
+          }
+        }
+      }
+    },
+    "重点 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key point · %@"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

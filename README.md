@@ -107,6 +107,8 @@ Recap is a native Mac Catalyst app written in UIKit. One trade-off runs through 
 
 Terminal Studio is a real terminal: a login shell on a PTY, opened in the course folder. It detects which agents are installed on your Mac (claude, codex, gemini, grok, kimi) and runs them as you, with the accounts they are already signed into. So if you pay for a Claude or Codex subscription, extracting key points and writing lecture notes run on that subscription, and you don't need a separate API account to reach the good models. If you would rather use an API key, the same jobs run through any OpenAI-compatible endpoint you configure. Both paths follow the same instructions.
 
+Studio can also sit beside a lecture PDF or the player. Attach a page, selected text, playback time, or key point, then return to that source from the reference history. Hiding or expanding Studio keeps the same terminal and draft. Quoted material is pasted into the terminal for confirmation with Return; the existing standalone window remains available from the lecture menu.
+
 **The skill ships with the app, so an agent knows what to do on arrival**
 
 `App/recap-review-skill.md` is both the product spec and the agent's instructions: it says what each file in a course folder is called and what shape it has. It installs itself under four conventions (`.claude/skills`, `.agents/skills`, `AGENTS.md`, `GEMINI.md`), so whichever agent you start in that folder knows what to read and where to write. You don't write prompts for it, and what it produces is what the app already renders.

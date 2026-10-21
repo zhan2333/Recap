@@ -32,6 +32,13 @@ final class PlayerPaneView: UIView {
 
     var onRequestRedownload: (() -> Void)?
 
+    var isStudioVisible = false {
+        didSet {
+            guard isStudioVisible != oldValue else { return }
+            setNeedsLayout()
+        }
+    }
+
     private var player: AVPlayer?
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
@@ -69,6 +76,11 @@ final class PlayerPaneView: UIView {
 
     private var content: UIStackView!
     private var columns: UIStackView!
+    private var railHeader: UIStackView!
+    private var railActions: UIStackView!
+    private var lens: UIStackView!
+    private let railHeaderSpacer = UIView()
+    private let lensSpacer = UIView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -81,11 +93,15 @@ final class PlayerPaneView: UIView {
             captionLabel.translatesAutoresizingMaskIntoConstraints = false
             captionLabel.isHidden = true
             overlay.addSubview(captionLabel)
+            let leading = captionLabel.leadingAnchor.constraint(greaterThanOrEqualTo: overlay.leadingAnchor, constant: 48)
+            let trailing = captionLabel.trailingAnchor.constraint(lessThanOrEqualTo: overlay.trailingAnchor, constant: -48)
+            // AVKit briefly gives its overlay a zero width while attaching the player.
+            leading.priority = UILayoutPriority(999)
+            trailing.priority = UILayoutPriority(999)
             NSLayoutConstraint.activate([
                 captionLabel.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
                 captionLabel.bottomAnchor.constraint(equalTo: overlay.bottomAnchor, constant: -56),
-                captionLabel.leadingAnchor.constraint(greaterThanOrEqualTo: overlay.leadingAnchor, constant: 48),
-                captionLabel.trailingAnchor.constraint(lessThanOrEqualTo: overlay.trailingAnchor, constant: -48),
+                leading, trailing,
             ])
         }
 
@@ -95,6 +111,7 @@ final class PlayerPaneView: UIView {
         railDetail.text = String(localized: "波形来自课堂音频，色块表示老师原话所在区间。")
         railDetail.font = RecapTheme.body(11)
         railDetail.textColor = RecapTheme.quiet
+        railDetail.numberOfLines = 0
 
         configureStep(previousButton, title: String(localized: "上一重点"), icon: "backward.end", iconLeading: true) { [weak self] in
             self?.step(-1)
@@ -144,8 +161,11 @@ final class PlayerPaneView: UIView {
         railTitle.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         railDetail.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        let railHeader = UIStackView(arrangedSubviews: [
-            vstack([railTitle, railDetail], spacing: 2), UIView(), previousButton, showAllButton, nextButton,
+        railActions = UIStackView(arrangedSubviews: [previousButton, showAllButton, nextButton])
+        railActions.axis = .horizontal
+        railActions.spacing = 8
+        railHeader = UIStackView(arrangedSubviews: [
+            vstack([railTitle, railDetail], spacing: 2), railHeaderSpacer, railActions,
         ])
         railHeader.axis = .horizontal
         railHeader.alignment = .center
@@ -162,7 +182,7 @@ final class PlayerPaneView: UIView {
         lensLeft.alignment = .leading
         let lensRight = vstack([frameStrip, playLeadInButton], spacing: 10)
         lensRight.alignment = .leading
-        let lens = UIStackView(arrangedSubviews: [lensLeft, UIView(), lensRight])
+        lens = UIStackView(arrangedSubviews: [lensLeft, lensSpacer, lensRight])
         lens.axis = .horizontal
         lens.alignment = .top
         lens.spacing = 18
@@ -192,9 +212,15 @@ final class PlayerPaneView: UIView {
         let columns = UIStackView(arrangedSubviews: [content, inspector])
         columns.axis = .horizontal
         columns.alignment = .fill
-        inspector.widthAnchor.constraint(equalToConstant: 236).isActive = true
+        let inspectorWidth = inspector.widthAnchor.constraint(equalToConstant: 236)
+        // UIStackView collapses a hidden arranged view to zero width.
+        inspectorWidth.priority = UILayoutPriority(999)
+        inspectorWidth.isActive = true
         columns.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(columns)
+        let scroll = UIScrollView()
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(columns)
+        addSubview(scroll)
         self.columns = columns
 
         // Empty state: media missing → explain + re-download path.
@@ -236,11 +262,20 @@ final class PlayerPaneView: UIView {
             equalTo: content.widthAnchor, multiplier: 9.0 / 16.0, constant: -27)
         // 749: below every default CHCR so scarce height always squeezes the video first
         playerAspect.priority = UILayoutPriority(749)
+        let fitHeight = columns.heightAnchor.constraint(lessThanOrEqualTo: scroll.frameLayoutGuide.heightAnchor)
+        // Preserve the rail and controls when a stacked Studio leaves less vertical space.
+        fitHeight.priority = UILayoutPriority(999)
         NSLayoutConstraint.activate([
-            columns.topAnchor.constraint(equalTo: topAnchor),
-            columns.leadingAnchor.constraint(equalTo: leadingAnchor),
-            columns.trailingAnchor.constraint(equalTo: trailingAnchor),
-            columns.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
+            scroll.topAnchor.constraint(equalTo: topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: bottomAnchor),
+            scroll.leadingAnchor.constraint(equalTo: leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: trailingAnchor),
+            columns.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            columns.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            columns.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            columns.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            columns.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            fitHeight,
             playerAspect,
             playerViewController.view.heightAnchor.constraint(greaterThanOrEqualToConstant: 160),
             rail.heightAnchor.constraint(equalToConstant: 92),
@@ -256,7 +291,17 @@ final class PlayerPaneView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        inspector.isHidden = bounds.width < 1000
+        inspector.isHidden = isStudioVisible || bounds.width < 1000
+        let contentWidth = bounds.width - (inspector.isHidden ? 0 : 236)
+        let compact = contentWidth < 680
+        railHeader.axis = compact ? .vertical : .horizontal
+        railHeader.alignment = compact ? .leading : .center
+        railHeaderSpacer.isHidden = compact
+        railActions.axis = contentWidth < 480 ? .vertical : .horizontal
+        railActions.alignment = .leading
+        lens.axis = compact ? .vertical : .horizontal
+        lens.alignment = compact ? .fill : .top
+        lensSpacer.isHidden = compact
         updatePartPillFit()
     }
 
@@ -609,6 +654,42 @@ final class PlayerPaneView: UIView {
         player.rate == 0 ? player.play() : player.pause()
     }
 
+    // References retain their time and words even as playback and selection move on.
+    func studioReference(selection: Bool) -> TerminalStudioReference? {
+        guard let player, playableParts.indices.contains(currentPartIndex) else { return nil }
+        if selection {
+            guard let selectedIndex, keyPoints.indices.contains(selectedIndex) else { return nil }
+            let point = keyPoints[selectedIndex]
+            guard point.start.isFinite else { return nil }
+            return TerminalStudioReference(
+                title: String(localized: "重点 · \(Self.timestamp(point.start))"),
+                text: point.signal.quote,
+                location: .playback(time: point.start, leadIn: true)
+            )
+        }
+
+        let localTime = player.currentTime().seconds
+        guard localTime.isFinite else { return nil }
+        let part = playableParts[currentPartIndex]
+        let globalTime = part.globalStart + max(0, min(localTime, part.duration))
+        guard globalTime.isFinite else { return nil }
+        let timestamp = Self.timestamp(globalTime)
+        let caption = captionRows.last { $0.start <= globalTime && globalTime <= $0.end + 1.5 }?.text
+        var text = String(localized: "播放时间：\(timestamp)")
+        if let caption, !caption.isEmpty { text += "\n\(caption)" }
+        return TerminalStudioReference(
+            title: String(localized: "播放 · \(timestamp)"),
+            text: text,
+            location: .playback(time: globalTime, leadIn: false)
+        )
+    }
+
+    func navigate(to reference: TerminalStudioReference) {
+        guard case let .playback(time, leadIn) = reference.location, time.isFinite else { return }
+        player?.pause()
+        seekGlobal(max(0, time - (leadIn ? 3 : 0)), thenPlay: false)
+    }
+
     // MARK: - Playback linkage
 
     private func tick(_ seconds: TimeInterval) {
@@ -863,6 +944,7 @@ final class FrameStripView: UIView {
         let stack = UIStackView()
         stack.axis = .horizontal
         stack.spacing = 8
+        stack.distribution = .fillEqually
         for (index, text) in labels.enumerated() {
             let button = UIButton(type: .custom)
             button.tag = index
@@ -871,8 +953,10 @@ final class FrameStripView: UIView {
             button.layer.cornerCurve = .continuous
             button.clipsToBounds = true
             button.imageView?.contentMode = .scaleAspectFill
-            button.widthAnchor.constraint(equalToConstant: 96).isActive = true
-            button.heightAnchor.constraint(equalToConstant: 54).isActive = true
+            let preferredWidth = button.widthAnchor.constraint(equalToConstant: 96)
+            preferredWidth.priority = .defaultHigh
+            preferredWidth.isActive = true
+            button.heightAnchor.constraint(equalTo: button.widthAnchor, multiplier: 9.0 / 16.0).isActive = true
             if index == 1 {
                 button.layer.borderWidth = 2
                 button.layer.borderColor = RecapTheme.signal.cgColor
@@ -891,7 +975,7 @@ final class FrameStripView: UIView {
             let cell = UIStackView(arrangedSubviews: [button, caption])
             cell.axis = .vertical
             cell.spacing = 3
-            cell.alignment = .center
+            cell.alignment = .fill
             slots.append(button)
             stack.addArrangedSubview(cell)
         }

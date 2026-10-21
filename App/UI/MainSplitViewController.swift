@@ -41,23 +41,27 @@ final class MainSplitViewController: UISplitViewController {
     func show(course: Course) {
         let lectures = LectureListViewController(course: course)
         setViewController(UINavigationController(rootViewController: lectures), for: .supplementary)
-        setViewController(UINavigationController(rootViewController: PlaceholderViewController(text: String(localized: "选择一个讲次查看文稿"))), for: .secondary)
+        replaceDetail(with: UINavigationController(rootViewController: PlaceholderViewController(text: String(localized: "选择一个讲次查看文稿"))))
     }
 
     func show(lecture: Lecture, in course: Course) {
-        let transcript = TranscriptViewController(lecture: lecture, course: course)
-        setViewController(UINavigationController(rootViewController: transcript), for: .secondary)
+        replaceDetail(with: TerminalStudioWorkspaceViewController(lecture: lecture, course: course))
     }
 
     func show(markdown: String, title: String, documentID: UUID, resolveTitle: (() -> String?)? = nil) {
         let viewer = MarkdownViewController(markdown: markdown, title: title, documentID: documentID, resolveTitle: resolveTitle)
-        setViewController(UINavigationController(rootViewController: viewer), for: .secondary)
+        replaceDetail(with: UINavigationController(rootViewController: viewer))
     }
 
     func show(pdfAt url: URL, title: String, courseID: UUID? = nil,
               resolveFile: (() -> (url: URL, title: String)?)? = nil) {
         let viewer = PDFViewController(fileURL: url, title: title, courseID: courseID, resolveFile: resolveFile)
-        setViewController(UINavigationController(rootViewController: viewer), for: .secondary)
+        replaceDetail(with: UINavigationController(rootViewController: viewer))
+    }
+
+    private func replaceDetail(with controller: UIViewController) {
+        (viewController(for: .secondary) as? TerminalStudioWorkspaceViewController)?.setPresentation(.hidden)
+        setViewController(controller, for: .secondary)
     }
 
     // MARK: - Menu actions
@@ -68,8 +72,7 @@ final class MainSplitViewController: UISplitViewController {
     }
 
     private var transcript: TranscriptViewController? {
-        (viewController(for: .secondary) as? UINavigationController)?
-            .viewControllers.first as? TranscriptViewController
+        (viewController(for: .secondary) as? TerminalStudioWorkspaceViewController)?.transcript
     }
 
     @objc func menuNewCourse() { courseList.promptNewCourse() }

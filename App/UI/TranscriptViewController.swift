@@ -29,6 +29,8 @@ final class TranscriptViewController: UIViewController {
     private let playerPane = PlayerPaneView()
     private let signalsView = SignalsPageView()
     private let emptyLabel = UILabel()
+    weak var studioWorkspace: TerminalStudioWorkspaceViewController?
+    private var handoutController: PDFViewController?
 
     init(lecture: Lecture, course: Course) {
         self.lecture = lecture
@@ -59,6 +61,7 @@ final class TranscriptViewController: UIViewController {
         )
         header.modeTabs.onSelect = { [weak self] _ in self?.applyMode() }
         header.analyzeButton.addAction(UIAction { [weak self] _ in self?.primaryAction() }, for: .touchUpInside)
+        header.studioButton.addAction(UIAction { [weak self] _ in self?.openTerminalStudio() }, for: .touchUpInside)
 
         emptyLabel.textColor = RecapTheme.quiet
         emptyLabel.font = RecapTheme.body(13)
@@ -240,6 +243,9 @@ final class TranscriptViewController: UIViewController {
         header.analyzeButton.isEnabled = !plainText.isEmpty
 
         var actions: [UIAction] = []
+        actions.append(UIAction(title: String(localized: "在独立窗口打开 Terminal Studio"), image: UIImage(systemName: "macwindow")) { [weak self] _ in
+            self?.openIndependentStudio()
+        })
         if analysis != nil {
             actions.append(UIAction(title: String(localized: "重新提取重点"), image: UIImage(systemName: "text.magnifyingglass")) { [weak self] _ in
                 self?.extractKeyPoints()
@@ -299,7 +305,25 @@ final class TranscriptViewController: UIViewController {
     func switchMode(_ index: Int) { header.modeTabs.select(index) }
     func extractKeyPoints() { promptPrepare() }
     func startHandoutFlow() { promptPrepare() }
-    func openTerminalStudio() { presentTerminalStudio() }
+    func openTerminalStudio() {
+        if let studioWorkspace { studioWorkspace.toggleStudio() }
+        else { presentTerminalStudio() }
+    }
+
+    func setStudioVisible(_ visible: Bool) {
+        playerPane.isStudioVisible = visible
+        header.studioButton.isSelected = visible
+    }
+
+    func studioReference(selection: Bool) -> TerminalStudioReference? {
+        guard header.modeTabs.selectedIndex == 2 else { return nil }
+        return playerPane.studioReference(selection: selection)
+    }
+
+    func navigate(to reference: TerminalStudioReference) {
+        header.modeTabs.select(2)
+        playerPane.navigate(to: reference)
+    }
     func stepPart(_ delta: Int) {
         if header.modeTabs.selectedIndex != 2 { header.modeTabs.select(2) }
         playerPane.stepPart(delta)
@@ -508,8 +532,15 @@ final class TranscriptViewController: UIViewController {
         }
     }
 
-    // Terminal Studio opens as its own window; results come back via notifications
     private func presentTerminalStudio(prompt: String? = nil) {
+        if let studioWorkspace {
+            studioWorkspace.showStudio(prompt: prompt)
+            return
+        }
+        openIndependentStudio(prompt: prompt)
+    }
+
+    private func openIndependentStudio(prompt: String? = nil) {
         let activity = TerminalStudioViewController.sceneActivity(lecture: lecture, prompt: prompt)
         let request = UISceneSessionActivationRequest(userActivity: activity)
         UIApplication.shared.activateSceneSession(for: request) { error in
@@ -520,7 +551,8 @@ final class TranscriptViewController: UIViewController {
 
     @objc private func studioArtifactsChanged(_ note: Notification) {
         guard note.userInfo?["lectureID"] as? UUID == lecture.id else { return }
-        loadContent()
+        loadContent(preservingPlayback: true)
+        handoutController?.reloadPreservingPosition()
     }
 
     @objc private func studioShowHandoutRequested(_ note: Notification) {
@@ -528,8 +560,17 @@ final class TranscriptViewController: UIViewController {
         showHandout()
     }
 
-    private func showHandout() {
+    func showHandout() {
         guard hasHandout else { return }
+        if let handoutController {
+            handoutController.reloadPreservingPosition()
+            if navigationController?.viewControllers.contains(where: { $0 === handoutController }) == true {
+                navigationController?.popToViewController(handoutController, animated: false)
+            } else {
+                navigationController?.pushViewController(handoutController, animated: true)
+            }
+            return
+        }
         let courseID = course.id
         let lectureID = lecture.id
         let resolve: () -> (url: URL, title: String)? = {
@@ -539,11 +580,11 @@ final class TranscriptViewController: UIViewController {
             return (store.productURL(lecture, in: course, ext: "handout.pdf"), String(localized: "\(lecture.name) 讲义"))
         }
         navigationController?.navigationBar.isHidden = false
-        navigationController?.pushViewController(
-            PDFViewController(fileURL: handoutURL, title: String(localized: "\(lecture.name) 讲义"),
-                              courseID: courseID, resolveFile: resolve),
-            animated: true
-        )
+        let reader = PDFViewController(fileURL: handoutURL, title: String(localized: "\(lecture.name) 讲义"),
+                                       courseID: courseID, resolveFile: resolve)
+        reader.onToggleStudio = { [weak self] in self?.studioWorkspace?.toggleStudio() }
+        handoutController = reader
+        navigationController?.pushViewController(reader, animated: true)
     }
 
     private func presentConfigureAlert() {

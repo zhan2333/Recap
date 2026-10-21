@@ -361,6 +361,151 @@ final class PDFReaderTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: renamedURL.path))
     }
 
+    func testStudioButtonOnlyAppearsWhenTheReaderHasAStudioHost() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        let controller = PDFViewController(fileURL: fixture.url, title: "Reader")
+        let (_, toolbar) = try await load(controller)
+        let originalItems = try XCTUnwrap(controller.navigationItem.rightBarButtonItems)
+        XCTAssertEqual(originalItems.count, 2)
+        var toggles = 0
+
+        controller.onToggleStudio = { toggles += 1 }
+
+        let items = try XCTUnwrap(controller.navigationItem.rightBarButtonItems)
+        XCTAssertEqual(items.count, 3)
+        XCTAssertTrue(items[0] === originalItems[0])
+        XCTAssertTrue(items[1] === originalItems[1])
+        XCTAssertEqual(toolbar.items?.count, 7)
+        try trigger(items[2])
+        XCTAssertEqual(toggles, 1)
+
+        controller.onToggleStudio = nil
+        XCTAssertEqual(controller.navigationItem.rightBarButtonItems?.count, 2)
+    }
+
+    func testStudioPageReferenceKeepsItsOriginalPageAndTextAfterReadingElsewhere() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        let controller = PDFViewController(fileURL: fixture.url, title: "Reader")
+        let (pdfView, _) = try await load(controller)
+        let document = try XCTUnwrap(pdfView.document)
+        let first = try XCTUnwrap(document.page(at: 0))
+        let last = try XCTUnwrap(document.page(at: 2))
+        pdfView.go(to: first)
+        let reachedFirst = await eventually { pdfView.currentPage === first }
+        XCTAssertTrue(reachedFirst)
+        let reference = try XCTUnwrap(controller.studioReference(selection: false))
+        guard case let .pdf(url, pageIndex, selectionBounds) = reference.location else {
+            return XCTFail("The reader must create a PDF reference")
+        }
+        XCTAssertEqual(url, fixture.url)
+        XCTAssertEqual(pageIndex, 0)
+        XCTAssertNil(selectionBounds)
+        XCTAssertTrue(reference.text.contains("Page 1"))
+
+        pdfView.go(to: last)
+        let reachedLast = await eventually { pdfView.currentPage === last }
+        XCTAssertTrue(reachedLast)
+        XCTAssertTrue(reference.text.contains("Page 1"))
+        controller.navigate(to: reference)
+
+        let returned = await eventually { pdfView.currentPage === first }
+        XCTAssertTrue(returned)
+        XCTAssertNil(pdfView.currentSelection)
+    }
+
+    func testStudioSelectionReferenceSnapshotsTextAndRestoresTheOriginalSelection() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        let controller = PDFViewController(fileURL: fixture.url, title: "Reader")
+        let (pdfView, _) = try await load(controller)
+        let document = try XCTUnwrap(pdfView.document)
+        let first = try XCTUnwrap(document.page(at: 0))
+        let last = try XCTUnwrap(document.page(at: 2))
+        XCTAssertNil(controller.studioReference(selection: true))
+        let firstText = try XCTUnwrap(first.string)
+        let selection = try XCTUnwrap(first.selection(for: (firstText as NSString).range(of: "Page 1")))
+        pdfView.setCurrentSelection(selection, animate: false)
+        let reference = try XCTUnwrap(controller.studioReference(selection: true))
+        guard case let .pdf(_, pageIndex, selectionBounds) = reference.location else {
+            return XCTFail("The reader must create a PDF reference")
+        }
+        XCTAssertEqual(pageIndex, 0)
+        XCTAssertEqual(selectionBounds, selection.bounds(for: first))
+        XCTAssertEqual(reference.text, "Page 1")
+
+        let lastText = try XCTUnwrap(last.string)
+        pdfView.setCurrentSelection(last.selection(for: (lastText as NSString).range(of: "Page 3")), animate: false)
+        pdfView.go(to: last)
+        let reachedLast = await eventually { pdfView.currentPage === last }
+        XCTAssertTrue(reachedLast)
+        XCTAssertEqual(reference.text, "Page 1")
+        controller.navigate(to: reference)
+
+        let returned = await eventually { pdfView.currentPage === first }
+        XCTAssertTrue(returned)
+        XCTAssertEqual(pdfView.currentSelection?.string, "Page 1")
+    }
+
+    func testReloadingUpdatedPDFPreservesPagePositionAndClearsOldSelections() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        let controller = PDFViewController(fileURL: fixture.url, title: "Reader")
+        let (pdfView, toolbar) = try await load(controller)
+        let originalDocument = try XCTUnwrap(pdfView.document)
+        let second = try XCTUnwrap(originalDocument.page(at: 1))
+        pdfView.autoScales = false
+        pdfView.scaleFactor = 1.2
+        pdfView.go(to: PDFDestination(page: second, at: CGPoint(x: 0, y: 700)))
+        let reachedSecond = await eventually { pdfView.currentPage === second }
+        XCTAssertTrue(reachedSecond)
+        let oldText = try XCTUnwrap(second.string)
+        let oldSelection = try XCTUnwrap(second.selection(for: (oldText as NSString).range(of: "Page 2")))
+        pdfView.setCurrentSelection(oldSelection, animate: false)
+        pdfView.highlightedSelections = [oldSelection]
+        pdfView.layoutDocumentView()
+        pdfView.layoutIfNeeded()
+        let position = try XCTUnwrap(pdfView.currentDestination).point
+        let viewportPoint = CGPoint(x: pdfView.bounds.midX, y: pdfView.bounds.midY)
+        let visiblePagePoint = pdfView.convert(viewportPoint, to: second)
+        XCTAssertTrue(second.bounds(for: pdfView.displayBox).contains(visiblePagePoint),
+                      "The saved reading anchor must be visible within the current page")
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792))
+        let updatedData = renderer.pdfData { context in
+            for number in 1...3 {
+                context.beginPage()
+                ("Updated page \(number)\nhttps://example.com/updated-\(number)" as NSString)
+                    .draw(in: CGRect(x: 40, y: 40, width: 500, height: 100),
+                          withAttributes: [.font: UIFont.systemFont(ofSize: 18)])
+            }
+        }
+        try updatedData.write(to: fixture.url, options: .atomic)
+
+        controller.reloadPreservingPosition()
+
+        let reloaded = await eventually {
+            guard let document = pdfView.document, let page = pdfView.currentPage else { return false }
+            return document !== originalDocument && document.index(for: page) == 1
+        }
+        XCTAssertTrue(reloaded)
+        XCTAssertEqual(toolbar.items?[3].title, "2 / 3")
+        XCTAssertTrue(try XCTUnwrap(pdfView.currentPage?.string).contains("Updated page 2"))
+        XCTAssertEqual(pdfView.scaleFactor, 1.2, accuracy: 0.001)
+        let restoredPosition = try XCTUnwrap(pdfView.currentDestination).point
+        XCTAssertEqual(restoredPosition.x, position.x, accuracy: 2)
+        XCTAssertEqual(restoredPosition.y, position.y, accuracy: 2)
+        let reloadedSecond = try XCTUnwrap(pdfView.document?.page(at: 1))
+        let restoredViewportPoint = pdfView.convert(visiblePagePoint, from: reloadedSecond)
+        XCTAssertEqual(restoredViewportPoint.x, viewportPoint.x, accuracy: 1)
+        XCTAssertEqual(restoredViewportPoint.y, viewportPoint.y, accuracy: 1)
+        XCTAssertNil(pdfView.currentSelection)
+        XCTAssertTrue(pdfView.highlightedSelections?.isEmpty ?? true)
+        XCTAssertTrue(try XCTUnwrap(pdfView.currentPage).annotations.contains {
+            ($0.action as? PDFActionURL)?.url?.absoluteString == "https://example.com/updated-2"
+        })
+    }
+
     #if targetEnvironment(macCatalyst)
     func testRootPDFShowsAppearanceButtonWithCustomWindowToolbar() async throws {
         try await assertAppearanceButtonWithWindowToolbar(pushed: false)

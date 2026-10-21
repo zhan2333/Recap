@@ -61,6 +61,7 @@
 
 - 在课程上下文里直接运行你自己的 CLI：自动检测本机已装的工具（claude / codex / gemini / grok / kimi），skill、文稿和重点已自动就位
 - 终端输出实时可见，随时可以停；生成好的讲义 PDF 出现在右侧产物区，点一下就能打开
+- Studio 可以附着在讲义 PDF 或播放页面旁边，引用当前页、选区、时间或重点；收起与展开保留同一终端和草稿。[伴随模式说明](docs/terminal-studio-companion.md)
 
 ### 讲义
 

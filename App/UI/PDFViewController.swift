@@ -12,6 +12,7 @@ import PDFKit
 final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFViewDelegate {
 
     private var fileURL: URL
+    private var knownFileURLs: Set<URL>
     private let courseID: UUID?
     private let resolveFile: (() -> (url: URL, title: String)?)?
     private let openURL: (URL, @escaping (Bool) -> Void) -> Void
@@ -21,6 +22,9 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
     private var detectedPages = Set<ObjectIdentifier>()
     private weak var outlineController: PDFOutlineViewController?
     private weak var findController: PDFFindViewController?
+    var onToggleStudio: (() -> Void)? {
+        didSet { if isViewLoaded { updateNavigationItems() } }
+    }
     #if targetEnvironment(macCatalyst)
     private var previousNavigationBarStyle: UIBehavioralStyle?
     #endif
@@ -38,6 +42,8 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
         primaryAction: UIAction(title: String(localized: "导出 PDF")) { [weak self] _ in self?.exportPDF() })
     private lazy var appearanceButton = UIBarButtonItem(image: UIImage(systemName: "moon"),
         primaryAction: UIAction { [weak self] _ in self?.togglePDFAppearance() })
+    private lazy var studioButton = UIBarButtonItem(image: UIImage(systemName: "terminal"),
+        primaryAction: UIAction(title: String(localized: "Terminal Studio")) { [weak self] _ in self?.onToggleStudio?() })
 
     init(fileURL: URL, title: String, courseID: UUID? = nil,
          resolveFile: (() -> (url: URL, title: String)?)? = nil,
@@ -45,6 +51,7 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
              UIApplication.shared.open(url, options: [:], completionHandler: completion)
          }) {
         self.fileURL = fileURL
+        self.knownFileURLs = [fileURL.standardizedFileURL]
         self.courseID = courseID
         self.resolveFile = resolveFile
         self.openURL = openURL
@@ -141,7 +148,7 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
             navigationBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
             navigationBar.heightAnchor.constraint(equalToConstant: 44),
         ])
-        navigationItem.rightBarButtonItems = [exportButton, appearanceButton]
+        updateNavigationItems()
         updateNavigation()
         applyAppearance()
     }
@@ -171,6 +178,61 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
     }
 
     // MARK: - Navigation
+
+    private func updateNavigationItems() {
+        studioButton.accessibilityLabel = String(localized: "Terminal Studio")
+        navigationItem.rightBarButtonItems = [exportButton, appearanceButton] + (onToggleStudio == nil ? [] : [studioButton])
+    }
+
+    func studioReference(selection: Bool) -> TerminalStudioReference? {
+        loadViewIfNeeded()
+        guard let document = pdfView.document, !document.isLocked else { return nil }
+        let page: PDFPage
+        let text: String
+        let bounds: CGRect?
+        if selection {
+            guard let selected = pdfView.currentSelection,
+                  let firstPage = selected.pages.first, firstPage.document === document,
+                  let selectedText = selected.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !selectedText.isEmpty else { return nil }
+            page = firstPage
+            text = selectedText
+            let selectedBounds = selected.bounds(for: page)
+            guard !selectedBounds.isEmpty, !selectedBounds.isNull, !selectedBounds.isInfinite else { return nil }
+            bounds = selectedBounds
+        } else {
+            guard let currentPage = pdfView.currentPage else { return nil }
+            page = currentPage
+            text = page.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            bounds = nil
+        }
+        let pageIndex = document.index(for: page)
+        guard pageIndex < document.pageCount else { return nil }
+        let pageTitle = String(localized: "第 \(pageIndex + 1) 页")
+        let selectionTitle = selection ? " · \(String(localized: "选区"))" : ""
+        return TerminalStudioReference(
+            title: "\(fileURL.lastPathComponent) · \(pageTitle)\(selectionTitle)",
+            text: text,
+            location: .pdf(url: fileURL, pageIndex: pageIndex, selectionBounds: bounds)
+        )
+    }
+
+    func navigate(to reference: TerminalStudioReference) {
+        guard case let .pdf(url, pageIndex, selectionBounds) = reference.location,
+              knownFileURLs.contains(url.standardizedFileURL) else { return }
+        loadViewIfNeeded()
+        guard let document = pdfView.document, !document.isLocked,
+              (0..<document.pageCount).contains(pageIndex),
+              let page = document.page(at: pageIndex) else { return }
+        pdfView.clearSelection()
+        if let bounds = selectionBounds, !bounds.isEmpty, !bounds.isNull, !bounds.isInfinite {
+            pdfView.setCurrentSelection(page.selection(for: bounds), animate: true)
+            pdfView.go(to: bounds, on: page)
+        } else {
+            pdfView.go(to: page)
+        }
+        updateNavigation()
+    }
 
     @objc private func navigationChanged() { updateNavigation() }
     @objc private func visiblePagesChanged() { detectVisibleLinks() }
@@ -323,25 +385,73 @@ final class PDFViewController: UIViewController, UIDocumentPickerDelegate, PDFVi
         refreshFile()
     }
 
-    private func refreshFile() {
-        guard let file = resolveFile?() else { return }
+    func reloadPreservingPosition() {
+        loadViewIfNeeded()
+        refreshFile(forceReload: true)
+    }
+
+    private func refreshFile(forceReload: Bool = false) {
+        let file: (url: URL, title: String)
+        if let resolveFile {
+            guard let resolved = resolveFile() else { return }
+            file = resolved
+        } else {
+            file = (fileURL, title ?? fileURL.lastPathComponent)
+        }
         title = file.title
-        guard file.url != fileURL, let document = PDFDocument(url: file.url) else { return }
-        let destination = pdfView.currentDestination
-        let pageIndex = destination?.page.flatMap { pdfView.document?.index(for: $0) }
+        guard forceReload || file.url != fileURL, let document = PDFDocument(url: file.url) else { return }
+        pdfView.layoutIfNeeded()
+        let viewportPoint = CGPoint(x: pdfView.bounds.midX, y: pdfView.bounds.midY)
+        let currentPage = pdfView.currentPage
+        let pageIndex = currentPage.flatMap { pdfView.document?.index(for: $0) }
+        let pagePoint = currentPage.map { pdfView.convert(viewportPoint, to: $0) }
         let scale = pdfView.scaleFactor
+        let autoScales = pdfView.autoScales
         fileURL = file.url
+        knownFileURLs.insert(fileURL.standardizedFileURL)
         detectedPages.removeAll()
+        pdfView.document?.cancelFindString()
         if pdfView.isFindInteractionEnabled { pdfView.findInteraction.dismissFindNavigator() }
         if findController != nil { presentedViewController?.dismiss(animated: false) }
+        findController = nil
+        pdfView.clearSelection()
+        pdfView.highlightedSelections = nil
         pdfView.document = document
-        if let pageIndex, pageIndex < document.pageCount, let page = document.page(at: pageIndex) {
-            pdfView.go(to: PDFDestination(page: page, at: destination?.point ?? .zero))
+        pdfView.autoScales = autoScales
+        if !autoScales { pdfView.scaleFactor = scale }
+        pdfView.layoutDocumentView()
+        if let pageIndex, document.pageCount > 0,
+           let page = document.page(at: min(pageIndex, document.pageCount - 1)) {
+            pdfView.go(to: page)
+            if let pagePoint { restoreReadingPosition(pagePoint, on: page, at: viewportPoint) }
         }
-        if !pdfView.autoScales { pdfView.scaleFactor = scale }
         outlineController?.update(entries: PDFNavigation.outlineEntries(in: document))
         updateNavigation()
         detectVisibleLinks()
+    }
+
+    private func restoreReadingPosition(_ pagePoint: CGPoint, on page: PDFPage, at viewportPoint: CGPoint) {
+        // PDFKit destination navigation can align a point differently after a reload at
+        // a custom zoom. Preserve the visible page anchor instead of round-tripping it.
+        pdfView.layoutDocumentView()
+        pdfView.layoutIfNeeded()
+        var ancestor = pdfView.documentView?.superview
+        while let current = ancestor, current !== pdfView {
+            if let scroll = current as? UIScrollView {
+                let actual = scroll.convert(pdfView.convert(pagePoint, from: page), from: pdfView)
+                let expected = scroll.convert(viewportPoint, from: pdfView)
+                let inset = scroll.adjustedContentInset
+                let minimum = CGPoint(x: -inset.left, y: -inset.top)
+                let maximum = CGPoint(x: max(minimum.x, scroll.contentSize.width - scroll.bounds.width + inset.right),
+                                      y: max(minimum.y, scroll.contentSize.height - scroll.bounds.height + inset.bottom))
+                let offset = CGPoint(x: min(maximum.x, max(minimum.x, scroll.contentOffset.x + actual.x - expected.x)),
+                                     y: min(maximum.y, max(minimum.y, scroll.contentOffset.y + actual.y - expected.y)))
+                scroll.setContentOffset(offset, animated: false)
+                return
+            }
+            ancestor = current.superview
+        }
+        pdfView.go(to: PDFDestination(page: page, at: pagePoint))
     }
 
     private func exportPDF() {

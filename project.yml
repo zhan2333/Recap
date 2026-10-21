@@ -24,6 +24,7 @@ targets:
           - Models/Library+Files.swift
           - Models/PriorAnalysis.swift
           - Models/PDFNavigation.swift
+          - Models/TerminalStudioReference.swift
           - UI/PDFViewController.swift
           - UI/PDFLinkView.swift
           - UI/BrandToolbarDelegate.swift
@@ -92,6 +93,7 @@ targets:
           - Models/PriorAnalysis.swift
           - Models/PDFNavigation.swift
           - Models/UpdateInstaller.swift
+          - Models/TerminalStudioReference.swift
       - path: Plugin
         includes:
           - ShellRunner.swift

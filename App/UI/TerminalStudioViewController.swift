@@ -68,6 +68,17 @@ final class TerminalStudioViewController: UIViewController {
     private let artifactsStack = UIStackView()
     private let viewHandoutButton = UIButton(type: .system)
 
+    var onRequestHide: (() -> Void)?
+    var onRequestExpand: (() -> Void)?
+    var onRequestReference: ((Bool) -> Void)?
+    var onNavigateReference: ((TerminalStudioReference) -> Void)?
+    var onOpenHandout: (() -> Void)?
+    private var hasStartedSession = false
+    private let expandButton = UIButton(type: .system)
+    private let referencesStack = UIStackView()
+    private var pendingReferences: [TerminalStudioReference] = []
+    private var insertedReferences: [TerminalStudioReference] = []
+
     private var courseDir: URL { LibraryStore.shared.courseDirectory(course) }
     private var pdfURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "handout.pdf") }
     private var texURL: URL { LibraryStore.shared.productURL(lecture, in: course, ext: "handout.tex") }
@@ -98,6 +109,11 @@ final class TerminalStudioViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = RecapTheme.paper
+        if onRequestHide != nil {
+            buildCompanionInterface()
+            observeLibrary()
+            return
+        }
 
         let titleLabel = UILabel()
         titleLabel.text = String(localized: "Terminal Studio")
@@ -315,6 +331,10 @@ final class TerminalStudioViewController: UIViewController {
             root.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
         ])
 
+        observeLibrary()
+    }
+
+    private func observeLibrary() {
         NotificationCenter.default.addObserver(
             self, selector: #selector(libraryDidChange), name: LibraryStore.didChange, object: nil
         )
@@ -328,13 +348,20 @@ final class TerminalStudioViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        // Lay the subtree out first so the shell's initial winsize is the real one
+        if onRequestHide == nil { activateSession() }
+    }
+
+    func activateSession() {
         view.layoutIfNeeded()
-        startShell()
+        if !hasStartedSession {
+            hasStartedSession = true
+            startShell()
+        }
         terminalView.becomeFirstResponder()
     }
 
     private func closeWindow() {
+        if let onRequestHide { onRequestHide(); return }
         guard let session = view.window?.windowScene?.session else { return }
         UIApplication.shared.requestSceneSessionDestruction(session, options: nil)
     }
@@ -370,6 +397,236 @@ final class TerminalStudioViewController: UIViewController {
     }
 
     // MARK: - Shell session
+
+    private func buildCompanionInterface() {
+        let title = sectionLabel("Terminal Studio")
+        title.font = RecapTheme.body(14, weight: .semibold)
+        expandButton.setImage(UIImage(systemName: "arrow.up.left.and.arrow.down.right"), for: .normal)
+        expandButton.accessibilityLabel = String(localized: "展开 Studio")
+        expandButton.addAction(UIAction { [weak self] _ in self?.onRequestExpand?() }, for: .touchUpInside)
+        let hide = companionButton(String(localized: "收起"), icon: "sidebar.right") { [weak self] in
+            self?.closeWindow()
+        }
+        let header = UIStackView(arrangedSubviews: [title, UIView(), expandButton, hide])
+        header.spacing = 8
+        header.alignment = .center
+
+        subtitleLabel.text = "\(lecture.name) · \(course.name)"
+        subtitleLabel.font = RecapTheme.body(11)
+        subtitleLabel.textColor = RecapTheme.muted
+        subtitleLabel.lineBreakMode = .byTruncatingMiddle
+        statusLabel.font = RecapTheme.mono(10)
+        statusLabel.textColor = RecapTheme.muted
+        statusLabel.numberOfLines = 2
+        toolButton.preferredBehavioralStyle = .pad
+        toolButton.configuration = .plain()
+        toolButton.showsMenuAsPrimaryAction = true
+        let restart = companionButton(String(localized: "新会话"), icon: "arrow.clockwise") { [weak self] in
+            self?.confirmRestart()
+        }
+        let controls = UIStackView(arrangedSubviews: [toolButton, UIView(), restart])
+        controls.alignment = .center
+
+        contextStack.axis = .vertical
+        contextStack.spacing = 6
+        let context = disclosure(title: String(localized: "课程上下文"), content: contextStack, maxHeight: 150)
+
+        terminalView.terminalDelegate = self
+        terminalView.focusEffect = nil
+        installWheelForwarding()
+        terminalContainer.layer.cornerRadius = RecapTheme.radiusSM
+        terminalContainer.layer.borderWidth = 1
+        terminalContainer.clipsToBounds = true
+        terminalContainer.addSubview(terminalView)
+        terminalView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            terminalView.topAnchor.constraint(equalTo: terminalContainer.topAnchor, constant: 6),
+            terminalView.leadingAnchor.constraint(equalTo: terminalContainer.leadingAnchor, constant: 6),
+            terminalView.trailingAnchor.constraint(equalTo: terminalContainer.trailingAnchor, constant: -6),
+            terminalView.bottomAnchor.constraint(equalTo: terminalContainer.bottomAnchor, constant: -6),
+        ])
+        applyTerminalTheme()
+
+        let current = companionButton(String(localized: "引用当前位置"), icon: "link") { [weak self] in
+            self?.onRequestReference?(false)
+        }
+        let selection = companionButton(String(localized: "引用选区 / 重点"), icon: "text.quote") { [weak self] in
+            self?.onRequestReference?(true)
+        }
+        let referenceActions = UIStackView(arrangedSubviews: [current, selection, UIView()])
+        referenceActions.spacing = 6
+        referencesStack.axis = .vertical
+        referencesStack.spacing = 4
+        referencesStack.isHidden = true
+
+        promptField.font = RecapTheme.body(12)
+        promptField.placeholder = String(localized: "围绕当前内容提问…")
+        promptField.text = initialPrompt
+        promptField.borderStyle = .roundedRect
+        promptField.addAction(UIAction { [weak self] _ in self?.sendPrompt() }, for: .primaryActionTriggered)
+        var config = UIButton.Configuration.filled()
+        config.image = UIImage(systemName: "arrow.up")
+        config.baseBackgroundColor = RecapTheme.ink
+        config.baseForegroundColor = RecapTheme.paper
+        config.background.cornerRadius = RecapTheme.radiusSM
+        sendButton.configuration = config
+        sendButton.accessibilityLabel = String(localized: "发送到终端；带引用时填入后按 Return 提交")
+        sendButton.addAction(UIAction { [weak self] _ in self?.sendPrompt() }, for: .touchUpInside)
+        let interrupt = companionButton(String(localized: "中断"), icon: "stop.fill") { [weak self] in
+            self?.terminalView.send(txt: "\u{3}")
+        }
+        let prompts = companionButton(String(localized: "提示词"), icon: "sparkles", action: {})
+        prompts.showsMenuAsPrimaryAction = true
+        prompts.menu = UIMenu(children: quickPrompts.map { item in
+            UIAction(title: item.title) { [weak self] _ in self?.setPrompt(item.prompt) }
+        })
+        let composer = UIStackView(arrangedSubviews: [promptField, sendButton])
+        composer.spacing = 6
+        let actions = UIStackView(arrangedSubviews: [prompts, UIView(), interrupt])
+        actions.alignment = .center
+
+        texRow.configure(name: texURL.lastPathComponent)
+        pdfRow.configure(name: pdfURL.lastPathComponent)
+        artifactsStack.axis = .vertical
+        artifactsStack.spacing = 4
+        viewHandoutButton.configuration = .plain()
+        viewHandoutButton.setTitle(String(localized: "在阅读区打开讲义"), for: .normal)
+        viewHandoutButton.addAction(UIAction { [weak self] _ in self?.onOpenHandout?() }, for: .touchUpInside)
+        let artifacts = UIStackView(arrangedSubviews: [texRow, pdfRow, artifactsStack, viewHandoutButton])
+        artifacts.axis = .vertical
+        artifacts.spacing = 8
+        let output = disclosure(title: String(localized: "生成产物"), content: artifacts, maxHeight: 160)
+
+        let root = UIStackView(arrangedSubviews: [header, subtitleLabel, controls, context, terminalContainer,
+                                                  statusLabel, referenceActions, referencesStack, composer, actions, output])
+        root.axis = .vertical
+        root.spacing = 8
+        root.translatesAutoresizingMaskIntoConstraints = false
+        let scroll = UIScrollView()
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        scroll.contentInsetAdjustmentBehavior = .never
+        view.addSubview(scroll)
+        scroll.addSubview(root)
+        let fitHeight = root.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor, constant: -24)
+        fitHeight.priority = .defaultHigh
+        NSLayoutConstraint.activate([
+            scroll.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scroll.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            root.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 12),
+            root.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 12),
+            root.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -12),
+            root.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -12),
+            root.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -24),
+            root.heightAnchor.constraint(greaterThanOrEqualTo: scroll.frameLayoutGuide.heightAnchor, constant: -24),
+            terminalContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 150),
+            fitHeight,
+            composer.heightAnchor.constraint(equalToConstant: 34),
+        ])
+        terminalContainer.setContentHuggingPriority(.defaultLow, for: .vertical)
+    }
+
+    private func companionButton(_ title: String, icon: String, action: @escaping () -> Void) -> UIButton {
+        let button = UIButton(type: .system)
+        button.preferredBehavioralStyle = .pad
+        var config = UIButton.Configuration.plain()
+        config.attributedTitle = AttributedString(title, attributes: AttributeContainer([.font: RecapTheme.body(10)]))
+        config.image = UIImage(systemName: icon, withConfiguration: UIImage.SymbolConfiguration(pointSize: 10))
+        config.imagePadding = 4
+        config.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 2, bottom: 4, trailing: 2)
+        config.baseForegroundColor = RecapTheme.muted
+        button.configuration = config
+        button.addAction(UIAction { _ in action() }, for: .touchUpInside)
+        return button
+    }
+
+    private func disclosure(title: String, content: UIView, maxHeight: CGFloat) -> UIView {
+        let scroll = UIScrollView()
+        scroll.addSubview(content)
+        content.translatesAutoresizingMaskIntoConstraints = false
+        let height = scroll.heightAnchor.constraint(equalToConstant: maxHeight)
+        height.priority = UILayoutPriority(999)
+        NSLayoutConstraint.activate([
+            content.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
+            content.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor),
+            content.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
+            content.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            height,
+        ])
+        scroll.isHidden = true
+        let button = companionButton(title, icon: "chevron.right", action: {})
+        button.contentHorizontalAlignment = .leading
+        button.addAction(UIAction { [weak scroll, weak button] _ in
+            guard let scroll else { return }
+            scroll.isHidden.toggle()
+            button?.configuration?.image = UIImage(systemName: scroll.isHidden ? "chevron.right" : "chevron.down")
+            button?.accessibilityValue = scroll.isHidden ? String(localized: "已折叠") : String(localized: "已展开")
+        }, for: .touchUpInside)
+        let stack = UIStackView(arrangedSubviews: [button, scroll])
+        stack.axis = .vertical
+        stack.spacing = 6
+        return stack
+    }
+
+    func setPrompt(_ prompt: String) {
+        loadViewIfNeeded()
+        promptField.text = prompt
+    }
+
+    func setExpanded(_ expanded: Bool) {
+        expandButton.setImage(UIImage(systemName: expanded ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"), for: .normal)
+        expandButton.accessibilityLabel = expanded ? String(localized: "返回伴随模式") : String(localized: "展开 Studio")
+    }
+
+    func addReference(_ reference: TerminalStudioReference) {
+        guard pendingReferences.count < 4 else {
+            setStatus(String(localized: "每次最多引用 4 处内容"), ready: false)
+            return
+        }
+        pendingReferences.append(reference)
+        refreshReferences()
+        promptField.becomeFirstResponder()
+    }
+
+    func showReferenceUnavailable(selection: Bool) {
+        setStatus(selection ? String(localized: "先选择 PDF 文字或播放重点") : String(localized: "在 PDF 或播放页面添加引用"), ready: false)
+    }
+
+    private func refreshReferences() {
+        referencesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for reference in pendingReferences {
+            let link = companionButton(reference.title, icon: "text.quote") { [weak self] in
+                self?.onNavigateReference?(reference)
+            }
+            link.titleLabel?.lineBreakMode = .byTruncatingTail
+            let remove = companionButton(String(localized: "移除"), icon: "xmark") { [weak self] in
+                self?.pendingReferences.removeAll { $0.id == reference.id }
+                self?.refreshReferences()
+            }
+            let row = UIStackView(arrangedSubviews: [link, UIView(), remove])
+            row.spacing = 4
+            referencesStack.addArrangedSubview(row)
+        }
+        if !insertedReferences.isEmpty {
+            let history = companionButton(String(localized: "返回已引用的位置"), icon: "clock.arrow.circlepath", action: {})
+            history.showsMenuAsPrimaryAction = true
+            history.menu = UIMenu(children: insertedReferences.reversed().map { reference in
+                UIAction(title: reference.title) { [weak self] _ in self?.onNavigateReference?(reference) }
+            })
+            referencesStack.addArrangedSubview(history)
+        }
+        referencesStack.isHidden = pendingReferences.isEmpty && insertedReferences.isEmpty
+    }
+
+    private func confirmRestart() {
+        let alert = UIAlertController(title: String(localized: "开始新会话？"),
+                                      message: String(localized: "将结束当前终端进程并清空输出和引用。"), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: String(localized: "取消"), style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "新会话"), style: .destructive) { [weak self] _ in self?.restartShell() })
+        present(alert, animated: true)
+    }
 
     private func startShell() {
         defer {
@@ -429,6 +686,9 @@ final class TerminalStudioViewController: UIViewController {
         // RIS: full reset wipes the old session's screen and scrollback
         terminalView.feed(text: "\u{1b}c")
         promptField.text = initialPrompt
+        pendingReferences.removeAll()
+        insertedReferences.removeAll()
+        refreshReferences()
         clearSessionArtifacts()
         refreshArtifacts()
         detectTools()
@@ -484,8 +744,23 @@ final class TerminalStudioViewController: UIViewController {
     private func sendPrompt() {
         guard shellPID > 0,
               let text = promptField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !text.isEmpty else { return }
-        ShellBridge.write(pid: shellPID, data: Data((text + "\n").utf8))
+              !text.isEmpty || !pendingReferences.isEmpty else { return }
+        if pendingReferences.isEmpty {
+            terminalView.send(txt: TerminalStudioReference.sanitizedPaste(text) + "\n")
+        } else {
+            // The foreground process may still be zsh. Paste quoted material as data and
+            // let the user confirm in the terminal, never execute document text as commands.
+            guard terminalView.getTerminal().bracketedPasteMode else {
+                setStatus(String(localized: "当前终端不支持引用粘贴，请先启动 CLI"), ready: false)
+                return
+            }
+            let payload = ([text] + pendingReferences.map(\.promptText)).joined(separator: "\n\n")
+            terminalView.send(txt: "\u{1b}[200~" + TerminalStudioReference.sanitizedPaste(payload) + "\u{1b}[201~")
+            insertedReferences.append(contentsOf: pendingReferences)
+            pendingReferences.removeAll()
+            refreshReferences()
+            setStatus(String(localized: "已填入终端 · 按 Return 提交"), ready: true)
+        }
         promptField.text = ""
         terminalView.becomeFirstResponder()
     }
@@ -509,7 +784,7 @@ final class TerminalStudioViewController: UIViewController {
         course = currentCourse
         lecture = currentLecture
         subtitleLabel.text = "\(lecture.name) · \(course.name)"
-        view.window?.windowScene?.title = "Terminal Studio · \(course.name)"
+        if onRequestHide == nil { view.window?.windowScene?.title = "Terminal Studio · \(course.name)" }
         if namesChanged { buildContextCards() }
         refreshArtifacts()
     }
@@ -644,6 +919,9 @@ final class TerminalStudioViewController: UIViewController {
         if pdfModified > lastPDFSeen {
             lastPDFSeen = pdfModified
             setStatus(String(localized: "讲义已生成"), ready: true)
+            NotificationCenter.default.post(
+                name: Self.artifactsDidChange, object: nil,
+                userInfo: ["lectureID": lecture.id])
         }
 
         clearSessionArtifacts()
@@ -683,6 +961,7 @@ final class TerminalStudioViewController: UIViewController {
 
     private func preview(_ url: URL) {
         guard FileManager.default.fileExists(atPath: url.path) else { return }
+        if url == pdfURL, let onOpenHandout { onOpenHandout(); return }
         if let token = previewStorageToken { LibraryStore.shared.endUsingStorage(token) }
         previewStorageToken = LibraryStore.shared.beginUsingStorage(in: course)
         previewItem = url
@@ -732,7 +1011,7 @@ extension TerminalStudioViewController: TerminalViewDelegate {
     // A live drag emits a size per layout pass and the shell redraws on every SIGWINCH,
     // so keep resizing during the drag but rate-limited, then settle on the final size
     func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {
-        guard shellPID > 0 else { return }
+        guard shellPID > 0, newCols > 0, newRows > 0, !view.isHidden else { return }
         pendingSize = (Int32(newCols), Int32(newRows))
         resizeTimer?.invalidate()
         if Date().timeIntervalSince(lastResizeSent) >= Self.resizeInterval {
